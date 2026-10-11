@@ -30,9 +30,10 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/setup@v3
         with:
           version: 12.4.1
+          install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -72,10 +73,11 @@ jobs:
         run: pnpm --filter @slskdn/e2e typecheck
 
       - name: Run E2E Tests
-        run: pnpm --filter @slskdn/e2e test:e2e:ci
+        run: node scripts/validate-development.mjs --task browser-e2e
         env:
           SLSKDN_TEST_NO_CONNECT: true
           SLSKDN_TEST_KEEP_ARTIFACTS: ${{ github.event_name == 'workflow_dispatch' }}
+          TMPDIR: ${{ runner.temp }}
 
       - name: Upload Test Artifacts
         if: failure()
@@ -94,5 +96,14 @@ jobs:
         with:
           name: playwright-report
           path: src/web/e2e/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload validation engine evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-engine-e2e
+          path: ${{ runner.temp }}/slskdn-validation-*/
           retention-days: 7
           if-no-files-found: ignore

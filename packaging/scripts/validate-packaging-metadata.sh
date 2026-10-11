@@ -105,7 +105,7 @@ expect_literal bin/watch 'pnpm --filter @slskdn/web start'
 reject_literal bin/build 'npm ci --legacy-peer-deps'
 reject_literal packaging/aur/PKGBUILD 'npm ci --legacy-peer-deps'
 expect_literal packaging/aur/PKGBUILD "'nodejs' 'pnpm'"
-PNPM_SETUP_ACTION='pnpm/action-setup@v6'
+PNPM_SETUP_ACTION='pnpm/setup@v3'
 for workflow in \
     .github/workflows/build-on-tag.yml \
     .github/workflows/ci-enhancements.yml \
@@ -116,9 +116,34 @@ for workflow in \
     .github/workflows/release-ppa.yml \
     .github/workflows/windows-smoke.yml; do
     expect_literal "$workflow" "$PNPM_SETUP_ACTION"
+    expect_literal "$workflow" 'install: false'
 done
-expect_literal packaging/scripts/run-release-gate.sh 'timeout --kill-after=60s "$timeout_seconds" "$@"'
+expect_literal packaging/scripts/run-release-gate.sh 'exec node scripts/validate-development.mjs'
+for task_id in \
+    release-branch-sync \
+    packaging-metadata \
+    remediation-baseline \
+    release-note-tests \
+    engine-contract-tests \
+    web-install \
+    web-tests \
+    backend-unit-tests \
+    backend-regression-tests \
+    backend-integration-smoke \
+    web-build \
+    bundle-budget \
+    built-web-output \
+    subpath-web-smoke; do
+    expect_literal scripts/validation-engine/config.mjs "id: '$task_id'"
+done
 reject_literal packaging/scripts/run-release-gate.sh 'timeout --preserve-status'
+expect_literal .github/workflows/ci.yml 'TMPDIR: ${{ runner.temp }}'
+expect_literal .github/workflows/e2e-tests.yml 'TMPDIR: ${{ runner.temp }}'
+expect_literal .github/workflows/build-on-tag.yml 'TMPDIR: ${{ runner.temp }}'
+expect_literal .github/workflows/ci.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
+expect_literal .github/workflows/e2e-tests.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
+reject_literal .github/workflows/ci.yml 'path: /tmp/slskdn-validation-*/'
+reject_literal .github/workflows/e2e-tests.yml 'path: /tmp/slskdn-validation-*/'
 expect_literal scripts/verify-release-artifacts.sh 'SHA256SUMS.txt'
 expect_literal scripts/verify-release-artifacts.sh 'vpn-agent/slskdN-vpn-agent'
 expect_literal scripts/verify-release-artifacts.sh 'slskdn-footer-session-total'

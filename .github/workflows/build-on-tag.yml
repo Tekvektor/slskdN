@@ -65,9 +65,10 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/setup@v3
         with:
           version: 12.4.1
+          install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -79,6 +80,7 @@ jobs:
       - name: Release Gate
         env:
           LOCAL_IDENTITY_DENYLIST: ${{ secrets.LOCAL_IDENTITY_DENYLIST }}
+          TMPDIR: ${{ runner.temp }}
         run: bash packaging/scripts/run-release-gate.sh
 
       - name: Upload Web Content
