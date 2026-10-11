@@ -18858,3 +18858,31 @@ fast-forwarded into local `main`. Current whole-product follow-ups require the
 T-908 trust/serving design or external accessibility, WAN, resource,
 throttling, and network-change evidence; unreviewed scanner queues remain
 candidates, not confirmed defects.
+
+## 2026-10-11 22:03 UTC — Fix issue #352 and publish stable `.349`
+
+Reproduced the transfer-table performance root cause with SQLite query-plan
+coverage. Active batch and user/filename queries now have matching partial
+indexes; removed completed transfer retention is bounded, and event/search
+history is capped. The .NET 10 audit confirms every first-party project under
+`src`, `tests`, and `tools` targets `net10.0`; MonoTorrent and Mono.Nat's
+`net8.0`/`net6.0` selections are compatible NuGet dependency assets.
+
+The local `.349` gate passed 14/14, the full unit suite passed 5,752 tests,
+backend regression coverage passed 74, integration smoke passed 40, the
+validation-engine contract passed 13, and repository lint passed. Hosted run
+`38177352194` built all six runtime packages and published release
+`2026101120-slskdn.349`. `scripts/verify-release-artifacts.sh` passed checksum
+verification for all six archives and confirmed the Linux binary, bundled Web
+marker, and VPN helper payload. Issue #352 was updated and closed after the
+published artifacts verified. The open issue list contained only #352, which was then closed. There were
+no open PRs and zero CodeQL, Dependabot, or secret-scanning alerts at the
+latest check.
+
+Release automation pushed stable metadata commit `7844198f6`, which was
+fast-forwarded into local `main`. At this entry's timestamp, all runtime
+publishers plus AUR, COPR, Chocolatey, Nix, Homebrew, GitHub release creation,
+and the announcement had succeeded; Docker image publication and Launchpad
+PPA upload were still in progress. Finish those publishers, verify the exact
+PPA publication if available, then record final status and push the remaining
+memory handoff.

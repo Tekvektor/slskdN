@@ -1,56 +1,37 @@
-## Current state — Collections and Wishlist guidance validated; continue UI audit — 2026-10-06 02:13 UTC
+## Current state — Stable `.349` published; issue #352 fixed — 2026-10-11 22:03 UTC
 
-The .NET 10 audit is complete. Every first-party application, test, and
-build-tool project under `src`, `tests`, and `tools` targets `net10.0`.
-MonoTorrent 3.9.0 targets `net8.0`, which NuGet marks compatible with `net10.0`;
-its Mono.Nat 3.0.4 dependency provides `net6.0` and .NET Standard assets, with
-NuGet selecting the compatible `net6.0` assembly for the app. No first-party
-TFM needs retargeting, and the pinned slskNet.Runtime mirror remains under its
-source-sync contract.
+The database performance issue #352 is fixed. Active transfer lookups now use
+partial indexes for batch and user/filename predicates, removed completed
+transfers have bounded retention, and event/search history is capped. SQLite
+query-plan regressions cover the indexed access paths. First-party app, test,
+VPN-agent, and build-task projects target `net10.0`; MonoTorrent's `net8.0`
+and Mono.Nat's compatible `net6.0` selections are dependency assets, not
+first-party targets requiring retargeting.
 
-The media-server review panel now accepts page-only connection, path, mapping,
-and safety values; displays path status and translated paths; passes a populated
-readiness preview into contract review; and names the report action honestly.
-Path maps now require a separator boundary. Send Private Message, User Note,
-and Lidarr Wanted Sync actions have explanatory tooltips. Gotchas `0z1694`,
-`0z1695`, and `0z1696` are pushed. The focused changed-component suite passes
-41/41, the complete web suite passes 1,245 tests across 190 files, web
-lint/build pass, `dotnet test slskd.sln -c Release --no-restore` passes 6,109
-tests, and `./bin/lint` passes.
+Stable release `2026101120-slskdn.349` is published from trigger tag
+`build-main-2026101120-slskdn.349`. The local gate passed 14/14, the unit suite
+passed 5,752 tests, backend regressions passed 74, integration smoke passed 40,
+and the hosted validation-engine contract passed 13. Repository lint passed.
+The published artifact verifier checked six platform archives and all
+published SHA256 sums, then confirmed the Linux binary, bundled Web marker, and
+VPN helper payload. Issue #352 was updated with the fix and closed after this
+verification. Open PRs and CodeQL, Dependabot, and secret-scanning alerts were
+all zero at the latest check.
 
-The media-server fixes are pushed in `ec8c0b7f2`; the refreshed active backlog
-and memory handoff are pushed in `46ed981b9`. The `.344`-to-`HEAD` release-note
-preview, local identity scan, target verification, and complete remediation
-baseline pass. Current candidate counts are 25 async-void, 0 silent-catch,
-216 callback/event, 429 remote-text, 12,448 red-team, and 834 mutable-ownership.
+The release workflow fast-forward commit `7844198f6` updated stable package
+metadata. Run `38177352194` has passed every runtime publisher, GitHub release
+creation, AUR, COPR, Chocolatey, Nix, Homebrew, and announcement job. Docker
+image publishing and the Launchpad PPA job are still running.
 
-Collections now explains standalone create, delete, add, and share actions.
-Wishlist table and card controls explain manual peer searches, search history,
-editing, deletion, bulk filters, and form actions. The page-count indicator is
-now a keyboard-accessible status with a Popup instead of a disabled button.
-Existing Popup triggers remain single-wrapped. Table and card views each render
-one delete confirmation; an initial duplicate-dialog finding was corrected
-after tracing the mutually exclusive view branch. Gotchas `0z1713` and
-`0z1714` capture the repeated action-guidance gap, and `0z1715` records the
-view-branch verification lesson.
+## Next Steps
 
-Focused Collections/Wishlist tests pass 20/20; the full Web suite passes 1,253
-tests across 191 files; Web lint/build, full .NET Release tests (6,109), and
-`./bin/lint` pass. The first .NET run hit a full shared `/tmp` tmpfs; rerunning
-with test files under `/var/tmp` passed. The current Collections/Wishlist
-component, tests, release fragment, changelog, and memory updates are not yet
-committed. Preview notes, scan identity leaks, commit and push, rerun the
-remediation baseline, then continue the UI audit.
-
-Stable `.344` remains immutable and its six platform artifacts are verified.
-Its exact Jammy AMD64 build `33815555` is now `Successfully built`, but the
-published-binaries query and public apt index do not yet contain the exact
-version. Do not create `.345` until that binary is published. Then run the
-guarded stable release gate and verify hosted artifacts. Continue triaging
-confirmed findings; T-908 lifecycle, global Party ID authority,
-accessibility/device evidence, WAN/resource measurements, hidden-tab
-throttling, and the original frontend network-change cause remain open or
-evidence-gated.
+- Monitor the Docker and Launchpad PPA publisher jobs for run `38177352194`.
+- Confirm the exact `.349` PPA package appears in Launchpad and the public apt
+  index; record the final publisher status here and in `tasks.md`.
+- Recheck open issues, pull requests, and security alerts after publishers
+  finish; confirm `main` is synchronized and the worktree is clean.
+- Keep evidence/design-gated product follow-ups tracked separately; do not
+  classify scanner candidates as confirmed defects without code evidence.
 
 ## Prior state — Continue search control and UI affordance remediation — 2026-10-06 00:53 UTC
 

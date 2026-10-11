@@ -26,6 +26,30 @@
 
 ## Active Development
 
+### Reported database issue #352 and stable `.349` release — 2026-10-11
+
+- [x] Reproduce issue #352's transfer-table scan root cause with SQLite query
+  plan coverage. Add active-row partial indexes for batch and user/filename
+  lookups, bounded cleanup for removed completed transfers, and caps for event
+  and search history.
+- [x] Confirm every first-party project under `src`, `tests`, and `tools`
+  targets `net10.0`. MonoTorrent's `net8.0` asset and Mono.Nat's compatible
+  `net6.0` asset are dependency binaries selected by NuGet, not application
+  targets.
+- [x] Pass the `.349` local release gate (14/14), full unit suite (5,752),
+  backend regression (74), integration smoke (40), validation-engine contract
+  (13), repository lint, and release-note preview.
+- [x] Publish stable `.349` from `build-main-2026101120-slskdn.349`; verify all
+  six platform archives and published checksums, then execute the Linux
+  binary, bundled Web marker, and VPN helper checks.
+- [x] Document hosted validation fixture identity and parallel Serilog test
+  logger gotchas in separate commits before their fixes.
+- [x] Post the fix and close GitHub issue #352 after published artifact
+  verification. No open PRs or CodeQL, Dependabot, or secret-scanning alerts
+  remained at the final check.
+- [ ] Finish the `.349` Docker and Launchpad PPA publisher jobs, then record
+  their final status and confirm the exact PPA package publication.
+
 ### Post-.344 HTTP, DHT, and Pod diagnostic-boundary hardening; .NET 10 audit — 2026-10-05
 
 - [x] Add Semantic UI explanations to selected-transfer Retry, Cancel, and
