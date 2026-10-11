@@ -40805,3 +40805,17 @@ context.
 missing summary fails while a valid summary records its case count. In ordinary
 JavaScript strings, encode regex \\s with \\\\s exactly once in source, then
 verify the resulting RegExp against real command output.
+
+### 0z1746. Clear Node Test Harness Context Before Launching Native Tests (2026-10-11)
+
+**What went wrong:** A validation engine invoked by `node --test` inherited
+`NODE_TEST_CONTEXT`. Its child `node --test` process then reported that it was
+running recursively, skipped the discovered test file, and exited successfully
+without reporting any active cases.
+
+**Why:** The child runner inherited parent test-harness state that is meaningful
+only inside the current Node test process.
+
+**Prevention:** Remove `NODE_TEST_CONTEXT` from child environments and verify
+that the child test runner executes a real fixture and reports nonzero active
+cases.
