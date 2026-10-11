@@ -28,6 +28,12 @@ For dev or build tags, use the same logical version string embedded in the tag.
   completed transfers are purged after their configured retention, while event
   history is capped at 10,000 rows and search history at 250 by default.
 
+### Security
+
+- File-operation failure logs no longer include local paths or exception
+  details that can repeat them; operation context, exception type, and HRESULT
+  remain available for troubleshooting.
+
 ## [2026100521-slskdn.345] — 2026-10-05
 
 ### Fixed

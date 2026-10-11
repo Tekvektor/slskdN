@@ -127,10 +127,8 @@ public static class ContentSafety
         if (verification.IsWarning || !verification.IsValid)
         {
             logger?.LogWarning(
-                "Content verification for {Filename} reported {ThreatLevel}: {Message}",
-                Path.GetFileName(safeFilePath),
-                verification.ThreatLevel,
-                verification.Message);
+                "Content verification reported {ThreatLevel}",
+                verification.ThreatLevel);
         }
 
         if (!rejected)
@@ -353,9 +351,9 @@ public static class ContentSafety
         catch (Exception ex)
         {
             logger?.LogWarning(
-                ex,
-                "Failed to read file for content verification: {FilePath}",
-                LoggingSanitizer.SanitizeFilePath(filePath));
+                "Failed to read file for content verification ({ExceptionType}, HRESULT {HResult})",
+                ex.GetType().Name,
+                ex.HResult);
             return ContentVerificationResult.Fail("Could not read file", ContentThreatLevel.Unknown);
         }
 

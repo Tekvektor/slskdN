@@ -556,8 +556,10 @@ public class SearchActionsController : ControllerBase
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _logger.LogWarning("[SearchActions] Failed to remove staged pod download at {StagingPath}: {Exception}",
-                LoggingSanitizer.SanitizeFilePath(localFilename), LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
+            _logger.LogWarning(
+                "[SearchActions] Failed to remove staged pod download ({ExceptionType}, HRESULT {HResult})",
+                ex.GetType().Name,
+                ex.HResult);
         }
     }
 

@@ -2176,9 +2176,9 @@ public class MultiSourceDownloadService : IMultiSourceDownloadService
         catch (Exception ex)
         {
             _logger.LogWarning(
-                "[AUTO-TAGGING] Final fingerprint verification failed for {File}: {Exception}",
-                LoggingSanitizer.SanitizeFilePath(filePath),
-                LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
+                "[AUTO-TAGGING] Final fingerprint verification failed ({ExceptionType}, HRESULT {HResult})",
+                ex.GetType().Name,
+                ex.HResult);
             return new FingerprintVerificationResult(null, false, null);
         }
     }

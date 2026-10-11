@@ -537,8 +537,12 @@ public class SearchActionsControllerTests
             logger.Verify(x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("Failed to remove staged pod download", StringComparison.Ordinal)),
-                It.IsAny<IOException>(),
+                It.Is<It.IsAnyType>((state, _) =>
+                    state.ToString()!.Contains("Failed to remove staged pod download", StringComparison.Ordinal) &&
+                    state.ToString()!.Contains("IOException", StringComparison.Ordinal) &&
+                    !state.ToString()!.Contains(trustedRoot, StringComparison.Ordinal) &&
+                    !state.ToString()!.Contains("outside.flac", StringComparison.Ordinal)),
+                It.Is<Exception?>(exception => exception == null),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
 
             var unexpected = Assert.Throws<TargetInvocationException>(() => method.Invoke(controller, new object[] { "", null! }));

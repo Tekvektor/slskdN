@@ -7,6 +7,7 @@ import * as rooms from '../../lib/rooms';
 import * as slskdn from '../../lib/slskdn';
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../Player/PodListenAlongPanel', () => ({ default: () => null }));
@@ -259,20 +260,17 @@ describe('Messaging', () => {
 
   it('uses slash leave to call the active room leave action', async () => {
     rooms.getJoined.mockResolvedValue(['indie']);
+    const user = userEvent.setup();
 
     renderMessaging({ initialKind: 'room' });
 
     expect(await screen.findByText('#indie')).toBeInTheDocument();
+    expect(await screen.findByText('No messages yet in #indie.')).toBeInTheDocument();
     const composer = screen.getByLabelText('Message #indie');
-    fireEvent.change(composer, {
-      target: { value: '/leave' },
-    });
-    await waitFor(() => {
-      expect(composer).toHaveValue('/leave');
-    }, { timeout: 5000 });
-    fireEvent.keyDown(composer, {
-      key: 'Enter',
-    });
+    expect(composer).toBeEnabled();
+    await user.type(composer, '/leave');
+    expect(composer).toHaveValue('/leave');
+    await user.keyboard('{Enter}');
 
     await waitFor(() => {
       expect(rooms.leave).toHaveBeenCalledWith({ roomName: 'indie' });

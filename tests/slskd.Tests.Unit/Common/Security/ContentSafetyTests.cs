@@ -7,6 +7,8 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Moq;
 using slskd.Common.Security;
 using Xunit;
 
@@ -183,6 +185,7 @@ public class ContentSafetyTests
         Directory.CreateDirectory(downloadsRoot);
         var filePath = Path.Combine(downloadsRoot, "mismatch.flac");
         await File.WriteAllBytesAsync(filePath, new byte[] { 0x25, 0x50, 0x44, 0x46 });
+        var logger = new Mock<ILogger>();
 
         try
         {
@@ -199,11 +202,21 @@ public class ContentSafetyTests
                         QuarantineSuspicious = false
                     }
                 },
-                CancellationToken.None);
+                CancellationToken.None,
+                logger.Object);
 
             Assert.True(disposition.Inspected);
             Assert.False(disposition.Rejected);
             Assert.True(File.Exists(filePath));
+            logger.Verify(entry => entry.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((state, _) =>
+                    state.ToString()!.Contains("Content verification reported", StringComparison.Ordinal) &&
+                    !state.ToString()!.Contains(root, StringComparison.Ordinal) &&
+                    !state.ToString()!.Contains("mismatch.flac", StringComparison.Ordinal)),
+                It.Is<Exception?>(exception => exception == null),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
         finally
         {

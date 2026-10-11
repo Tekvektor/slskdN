@@ -6,12 +6,12 @@ namespace slskd.Common.Security
     using System;
     using System.Net;
     /// <summary>
-    ///     Provides logging utilities that preserve operator-visible activity while keeping actual secrets out of logs.
+    ///     Provides log-forging protection for operator-facing values without changing the original values.
     /// </summary>
     /// <remarks>
-    ///     H-GLOBAL01: Logging and Telemetry Hygiene Audit. Runtime and operator logs should show usernames, paths,
-    ///     search terms, peer IDs, endpoints, and hashes because those values are needed to troubleshoot a running node.
-    ///     Only credentials, API keys, private keys, passwords, and equivalent secret material should be redacted.
+    ///     This utility escapes control characters; it does not redact paths, identifiers, or credentials. Callers must
+    ///     omit local paths and exception text at failure boundaries where they could reveal a configured filesystem
+    ///     root, and must redact credentials, API keys, private keys, passwords, and equivalent secret material.
     /// </remarks>
     public static class LoggingSanitizer
     {

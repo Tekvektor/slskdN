@@ -820,8 +820,10 @@ public class SharesController : ControllerBase
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _log.LogWarning(ex, "[Backfill] Failed to remove staged download at {StagingPath}",
-                LoggingSanitizer.SanitizeFilePath(filePath));
+            _log.LogWarning(
+                "[Backfill] Failed to remove staged download ({ExceptionType}, HRESULT {HResult})",
+                ex.GetType().Name,
+                ex.HResult);
         }
     }
 }
