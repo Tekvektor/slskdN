@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1756. Do Not Patch Shared Process Streams In Concurrent Node Tests (2026-10-11)
+
+**What went wrong:** A validation-engine test replaced `process.stdout.write` to
+capture one asynchronous `main()` call. Node ran other top-level tests at the
+same time, so they shared the replacement and failed with missing output or
+incorrect task states on the hosted runner.
+
+**Why:** Process streams are global mutable state, while Node's test runner may
+execute sibling tests concurrently. Locally, timing let the test pass and hid
+the interference.
+
+**Prevention:** Test a pure summary-formatting function directly, or run output
+capture in an isolated child process. Do not patch `process.stdout` or
+`process.stderr` around asynchronous work in concurrent tests.
+
 ### 0z1755. Provision Every Validation Command On Hosted Release Runners (2026-10-11)
 
 **What went wrong:** The GitHub-hosted tag workflow invoked the validation
