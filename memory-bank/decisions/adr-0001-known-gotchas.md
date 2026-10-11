@@ -40788,3 +40788,52 @@ conditional child rendering from the shared button tree.
 **Prevention:** When consolidating responsive markup, preserve the visible
 label branch and test the rendered text at wide widths as well as the icon-only
 layout at narrow widths.
+
+### 0z1729. Preserve Test Evidence Rules In Validation Plans (2026-10-11)
+
+**What went wrong:** The validation plan projection omitted each test task's
+casePattern and minimumCases. Execution received that projection, so an
+exit-zero test command could be marked passed without any active-case evidence.
+The JavaScript regex strings were also escaped twice, preventing them from
+matching whitespace and digits.
+
+**Why:** The plan was treated as display metadata instead of the immutable
+execution contract, and regex escaping was copied from an already escaped
+context.
+
+**Prevention:** Carry every test assertion field into the plan and test that a
+missing summary fails while a valid summary records its case count. In ordinary
+JavaScript strings, encode regex \\s with \\\\s exactly once in source, then
+verify the resulting RegExp against real command output.
+
+### 0z1746. Clear Node Test Harness Context Before Launching Native Tests (2026-10-11)
+
+**What went wrong:** A validation engine invoked by `node --test` inherited
+`NODE_TEST_CONTEXT`. Its child `node --test` process then reported that it was
+running recursively, skipped the discovered test file, and exited successfully
+without reporting any active cases.
+
+**Why:** The child runner inherited parent test-harness state that is meaningful
+only inside the current Node test process.
+
+**Prevention:** Remove `NODE_TEST_CONTEXT` from child environments and verify
+that the child test runner executes a real fixture and reports nonzero active
+cases.
+
+### 0z1747. Bootstrap pnpm Without The Runner's npm Installer (2026-10-11)
+
+**What went wrong:** `pnpm/action-setup@v6` failed on the self-hosted Linux
+runner before any build or test ran. Its self-installer used npm 12.2.0 under
+Node 20.20.2, then npm blocked `@pnpm/exe`'s preinstall script, leaving an
+invalid executable and exit code 127. The same setup failure affected separate
+CI and dependency-scanning jobs.
+
+**Why:** The action's bootstrap path depended on runner npm policy and a Node
+version that npm 12 does not support. Retrying could occasionally pass, but
+that does not make the environment-dependent bootstrap reliable.
+
+**Prevention:** For pnpm 11 or newer, install the standalone pnpm binary with
+`pnpm/setup` and keep the repository's explicit Node setup when its caching or
+runtime features are needed. Set `install: false` when the workflow performs
+its own frozen-lockfile install. Re-run the affected hosted jobs and confirm
+they pass the pnpm setup step before treating a dependency update as validated.
