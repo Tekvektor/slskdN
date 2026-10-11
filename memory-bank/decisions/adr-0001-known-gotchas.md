@@ -40891,3 +40891,17 @@ context.
 missing summary fails while a valid summary records its case count. In ordinary
 JavaScript strings, encode regex \\s with \\\\s exactly once in source, then
 verify the resulting RegExp against real command output.
+
+### 0z1753. Match Changelog Headings As Complete Lines (2026-10-11)
+
+**What went wrong:** Release-note preparation first searched for the substring
+`## [Unreleased]` and matched its inline mention in the document introduction.
+A follow-up regex was double-escaped and matched no heading. The script edited
+the wrong sentence once, then stopped safely when it found zero exact matches.
+
+**Why:** The substring search ignored Markdown line boundaries, and the regex
+attempt added more escaping than the Python raw string required.
+
+**Prevention:** Find headings by comparing complete input lines and assert each
+expected heading occurs exactly once before editing. If a regex is needed, test
+it against the literal heading and an inline mention before applying it.
