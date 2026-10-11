@@ -22,6 +22,12 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Fixed
+
+- Validation contract tests now verify preflight diagnostics without capturing
+  process-global output, preventing concurrent test interference in hosted
+  release checks.
+
 ## [2026101120-slskdn.347] — 2026-10-11
 
 ### Changed

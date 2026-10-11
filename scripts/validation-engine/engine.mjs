@@ -675,6 +675,20 @@ function help(config) {
   ].join('\n');
 }
 
+export function summarizeResult(repository, result) {
+  const preflightFailures = (result.receipt.prerequisites ?? []).filter((item) =>
+    item.available === false || item.versionCompatible === false
+  );
+  return {
+    repository,
+    status: result.receipt.status,
+    planSha256: result.receipt.planSha256,
+    totals: result.receipt.totals,
+    preflightFailures,
+    evidenceDirectory: result.runRoot,
+  };
+}
+
 export async function main(argv = process.argv.slice(2), root = DEFAULT_ROOT, config) {
   const loaded = config ?? (await import(pathToFileURL(path.join(ENGINE_DIR, 'config.mjs')).href)).validation;
   const args = [...argv];
@@ -708,17 +722,7 @@ export async function main(argv = process.argv.slice(2), root = DEFAULT_ROOT, co
     return 0;
   }
   const result = await executePlan(root, loaded, plan);
-  const preflightFailures = (result.receipt.prerequisites ?? []).filter((item) =>
-    item.available === false || item.versionCompatible === false
-  );
-  process.stdout.write(JSON.stringify({
-    repository: loaded.repository,
-    status: result.receipt.status,
-    planSha256: result.receipt.planSha256,
-    totals: result.receipt.totals,
-    preflightFailures,
-    evidenceDirectory: result.runRoot,
-  }, null, 2) + '\n');
+  process.stdout.write(JSON.stringify(summarizeResult(loaded.repository, result), null, 2) + '\n');
   return result.exitCode;
 }
 
