@@ -40788,3 +40788,20 @@ conditional child rendering from the shared button tree.
 **Prevention:** When consolidating responsive markup, preserve the visible
 label branch and test the rendered text at wide widths as well as the icon-only
 layout at narrow widths.
+
+### 0z1729. Preserve Test Evidence Rules In Validation Plans (2026-10-11)
+
+**What went wrong:** The validation plan projection omitted each test task's
+casePattern and minimumCases. Execution received that projection, so an
+exit-zero test command could be marked passed without any active-case evidence.
+The JavaScript regex strings were also escaped twice, preventing them from
+matching whitespace and digits.
+
+**Why:** The plan was treated as display metadata instead of the immutable
+execution contract, and regex escaping was copied from an already escaped
+context.
+
+**Prevention:** Carry every test assertion field into the plan and test that a
+missing summary fails while a valid summary records its case count. In ordinary
+JavaScript strings, encode regex \\s with \\\\s exactly once in source, then
+verify the resulting RegExp against real command output.
