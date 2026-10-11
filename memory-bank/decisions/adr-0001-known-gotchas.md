@@ -7482,6 +7482,25 @@ installer.
 
 ## 🚨 CRITICAL: Bugs That Keep Coming Back
 
+### 0z1742. Keep Transfer Lookups Indexed And Removed History Bounded (2026-10-11)
+
+**What went wrong:** Transfer batch polling and peer/file duplicate checks had
+no matching indexes, so SQLite scanned the full `Transfers` table. User removal
+and configured transfer retention only set `Removed = true`, allowing old rows
+to accumulate indefinitely. Event history had only an age limit, and the default
+search count limit allowed unusually large result payloads to keep a large
+database.
+
+**Why:** Soft removal preserved historical rows, but no later purge deleted
+them. Retention age alone did not bound high-volume event data, and the query
+indexes covered other access paths rather than these hot predicates.
+
+**Prevention:** Add idempotent partial indexes that match the actual SQLite
+query predicates, verify them with `EXPLAIN QUERY PLAN`, and test that cleanup
+deletes only old, completed, removed transfers. Bound event and search history
+by both age and a configurable record count; keep active transfers outside the
+purge predicate.
+
 ### 0z1556. Drain Both Redirected Process Streams Concurrently (2026-10-04)
 
 **What went wrong:** `SongIdService.RunToolAsync` awaited the child process's
