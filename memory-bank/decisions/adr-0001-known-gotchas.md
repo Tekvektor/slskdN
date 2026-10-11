@@ -40837,3 +40837,17 @@ that does not make the environment-dependent bootstrap reliable.
 runtime features are needed. Set `install: false` when the workflow performs
 its own frozen-lockfile install. Re-run the affected hosted jobs and confirm
 they pass the pnpm setup step before treating a dependency update as validated.
+
+### 0z1748. Register Validation Commands In The Root Manifest (2026-10-11)
+
+**What went wrong:** Documentation and the release gate invoked
+`pnpm validate:development`, but the root `package.json` had no matching
+script. The command failed with “Command not found” before planning or running
+any validation task.
+
+**Why:** The executable and documentation were added without checking that the
+workspace package manager could resolve the advertised entry point.
+
+**Prevention:** Add every documented pnpm command to the root manifest and
+check it with `pnpm run` or by invoking the exact command before integrating
+the command into CI or release documentation.
