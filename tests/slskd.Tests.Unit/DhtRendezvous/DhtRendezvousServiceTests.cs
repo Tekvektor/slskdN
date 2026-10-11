@@ -85,7 +85,13 @@ public class DhtRendezvousServiceTests
             overlay.Object, Mock.Of<IMeshOverlayConnector>(),
             new MeshNeighborRegistry(NullLogger<MeshNeighborRegistry>.Instance),
             new MeshPeerManager(NullLogger<MeshPeerManager>.Instance),
-            new DhtRendezvousOptions { Enabled = true, LanOnly = true });
+            new DhtRendezvousOptions { Enabled = true, LanOnly = true, DhtPort = 0 },
+            Microsoft.Extensions.Options.Options.Create(new OverlayOptions
+            {
+                ListenPort = 0,
+                EnableQuic = false,
+                ShareQuicWithDhtPort = false,
+            }));
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         await service.StartAsync(timeout.Token);
         await service.StartAsync(timeout.Token);
@@ -120,7 +126,13 @@ public class DhtRendezvousServiceTests
             overlay.Object, Mock.Of<IMeshOverlayConnector>(),
             new MeshNeighborRegistry(NullLogger<MeshNeighborRegistry>.Instance),
             new MeshPeerManager(NullLogger<MeshPeerManager>.Instance),
-            new DhtRendezvousOptions { Enabled = true, LanOnly = true });
+            new DhtRendezvousOptions { Enabled = true, LanOnly = true, DhtPort = 0 },
+            Microsoft.Extensions.Options.Options.Create(new OverlayOptions
+            {
+                ListenPort = 0,
+                EnableQuic = false,
+                ShareQuicWithDhtPort = false,
+            }));
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         await service.StartAsync(timeout.Token);
         await entered.Task.WaitAsync(timeout.Token);
