@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1758. Keep Log Capture Out Of Parallel Tests' Global Serilog Logger (2026-10-11)
+
+**What went wrong:** A disaster-mode test replaced process-wide
+`Serilog.Log.Logger` with a logger whose sink stored events in a `List<LogEvent>`.
+Another parallel unit test emitted a log through that same global logger while
+the assertion enumerated the list, causing `Collection was modified`.
+
+**Why:** The wrapper used Serilog's static logger, so a test-local sink was
+actually shared by unrelated xUnit tests running in parallel. Filtering by log
+message did not prevent the concurrent write.
+
+**Prevention:** Inject `ILogger<T>` into the wrapper and give the test a
+test-local capturing logger. If a test must replace `Log.Logger`, put it in
+`StaticEventCollection` and keep its sink safe for concurrent writes.
+
 ### 0z1757. Isolate Validation Fixtures From The Hosted Commit Identity (2026-10-11)
 
 **What went wrong:** Engine contract tests create temporary Git repositories with
