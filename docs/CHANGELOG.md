@@ -24,8 +24,11 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Changed
 
-- CI and release workflows now install pnpm from its standalone binary, avoiding
-  dependence on runner npm install-script policy.
+- CI and release workflows now install pnpm from its standalone release binary,
+  avoiding dependence on runner npm install-script policy.
+- A repository validation command now inventories native test suites, binds
+  each run to a source snapshot, and records private evidence for release
+  checks.
 
 ### Fixed
 
@@ -35,6 +38,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Security
 
+- GitHub validation receipts and logs now stay scoped to the current runner job,
+  preventing artifacts from including stale evidence left by earlier runs.
 - File-operation failure logs no longer include local paths or exception
   details that can repeat them; operation context, exception type, and HRESULT
   remain available for troubleshooting.

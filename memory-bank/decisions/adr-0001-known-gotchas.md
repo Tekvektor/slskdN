@@ -40789,7 +40789,93 @@ conditional child rendering from the shared button tree.
 label branch and test the rendered text at wide widths as well as the icon-only
 layout at narrow widths.
 
-### 0z1729. Preserve Test Evidence Rules In Validation Plans (2026-10-11)
+### 0z1746. Clear Node Test Harness Context Before Launching Native Tests (2026-10-11)
+
+**What went wrong:** A validation engine invoked by `node --test` inherited
+`NODE_TEST_CONTEXT`. Its child `node --test` process then reported that it was
+running recursively, skipped the discovered test file, and exited successfully
+without reporting any active cases.
+
+**Why:** The child runner inherited parent test-harness state that is meaningful
+only inside the current Node test process.
+
+**Prevention:** Remove `NODE_TEST_CONTEXT` from child environments and verify
+that the child test runner executes a real fixture and reports nonzero active
+cases.
+
+### 0z1747. Bootstrap pnpm Without The Runner's npm Installer (2026-10-11)
+
+**What went wrong:** `pnpm/action-setup@v6` failed on the self-hosted Linux
+runner before any build or test ran. Its self-installer used npm 12.2.0 under
+Node 20.20.2, then npm blocked `@pnpm/exe`'s preinstall script, leaving an
+invalid executable and exit code 127. The same setup failure affected separate
+CI and dependency-scanning jobs.
+
+**Why:** The action's bootstrap path depended on runner npm policy and a Node
+version that npm 12 does not support. Retrying could occasionally pass, but
+that does not make the environment-dependent bootstrap reliable.
+
+**Prevention:** For pnpm 11 or newer, install the standalone pnpm binary with
+`pnpm/setup` and keep the repository's explicit Node setup when its caching or
+runtime features are needed. Set `install: false` when the workflow performs
+its own frozen-lockfile install. Re-run the affected hosted jobs and confirm
+they pass the pnpm setup step before treating a dependency update as validated.
+
+### 0z1748. Register Validation Commands In The Root Manifest (2026-10-11)
+
+**What went wrong:** Documentation and the release gate invoked
+`pnpm validate:development`, but the root `package.json` had no matching
+script. The command failed with “Command not found” before planning or running
+any validation task.
+
+**Why:** The executable and documentation were added without checking that the
+workspace package manager could resolve the advertised entry point.
+
+**Prevention:** Add every documented pnpm command to the root manifest and
+check it with `pnpm run` or by invoking the exact command before integrating
+the command into CI or release documentation.
+
+### 0z1749. Update Workflow Validators With Runner Action Changes (2026-10-11)
+
+**What went wrong:** Replacing `pnpm/action-setup@v6` with the standalone
+`pnpm/setup@v3` allowed CI bootstrap to succeed, but the release gate stopped
+at packaging metadata validation because it still required the old action's
+literal name in the tag-build workflow.
+
+**Why:** Workflow action choices are also encoded in repository-specific
+packaging checks; changing the workflow without updating those checks leaves
+an obsolete invariant that blocks the build.
+
+**Prevention:** Search packaging validators and workflow contract checks for
+the old action name whenever changing runner setup, update their accepted
+contract to the new action, and run the same validation before pushing.
+
+### 0z1750. Scope CI Evidence To The Current Runner Job (2026-10-11)
+
+**What went wrong:** CI uploaded every `/tmp/slskdn-validation-*` directory.
+On a persistent self-hosted runner, that pattern can include receipts and logs
+left by earlier jobs, attaching stale evidence to the current run.
+
+**Why:** The engine used the operating system's shared temporary directory and
+the artifact glob was not scoped to the current GitHub Actions job.
+
+**Prevention:** Set `TMPDIR` to `${{ runner.temp }}` for engine invocations and
+upload evidence only from that job-scoped directory. Do not glob a shared
+`/tmp` prefix on a persistent runner.
+
+### 0z1751. Allocate Gotcha Identifiers Across The Full Record (2026-10-11)
+
+**What went wrong:** Two unrelated lessons were added with the same gotcha ID
+`0z1729`. The duplicate made references ambiguous when the validation evidence
+lesson was combined with the earlier UI tooltip lesson.
+
+**Why:** Concurrent work assigned an identifier from a local branch without
+checking the full shared gotcha record.
+
+**Prevention:** Search the complete ADR for an ID before using it, allocate a
+unique next identifier, and check for duplicate headings after merging branches.
+
+### 0z1752. Preserve Test Evidence Rules In Validation Plans (2026-10-11)
 
 **What went wrong:** The validation plan projection omitted each test task's
 casePattern and minimumCases. Execution received that projection, so an
@@ -40805,17 +40891,3 @@ context.
 missing summary fails while a valid summary records its case count. In ordinary
 JavaScript strings, encode regex \\s with \\\\s exactly once in source, then
 verify the resulting RegExp against real command output.
-
-### 0z1746. Clear Node Test Harness Context Before Launching Native Tests (2026-10-11)
-
-**What went wrong:** A validation engine invoked by `node --test` inherited
-`NODE_TEST_CONTEXT`. Its child `node --test` process then reported that it was
-running recursively, skipped the discovered test file, and exited successfully
-without reporting any active cases.
-
-**Why:** The child runner inherited parent test-harness state that is meaningful
-only inside the current Node test process.
-
-**Prevention:** Remove `NODE_TEST_CONTEXT` from child environments and verify
-that the child test runner executes a real fixture and reports nonzero active
-cases.

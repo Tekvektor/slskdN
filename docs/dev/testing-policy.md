@@ -45,6 +45,40 @@ This is the minimum bar for code that is about to ship or gate CI:
 
 See [release-checklist.md](release-checklist.md) for the operator-facing release steps and what this gate does or does not prove.
 
+#### Validation engine entry points
+
+The release gate is driven by the repository-specific validation engine. From
+the repository root:
+
+```bash
+node scripts/validate-development.mjs --plan
+node scripts/validate-development.mjs --tests-only
+node scripts/validate-development.mjs
+node scripts/validate-development.mjs --task browser-e2e
+node scripts/validate-development.mjs --task web-browser-e2e
+```
+
+`--plan` discovers test files, records the Git candidate and supported runtime
+versions, and reports command availability. It does not execute tests.
+`--tests-only` runs registered unit, regression, integration-smoke, release-note,
+and engine-contract tests. The default run adds repository checks and the web
+build/output checks. Browser suites remain separately selectable because they
+need more time and platform setup.
+
+Each execution creates a fresh receipt and per-task logs in a private directory
+under the operating system's temporary directory. Receipts bind the Git commit,
+tree, dirty diff, untracked files, lock/workflow inputs, discovered test-file
+digests, runtime versions, and (on GitHub Actions) the workflow run and attempt.
+Test tasks pass only when their native command succeeds and reports at least
+one active case. No previous result is reused. A task that changes the planned
+source blocks remaining work and fails the run. Sensitive environment values
+are removed from child commands by default; a task must explicitly name any
+private value it needs.
+
+GitHub CI uploads the receipt and logs as a seven-day artifact. A passing local
+or hosted engine run does not include the separate Nix packaging job, release
+publishing, or all platform installer smokes.
+
 ### 2. Focused Regression Tests
 
 Every confirmed bug should leave behind one focused automated check when practical:
@@ -62,6 +96,11 @@ Use the existing integration and Playwright layers for broader end-to-end covera
 - `tests/slskd.Tests.Integration`
 - `src/web/e2e`
 - `.github/workflows/e2e-tests.yml`
+
+The validation engine tracks the `tests/e2e/specs` Playwright inventory as the
+`browser-e2e` task. `src/web/e2e` is separately inventoried by
+`web-browser-e2e`; select it explicitly when the corresponding browser setup
+is available. Neither browser suite is silently included in `--tests-only`.
 
 These are important, but they should complement the release gate rather than replace it.
 

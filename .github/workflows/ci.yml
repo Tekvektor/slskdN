@@ -117,13 +117,20 @@ jobs:
             "origin/${{ github.base_ref }}" \
             "${{ github.sha }}"
 
-      - name: Release-note tooling tests
-        run: python3 scripts/test_release_notes.py
-
       - name: Release Gate
         env:
           LOCAL_IDENTITY_DENYLIST: ${{ secrets.LOCAL_IDENTITY_DENYLIST }}
+          TMPDIR: ${{ runner.temp }}
         run: bash packaging/scripts/run-release-gate.sh
+
+      - name: Upload validation engine evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-engine-release-gate
+          path: ${{ runner.temp }}/slskdn-validation-*/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Upload Static Web Content
         if: startsWith(github.ref, 'refs/tags/')
