@@ -2176,7 +2176,7 @@ namespace slskd
                 [EnvironmentVariable("SEARCH_RETENTION_MAX_COUNT")]
                 [Description("maximum number of search records to retain (0 = no limit)")]
                 [Range(0, int.MaxValue)]
-                public int MaxCount { get; init; } = 1000;
+                public int MaxCount { get; init; } = 250;
 
                 /// <summary>
                 ///     Gets the interval between automatic search cleanup runs, in seconds.
@@ -2433,6 +2433,12 @@ namespace slskd
             public int Events { get; init; } = 30;
 
             /// <summary>
+            ///     Gets the maximum number of event records to retain. Defaults to 10,000; zero disables the count limit.
+            /// </summary>
+            [Range(0, maximum: int.MaxValue)]
+            public int EventsMaxCount { get; init; } = 10_000;
+
+            /// <summary>
             ///     Gets transfer retention options.
             /// </summary>
             [Validate]
@@ -2455,6 +2461,12 @@ namespace slskd
             /// </summary>
             public class TransferRetentionOptions
             {
+                /// <summary>
+                ///     Gets the time to retain soft-removed, completed transfers, in minutes. Defaults to seven days.
+                /// </summary>
+                [Range(5, maximum: int.MaxValue)]
+                public int? Removed { get; init; } = 10_080;
+
                 /// <summary>
                 ///     Gets upload retention options.
                 /// </summary>

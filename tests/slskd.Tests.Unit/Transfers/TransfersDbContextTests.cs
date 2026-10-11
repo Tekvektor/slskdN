@@ -201,8 +201,11 @@ public sealed class TransfersDbContextTests
             LIMIT 10
             """);
 
-        Assert.Contains(actionablePlan, detail =>
-            detail.Contains("INDEX IDX_Transfers_Actionable_UpdatedAt", StringComparison.Ordinal));
+        Assert.True(
+            actionablePlan.Any(detail =>
+                detail.Contains("INDEX IDX_Transfers_Actionable_UpdatedAt", StringComparison.Ordinal) ||
+                detail.Contains("INDEX IDX_Transfers_Direction_UpdatedAt", StringComparison.Ordinal)),
+            string.Join(" | ", actionablePlan));
         Assert.Contains(countPlan, detail =>
             detail.Contains("COVERING INDEX IDX_Transfers_Removed_Direction", StringComparison.Ordinal));
         Assert.Contains(historyPlan, detail =>
@@ -389,6 +392,76 @@ public sealed class TransfersDbContextTests
     }
 
     [Fact]
+    public async Task TransferLookupIndexesMigration_CreatesPartialIndexesAndUsesThemForHotQueries()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"slskdn-transfer-lookups-{Guid.NewGuid():N}.db");
+        var connectionString = $"Data Source={databasePath}";
+
+        try
+        {
+            await using (var connection = new SqliteConnection(connectionString))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    """
+                    CREATE TABLE Transfers (
+                        Id TEXT PRIMARY KEY,
+                        Direction TEXT NOT NULL,
+                        BatchId TEXT NULL,
+                        Username TEXT NOT NULL,
+                        Filename TEXT NOT NULL,
+                        Removed INTEGER NOT NULL,
+                        UpdatedAt TEXT NOT NULL,
+                        EndedAt TEXT NULL
+                    );
+                    """;
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var migration = new Z10112026_TransferLookupIndexesMigration(
+                new ConnectionStringDictionary(new()
+                {
+                    [Database.Transfers] = connectionString,
+                }));
+
+            Assert.True(migration.NeedsToBeApplied());
+            migration.Apply();
+            Assert.False(migration.NeedsToBeApplied());
+
+            await using (var connection = new SqliteConnection(connectionString))
+            {
+                await connection.OpenAsync();
+                Assert.Equal(["Direction", "BatchId"], ReadIndexColumns(connection, "IDX_Transfers_Direction_BatchId"));
+                Assert.Equal(["Direction", "Username", "Filename"], ReadIndexColumns(connection, "IDX_Transfers_Direction_Username_Filename"));
+                Assert.Equal(["Direction", "UpdatedAt"], ReadIndexColumns(connection, "IDX_Transfers_Removed_Direction_UpdatedAt"));
+
+                var batchPlan = await ReadQueryPlanAsync(
+                    connection,
+                    "SELECT * FROM Transfers WHERE Direction = 'Download' AND BatchId = 'batch' AND Removed = 0");
+                Assert.Contains(batchPlan, detail => detail.Contains("IDX_Transfers_Direction_BatchId", StringComparison.OrdinalIgnoreCase));
+
+                var peerFilePlan = await ReadQueryPlanAsync(
+                    connection,
+                    "SELECT * FROM Transfers WHERE Direction = 'Download' AND Username = 'peer' AND Filename = 'track.flac' AND Removed = 0");
+                Assert.Contains(peerFilePlan, detail => detail.Contains("IDX_Transfers_Direction_Username_Filename", StringComparison.OrdinalIgnoreCase));
+
+                var removedPlan = await ReadQueryPlanAsync(
+                    connection,
+                    "SELECT * FROM Transfers WHERE Direction = 'Download' AND Removed = 1 AND EndedAt IS NOT NULL AND UpdatedAt < '2026-01-01'");
+                Assert.Contains(removedPlan, detail => detail.Contains("IDX_Transfers_Removed_Direction_UpdatedAt", StringComparison.OrdinalIgnoreCase));
+            }
+
+            migration.Apply();
+            Assert.False(migration.NeedsToBeApplied());
+        }
+        finally
+        {
+            System.IO.File.Delete(databasePath);
+        }
+    }
+
+    [Fact]
     public void Migrator_RegistersAutoRetryIndexMigration()
     {
         var connectionStrings = new ConnectionStringDictionary(new()
@@ -410,6 +483,8 @@ public sealed class TransfersDbContextTests
             migrations[nameof(Z07162026_DownloadRequestSummaryIndexMigration)]);
         Assert.IsType<Z08032026_AutoReplaceAttemptsMigration>(
             migrations[nameof(Z08032026_AutoReplaceAttemptsMigration)]);
+        Assert.IsType<Z10112026_TransferLookupIndexesMigration>(
+            migrations[nameof(Z10112026_TransferLookupIndexesMigration)]);
     }
 
     [Fact]

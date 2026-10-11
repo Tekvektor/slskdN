@@ -355,7 +355,7 @@ public static class ContentSafety
             logger?.LogWarning(
                 ex,
                 "Failed to read file for content verification: {FilePath}",
-                filePath);
+                LoggingSanitizer.SanitizeFilePath(filePath));
             return ContentVerificationResult.Fail("Could not read file", ContentThreatLevel.Unknown);
         }
 

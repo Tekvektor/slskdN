@@ -167,6 +167,37 @@ public class EventsTests
         Assert.True(remaining.Timestamp > DateTime.UtcNow.AddDays(-7));
     }
 
+    [Fact]
+    public void PruneAsync_EnforcesMaximumCountByDeletingOldestEvents()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        var options = new DbContextOptionsBuilder<EventsDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        var now = DateTime.UtcNow;
+        var records = Enumerable.Range(0, 6)
+            .Select(index => EventRecord.From<NoopEvent>(new NoopEvent { Timestamp = now.AddMinutes(-index) }))
+            .ToArray();
+
+        using (var context = new EventsDbContext(options))
+        {
+            context.Database.EnsureCreated();
+            context.Events.AddRange(records);
+            context.SaveChanges();
+        }
+
+        var service = new EventService(new TestEventsDbContextFactory(options));
+        var pruned = service.PruneAsync(7, 3);
+
+        Assert.Equal(3, pruned);
+        using var verificationContext = new EventsDbContext(options);
+        var remaining = verificationContext.Events
+            .OrderByDescending(record => record.Timestamp)
+            .ToList();
+        Assert.Equal(records.Take(3).Select(record => record.Id), remaining.Select(record => record.Id));
+    }
+
     private sealed class TestEventsDbContextFactory : IDbContextFactory<EventsDbContext>
     {
         private readonly DbContextOptions<EventsDbContext> _options;

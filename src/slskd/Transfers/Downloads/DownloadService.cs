@@ -177,6 +177,13 @@ namespace slskd.Transfers.Downloads
         int Prune(int age, TransferStates stateHasFlag = TransferStates.Completed);
 
         /// <summary>
+        ///     Permanently deletes soft-removed, completed downloads older than the specified <paramref name="age"/>.
+        /// </summary>
+        /// <param name="age">The time since the last transfer update, in minutes.</param>
+        /// <returns>The number of deleted downloads.</returns>
+        int PruneRemoved(int age);
+
+        /// <summary>
         ///     Removes the download matching the specified <paramref name="id"/>.
         /// </summary>
         /// <remarks>This is a soft delete; the record is retained for historical retrieval.</remarks>
@@ -1168,6 +1175,38 @@ namespace slskd.Transfers.Downloads
             catch (Exception ex)
             {
                 Log.Error("Failed to prune downloads: {Exception}", LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        ///     Permanently deletes soft-removed, completed downloads older than the specified <paramref name="age"/>.
+        /// </summary>
+        /// <param name="age">The time since the last transfer update, in minutes.</param>
+        /// <returns>The number of deleted downloads.</returns>
+        public int PruneRemoved(int age)
+        {
+            try
+            {
+                using var context = ContextFactory.CreateDbContext();
+                var cutoffDateTime = DateTime.UtcNow.AddMinutes(-age);
+                var pruned = context.Transfers
+                    .Where(t => t.Direction == TransferDirection.Download)
+                    .Where(t => t.Removed)
+                    .Where(t => t.EndedAt.HasValue)
+                    .Where(t => t.UpdatedAt < cutoffDateTime)
+                    .ExecuteDelete();
+
+                if (pruned > 0)
+                {
+                    Log.Debug("Permanently deleted {Count} removed downloads older than {Age} minutes", pruned, age);
+                }
+
+                return pruned;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to permanently delete removed downloads: {Exception}", LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
                 throw;
             }
         }

@@ -2161,6 +2161,12 @@ namespace slskd
                 PruneDownload(options.Transfers.Download.Succeeded, TransferStates.Succeeded);
                 PruneDownload(options.Transfers.Download.Cancelled, TransferStates.Cancelled);
                 PruneDownload(options.Transfers.Download.Errored, TransferStates.Errored);
+
+                if (options.Transfers.Removed.HasValue)
+                {
+                    Transfers.Uploads.PruneRemoved(options.Transfers.Removed.Value);
+                    Transfers.Downloads.PruneRemoved(options.Transfers.Removed.Value);
+                }
             }
             catch
             {
@@ -2242,11 +2248,11 @@ namespace slskd
 
         private void PruneEvents()
         {
-            var age = OptionsMonitor.CurrentValue.Retention.Events;
+            var retention = OptionsMonitor.CurrentValue.Retention;
 
             try
             {
-                EventService.PruneAsync(age);
+                EventService.PruneAsync(retention.Events, retention.EventsMaxCount);
             }
             catch
             {

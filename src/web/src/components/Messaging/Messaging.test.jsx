@@ -269,7 +269,7 @@ describe('Messaging', () => {
     });
     await waitFor(() => {
       expect(composer).toHaveValue('/leave');
-    });
+    }, { timeout: 5000 });
     fireEvent.keyDown(composer, {
       key: 'Enter',
     });

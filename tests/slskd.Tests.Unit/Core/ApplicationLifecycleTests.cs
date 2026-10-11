@@ -520,7 +520,7 @@ public class ApplicationLifecycleTests
             out _,
             out var searchService);
         searchService
-            .Setup(service => service.CleanupAsync(30, 1000))
+            .Setup(service => service.CleanupAsync(30, 250))
             .ReturnsAsync(0);
         var startedAt = new DateTime(2026, 7, 15, 12, 0, 0, DateTimeKind.Utc);
 
@@ -528,7 +528,7 @@ public class ApplicationLifecycleTests
         await application.PruneSearches(startedAt.AddMinutes(59));
         await application.PruneSearches(startedAt.AddHours(1));
 
-        searchService.Verify(service => service.CleanupAsync(30, 1000), Times.Exactly(2));
+        searchService.Verify(service => service.CleanupAsync(30, 250), Times.Exactly(2));
         application.Dispose();
     }
 
@@ -545,7 +545,7 @@ public class ApplicationLifecycleTests
             out _,
             out var searchService);
         searchService
-            .SetupSequence(service => service.CleanupAsync(30, 1000))
+            .SetupSequence(service => service.CleanupAsync(30, 250))
             .ThrowsAsync(new InvalidOperationException("cleanup failed"))
             .ReturnsAsync(0);
         var startedAt = new DateTime(2026, 7, 15, 12, 0, 0, DateTimeKind.Utc);
@@ -553,7 +553,7 @@ public class ApplicationLifecycleTests
         await application.PruneSearches(startedAt);
         await application.PruneSearches(startedAt.AddMinutes(5));
 
-        searchService.Verify(service => service.CleanupAsync(30, 1000), Times.Exactly(2));
+        searchService.Verify(service => service.CleanupAsync(30, 250), Times.Exactly(2));
         application.Dispose();
     }
 
@@ -571,14 +571,14 @@ public class ApplicationLifecycleTests
             out var searchService);
         var cleanupCompletion = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         searchService
-            .Setup(service => service.CleanupAsync(30, 1000))
+            .Setup(service => service.CleanupAsync(30, 250))
             .Returns(cleanupCompletion.Task);
         var startedAt = new DateTime(2026, 7, 15, 12, 0, 0, DateTimeKind.Utc);
 
         var firstCleanup = application.PruneSearches(startedAt);
         await application.PruneSearches(startedAt.AddMinutes(5));
 
-        searchService.Verify(service => service.CleanupAsync(30, 1000), Times.Once);
+        searchService.Verify(service => service.CleanupAsync(30, 250), Times.Once);
         cleanupCompletion.SetResult(0);
         await firstCleanup;
         application.Dispose();

@@ -230,7 +230,7 @@
 #      - instrumental
 #  search_retention:
 #    max_age_days: 30            # auto-delete searches older than this (0 = no age limit)
-#    max_count: 1000             # keep at most this many searches (0 = no count limit)
+#    max_count: 250              # keep at most this many searches (0 = no count limit)
 #    cleanup_interval_seconds: 86400  # how often to run cleanup (default: daily)
 #web:
 #  port: 5030
@@ -278,7 +278,9 @@
 #    mesh_gateway_window_seconds: 60
 #retention:
 #  search: 10080 # 7 days, in minutes
+#  events_max_count: 10000 # retain at most this many recent events (0 = no count limit)
 #  transfers:
+#    removed: 10080 # permanently remove hidden completed transfer rows after 7 days (null = keep indefinitely)
 #    upload:
 #      succeeded: 1440 # 1 day, in minutes
 #      errored: 30

@@ -150,6 +150,24 @@ namespace slskd.Transfers
 
             modelBuilder
                 .Entity<Transfer>()
+                .HasIndex(t => new { t.Direction, t.BatchId })
+                .HasDatabaseName("IDX_Transfers_Direction_BatchId")
+                .HasFilter("Removed = 0");
+
+            modelBuilder
+                .Entity<Transfer>()
+                .HasIndex(t => new { t.Direction, t.Username, t.Filename })
+                .HasDatabaseName("IDX_Transfers_Direction_Username_Filename")
+                .HasFilter("Removed = 0");
+
+            modelBuilder
+                .Entity<Transfer>()
+                .HasIndex(t => new { t.Direction, t.UpdatedAt })
+                .HasDatabaseName("IDX_Transfers_Removed_Direction_UpdatedAt")
+                .HasFilter("Removed = 1 AND EndedAt IS NOT NULL");
+
+            modelBuilder
+                .Entity<Transfer>()
                 .HasIndex(t => new { t.RequestId, t.Removed, t.RequestedAt })
                 .HasDatabaseName("IDX_Transfers_RequestId_Current")
                 .IsDescending(false, false, true);

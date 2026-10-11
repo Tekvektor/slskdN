@@ -767,6 +767,8 @@ internal sealed class StubDownloadService : IDownloadService
 
     public int Prune(int age, TransferStates stateHasFlag = TransferStates.Completed) => 0;
 
+    public int PruneRemoved(int age) => 0;
+
     public void Remove(Guid id, bool deleteFile = false)
     {
         if (_storage.TryGetValue(id, out var t)) t.Removed = true;

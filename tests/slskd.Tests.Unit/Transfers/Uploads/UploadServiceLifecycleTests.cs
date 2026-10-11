@@ -21,6 +21,76 @@ using Xunit;
 public class UploadServiceLifecycleTests
 {
     [Fact]
+    public async Task PruneRemoved_DeletesOnlyOldCompletedRemovedUploads()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var dbOptions = new DbContextOptionsBuilder<TransfersDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        var now = DateTime.UtcNow;
+        var expiredId = Guid.NewGuid();
+        var recentId = Guid.NewGuid();
+        var activeRemovedId = Guid.NewGuid();
+        var visibleId = Guid.NewGuid();
+        var downloadId = Guid.NewGuid();
+
+        slskd.Transfers.Transfer CreateTransfer(Guid id, TransferDirection direction, bool removed, DateTime? endedAt)
+            => new()
+            {
+                Id = id,
+                Username = "alice",
+                Direction = direction,
+                Filename = $"{id:N}.flac",
+                RequestedAt = now.AddHours(-1),
+                EndedAt = endedAt,
+                State = endedAt.HasValue
+                    ? TransferStates.Completed | TransferStates.Succeeded
+                    : TransferStates.InProgress,
+                Removed = removed,
+            };
+
+        await using (var context = new TransfersDbContext(dbOptions))
+        {
+            await context.Database.EnsureCreatedAsync();
+            context.Transfers.AddRange(
+                CreateTransfer(expiredId, TransferDirection.Upload, true, now.AddMinutes(-30)),
+                CreateTransfer(recentId, TransferDirection.Upload, true, now),
+                CreateTransfer(activeRemovedId, TransferDirection.Upload, true, null),
+                CreateTransfer(visibleId, TransferDirection.Upload, false, now.AddMinutes(-30)),
+                CreateTransfer(downloadId, TransferDirection.Download, true, now.AddMinutes(-30)));
+            await context.SaveChangesAsync();
+
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE Transfers SET UpdatedAt = {now.AddMinutes(-30)} WHERE Id IN ({expiredId}, {activeRemovedId}, {visibleId}, {downloadId})");
+        }
+
+        var optionsMonitor = new TestOptionsMonitor<Options>(new Options());
+        var userService = new Mock<IUserService>();
+        var eventService = new EventService(Mock.Of<IDbContextFactory<EventsDbContext>>());
+        using var service = new UploadService(
+            new FileService(optionsMonitor),
+            userService.Object,
+            Mock.Of<ISoulseekClient>(),
+            optionsMonitor,
+            Mock.Of<IShareService>(),
+            Mock.Of<IRelayService>(),
+            new TestDbContextFactory(dbOptions),
+            new EventBus(eventService),
+            Mock.Of<ITrafficAccountingService>());
+
+        Assert.Equal(1, service.PruneRemoved(5));
+
+        await using var verificationContext = new TransfersDbContext(dbOptions);
+        var remainingIds = await verificationContext.Transfers.Select(transfer => transfer.Id).ToListAsync();
+        Assert.DoesNotContain(expiredId, remainingIds);
+        Assert.Contains(recentId, remainingIds);
+        Assert.Contains(activeRemovedId, remainingIds);
+        Assert.Contains(visibleId, remainingIds);
+        Assert.Contains(downloadId, remainingIds);
+    }
+
+    [Fact]
     public void Dispose_DisposesOwnedGovernorAndQueue()
     {
         var optionsMonitor = new TestOptionsMonitor<Options>(new Options());

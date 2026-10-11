@@ -136,6 +136,13 @@ namespace slskd.Transfers.Uploads
         int Prune(int age, TransferStates stateHasFlag = TransferStates.Completed);
 
         /// <summary>
+        ///     Permanently deletes soft-removed, completed uploads older than the specified <paramref name="age"/>.
+        /// </summary>
+        /// <param name="age">The time since the last transfer update, in minutes.</param>
+        /// <returns>The number of deleted uploads.</returns>
+        int PruneRemoved(int age);
+
+        /// <summary>
         ///     Removes the upload matching the specified <paramref name="id"/>.
         /// </summary>
         /// <remarks>This is a soft delete; the record is retained for historical retrieval.</remarks>
@@ -1022,6 +1029,38 @@ namespace slskd.Transfers.Uploads
             catch (Exception ex)
             {
                 Log.Error("Failed to prune uploads: {Exception}", LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
+                throw;
+            }
+        }
+
+        /// <summary>
+        ///     Permanently deletes soft-removed, completed uploads older than the specified <paramref name="age"/>.
+        /// </summary>
+        /// <param name="age">The time since the last transfer update, in minutes.</param>
+        /// <returns>The number of deleted uploads.</returns>
+        public int PruneRemoved(int age)
+        {
+            try
+            {
+                using var context = ContextFactory.CreateDbContext();
+                var cutoffDateTime = DateTime.UtcNow.AddMinutes(-age);
+                var pruned = context.Transfers
+                    .Where(t => t.Direction == TransferDirection.Upload)
+                    .Where(t => t.Removed)
+                    .Where(t => t.EndedAt.HasValue)
+                    .Where(t => t.UpdatedAt < cutoffDateTime)
+                    .ExecuteDelete();
+
+                if (pruned > 0)
+                {
+                    Log.Debug("Permanently deleted {Count} removed uploads older than {Age} minutes", pruned, age);
+                }
+
+                return pruned;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to permanently delete removed uploads: {Exception}", LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
                 throw;
             }
         }

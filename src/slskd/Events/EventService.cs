@@ -109,6 +109,17 @@ public class EventService
     /// <returns>The number of pruned records.</returns>
     public virtual int PruneAsync(int age)
     {
+        return PruneAsync(age, 0);
+    }
+
+    /// <summary>
+    ///     Deletes events older than the specified age and limits retained records to the newest <paramref name="maxCount"/>.
+    /// </summary>
+    /// <param name="age">The maximum age of events to retain, in days.</param>
+    /// <param name="maxCount">The maximum number of event records to retain; zero disables the count limit.</param>
+    /// <returns>The number of pruned records.</returns>
+    public virtual int PruneAsync(int age, int maxCount)
+    {
         try
         {
             using var context = ContextFactory.CreateDbContext();
@@ -116,9 +127,24 @@ public class EventService
             var expired = context.Events.Where(e => e.Timestamp < cutoff);
             var count = expired.ExecuteDelete();
 
+            if (maxCount > 0)
+            {
+                var totalCount = context.Events.LongCount();
+                var excessCount = totalCount - maxCount;
+                if (excessCount > 0)
+                {
+                    var excess = (int)Math.Min(int.MaxValue, excessCount);
+                    count += context.Events
+                        .OrderBy(e => e.Timestamp)
+                        .ThenBy(e => e.Id)
+                        .Take(excess)
+                        .ExecuteDelete();
+                }
+            }
+
             if (count > 0)
             {
-                Log.Debug("Pruned {Count} event records older than {Age} days", count, age);
+                Log.Debug("Pruned {Count} event records by retention (maximum age {Age} days, maximum count {MaxCount})", count, age, maxCount);
             }
 
             return count;
