@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1759. Avoid Version-Filtered Launchpad Binary Queries (2026-10-11)
+
+**What went wrong:** The PPA publication waiter passed a specific `version` to
+Launchpad `getPublishedBinaries`. For stable `.349`, that query returned no
+entry or `Pending` while the unfiltered package-name query returned the exact
+version as `Published` and the public Jammy apt index already contained it.
+The release job therefore kept waiting after the package was available.
+
+**Why:** Launchpad's version-filtered binary result lagged the unfiltered
+result and the public package index, repeating the cache-lag failure mode
+documented in gotcha `0z1659`.
+
+**Prevention:** Query `getPublishedBinaries` by binary package name without a
+version filter, then enforce exact version, `Published` status, and Ubuntu
+series locally. Keep a regression for the lagging version-filtered response.
+
 ### 0z1758. Keep Log Capture Out Of Parallel Tests' Global Serilog Logger (2026-10-11)
 
 **What went wrong:** A disaster-mode test replaced process-wide
