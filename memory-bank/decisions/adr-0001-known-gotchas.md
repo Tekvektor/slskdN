@@ -4,6 +4,24 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1757. Isolate Validation Fixtures From The Hosted Commit Identity (2026-10-11)
+
+**What went wrong:** Engine contract tests create temporary Git repositories with
+synthetic commits. On GitHub Actions, `createPlan` also records the workflow's
+real `GITHUB_SHA`; `executePlan` correctly rejects the fixture because those
+identities differ. Tests then saw an incomplete receipt with no task log and
+failed in several unrelated assertions.
+
+**Why:** The production release gate binds execution to the checked-out commit,
+but tests reused that hosted execution context for temporary repositories.
+Running locally hid the mismatch because `GITHUB_ACTIONS` and `GITHUB_SHA` were
+unset.
+
+**Prevention:** Allow contract tests to supply an explicit execution context
+without changing production defaults. Keep a regression that verifies a
+mismatched hosted SHA fails closed, and reproduce hosted-only failures locally
+with `GITHUB_ACTIONS=true` and a deliberately different `GITHUB_SHA`.
+
 ### 0z1756. Do Not Patch Shared Process Streams In Concurrent Node Tests (2026-10-11)
 
 **What went wrong:** A validation-engine test replaced `process.stdout.write` to
