@@ -7503,19 +7503,20 @@ purge predicate.
 
 ### 0z1743. Allow Controlled UI State Assertions For Concurrent Test Load (2026-10-11)
 
-**What went wrong:** The Messaging slash-command regression test waited for a
-controlled textarea value with Testing Library's one-second default timeout.
-The assertion passed alone, but timed out while the full 199-file jsdom suite
-ran concurrently. The resulting failure was in the test's timing budget, not
-the slash-command behavior.
+**What went wrong:** The Messaging slash-command regression test treated the
+visible `#indie` room row as proof that its composer was ready. During full
+suite load, the row appeared before its conversation adapter was initialized,
+so the textarea remained disabled and ignored `fireEvent.change`. Waiting five
+seconds for the controlled value could not make that impossible assertion pass.
 
-**Why it happened:** A short default wait assumes the test process can commit
-React state promptly even when many jsdom environments compete for CPU.
+**Why it happened:** Room-list hydration and conversation-adapter readiness
+are separate asynchronous states. The test observed the former and sent input
+before the latter completed.
 
-**How to prevent it:** Use an explicit, bounded timeout for asynchronous UI
-state transitions that pass in isolation but can be delayed by the full suite.
-Keep the assertion focused on observable state; do not add sleeps or change
-product behavior to mask test-runner contention.
+**How to prevent it:** Before sending input in an asynchronous conversation,
+wait for the composer to be enabled, then assert the controlled value and
+command action. Do not extend a timeout around a state transition that the UI
+currently rejects.
 
 ### 0z1744. Keep Local Paths Out Of File-Operation Error Logs (2026-10-11)
 
