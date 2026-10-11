@@ -49,15 +49,23 @@
   remained at the final check.
 - [x] Verify stable `.349` Docker publication and exact Launchpad PPA package
   publication. The Jammy package is `Published` and appears in the public apt
-  index. The immutable tag run can keep waiting because its older
-  version-filtered Launchpad query returns stale data; the corrected waiter
-  queries by package and locally matches exact version, status, and series.
+  index. The immutable tag run ultimately completed successfully; its older
+  version-filtered Launchpad query caused the extended wait. The corrected
+  waiter queries by package and locally matches exact version, status, and
+  series.
 - [x] Reproduce the stale Launchpad binary-query behavior with a mock regression
   and against the live published `.349` package. The corrected waiter passes
   both checks; its release fragment validates.
-- [ ] Refresh the four new red-team inventory matches (Launchpad response
-  fixtures and mock API URL) as test-data false positives, then rerun and record
-  the full release gate.
+- [x] Refresh the four new red-team inventory matches (Launchpad response
+  fixtures and mock API URL) as test-data false positives. The synchronized
+  tree passes all 14 release-gate checks with zero failures or blockers;
+  .NET Release unit tests pass 5,752, backend regressions pass 74, integration
+  smoke passes 40, web tests/build and `./bin/lint` pass.
+- [x] Confirm hosted run `38177352194` completed successfully, including all
+  six platform archives, Docker publishers, and exact Jammy PPA publication.
+  The release artifact verifier passed for the published archives and payloads.
+- [x] Recheck repository state: no open issues or PRs and zero open CodeQL,
+  Dependabot, or secret-scanning alerts. Local `main` is pushed and clean.
 
 ### Post-.344 HTTP, DHT, and Pod diagnostic-boundary hardening; .NET 10 audit — 2026-10-05
 

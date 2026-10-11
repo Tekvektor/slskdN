@@ -18904,3 +18904,21 @@ context and recorded them as test fixtures, updating the active backlog to
 12,564. Gotcha `0z1759` records the Launchpad API behavior and `0z1760` records
 the test-only count drift. The full gate must be rerun after these documentation
 and memory updates are committed and pushed.
+
+## 2026-10-11 23:30 UTC — Complete release validation and publisher audit
+
+The refreshed inventory resolves the only prior gate failure. The synchronized
+tree passes the full release gate: 14/14 checks, zero failures or blockers;
+5,752 Release unit tests, 74 backend regressions, 40 integration smoke tests,
+web tests/build, and `./bin/lint` pass. Three browser E2E phases are excluded
+by the checked-in gate plan. The published `.349` workflow completed with
+success, including all six archives, Docker images, and the exact Jammy PPA
+binary; `scripts/verify-release-artifacts.sh` verified the public archives
+and checksums.
+
+The target repository has no open issues or PRs and zero open CodeQL,
+Dependabot, or secret-scanning alerts. All changes, including the required
+gotcha entries and refreshed backlog, are pushed to `main`; the worktree is
+clean. Stable `.349` remains the released product version; the post-release
+Launchpad polling correction is on `main` with a validated release-note
+fragment for the next release.

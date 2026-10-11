@@ -1,32 +1,35 @@
-## Current state — Stable `.349` verified; Launchpad waiter and gate inventory fixed — 2026-10-11 23:24 UTC
+## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 
 Issue #352 is fixed and closed. Active transfer lookups use matching SQLite
 partial indexes, completed transfer retention is bounded, and event/search
-history is capped. First-party projects target `net10.0`; MonoTorrent's
+history is capped. Every first-party project targets `net10.0`; MonoTorrent's
 `net8.0` and Mono.Nat's compatible `net6.0` selections are dependency assets.
 
-Stable release `2026101120-slskdn.349` is published and all six artifacts and
-checksums passed verification. The exact Jammy PPA package is Published and
-present in the public apt index; Docker publication succeeded. The immutable
-tag run may still show its old PPA waiter because its Launchpad version-filtered
-binary query can return stale data. The waiter fix is on `main`: query by
-package name, then select exact version, Published status, and Ubuntu series
-locally. Its mock regression and live `.349` check pass.
+Stable release `2026101120-slskdn.349` completed successfully. All six platform
+archives and checksums verified; Linux binary, bundled Web marker, VPN helper,
+Docker publishers, and exact Jammy PPA package checks passed. The release run is
+green: https://github.com/snapetech/slskdN/actions/runs/38177352194. Issue #352
+is closed. There are no open issues or PRs and zero open CodeQL, Dependabot, or
+secret-scanning alerts.
 
-The first post-fix release-gate rerun passed 13/14 checks and failed only the
-active backlog count: the new regression script added four mock response/API
-URL matches to the red-team review queue. The report confirms these are test
-fixtures. The backlog now records 12,564 candidates and classifies those four
-matches as test data. Gotchas `0z1759` (Launchpad stale query) and `0z1760`
-(test-only backlog counts) are committed; the latter is not yet pushed.
+The Launchpad publication waiter now queries by binary package name, then
+matches exact version, Published status, and Ubuntu series locally. The mock
+regression and live `.349` check pass. The refreshed red-team backlog count is
+12,564; four new matches from mock API response fixtures are classified as
+test data. Gotchas `0z1759` and `0z1760` document the Launchpad query and
+test-only count pitfalls.
+
+The synchronized tree passes the full release gate (14/14; zero failures or
+blockers), including 5,752 Release unit tests, 74 backend regressions, 40
+integration smoke tests, web tests/build, and `./bin/lint`. Web browser E2E
+phases remain excluded by the release-gate plan. All code, release-note, and
+memory updates are pushed; the worktree is clean.
 
 ## Next Steps
 
-- Commit and push the refreshed inventory and memory records, then rerun the
-  full 14-check release gate on the synchronized tree.
-- Recheck issue, PR, and security-alert state; confirm the worktree is clean.
-- Keep evidence/design-gated product follow-ups separate; broad scanner counts
-  remain discovery queues, not confirmed defects.
+- No active work remains for issue #352 or stable `.349` release remediation.
+- Keep broad discovery queues and evidence/design-gated product follow-ups
+  tracked separately; candidate counts are not confirmed defect counts.
 
 ## Prior state — Continue search control and UI affordance remediation — 2026-10-06 00:53 UTC
 
