@@ -22,6 +22,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+## [2026101120-slskdn.346] — 2026-10-11
+
 ### Changed
 
 - CI and release workflows now install pnpm from its standalone release binary,
