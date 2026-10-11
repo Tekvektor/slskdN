@@ -7536,6 +7536,21 @@ filename, the exception object, or its message/string. Keep path sanitization
 for log-forging separate from privacy redaction, and verify the result with a
 fresh CodeQL analysis.
 
+### 0z1745. Refresh The Ownership Candidate Count After Source Changes (2026-10-11)
+
+**What went wrong:** The release gate rejected the rebased dependency PR because
+the active bughunt found 835 public mutable ownership candidates while the
+checked-in backlog still recorded 834. The candidate came from the source
+changes already on `main`, not from the dependency versions.
+
+**Why it happened:** The ownership inventory is an exact scanner snapshot, and
+the source change landed without regenerating that count before the next PR
+ran the release gate.
+
+**How to prevent it:** Run `scripts/check-council-active-backlog.sh` after
+source changes, copy every emitted section count into
+`docs/dev/bug-council-active-backlog.md`, and rerun the check before pushing.
+
 ### 0z1556. Drain Both Redirected Process Streams Concurrently (2026-10-04)
 
 **What went wrong:** `SongIdService.RunToolAsync` awaited the child process's
