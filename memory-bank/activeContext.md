@@ -1,37 +1,32 @@
-## Current state — Stable `.349` published; issue #352 fixed — 2026-10-11 22:03 UTC
+## Current state — Stable `.349` verified; Launchpad waiter and gate inventory fixed — 2026-10-11 23:24 UTC
 
-The database performance issue #352 is fixed. Active transfer lookups now use
-partial indexes for batch and user/filename predicates, removed completed
-transfers have bounded retention, and event/search history is capped. SQLite
-query-plan regressions cover the indexed access paths. First-party app, test,
-VPN-agent, and build-task projects target `net10.0`; MonoTorrent's `net8.0`
-and Mono.Nat's compatible `net6.0` selections are dependency assets, not
-first-party targets requiring retargeting.
+Issue #352 is fixed and closed. Active transfer lookups use matching SQLite
+partial indexes, completed transfer retention is bounded, and event/search
+history is capped. First-party projects target `net10.0`; MonoTorrent's
+`net8.0` and Mono.Nat's compatible `net6.0` selections are dependency assets.
 
-Stable release `2026101120-slskdn.349` is published from trigger tag
-`build-main-2026101120-slskdn.349`. The local gate passed 14/14, the unit suite
-passed 5,752 tests, backend regressions passed 74, integration smoke passed 40,
-and the hosted validation-engine contract passed 13. Repository lint passed.
-The published artifact verifier checked six platform archives and all
-published SHA256 sums, then confirmed the Linux binary, bundled Web marker, and
-VPN helper payload. Issue #352 was updated with the fix and closed after this
-verification. Open PRs and CodeQL, Dependabot, and secret-scanning alerts were
-all zero at the latest check.
+Stable release `2026101120-slskdn.349` is published and all six artifacts and
+checksums passed verification. The exact Jammy PPA package is Published and
+present in the public apt index; Docker publication succeeded. The immutable
+tag run may still show its old PPA waiter because its Launchpad version-filtered
+binary query can return stale data. The waiter fix is on `main`: query by
+package name, then select exact version, Published status, and Ubuntu series
+locally. Its mock regression and live `.349` check pass.
 
-The release workflow fast-forward commit `7844198f6` updated stable package
-metadata. Run `38177352194` has passed every runtime publisher, GitHub release
-creation, AUR, COPR, Chocolatey, Nix, Homebrew, and announcement job. Docker
-image publishing and the Launchpad PPA job are still running.
+The first post-fix release-gate rerun passed 13/14 checks and failed only the
+active backlog count: the new regression script added four mock response/API
+URL matches to the red-team review queue. The report confirms these are test
+fixtures. The backlog now records 12,564 candidates and classifies those four
+matches as test data. Gotchas `0z1759` (Launchpad stale query) and `0z1760`
+(test-only backlog counts) are committed; the latter is not yet pushed.
 
 ## Next Steps
 
-- Monitor the Docker and Launchpad PPA publisher jobs for run `38177352194`.
-- Confirm the exact `.349` PPA package appears in Launchpad and the public apt
-  index; record the final publisher status here and in `tasks.md`.
-- Recheck open issues, pull requests, and security alerts after publishers
-  finish; confirm `main` is synchronized and the worktree is clean.
-- Keep evidence/design-gated product follow-ups tracked separately; do not
-  classify scanner candidates as confirmed defects without code evidence.
+- Commit and push the refreshed inventory and memory records, then rerun the
+  full 14-check release gate on the synchronized tree.
+- Recheck issue, PR, and security-alert state; confirm the worktree is clean.
+- Keep evidence/design-gated product follow-ups separate; broad scanner counts
+  remain discovery queues, not confirmed defects.
 
 ## Prior state — Continue search control and UI affordance remediation — 2026-10-06 00:53 UTC
 

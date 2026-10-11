@@ -18886,3 +18886,21 @@ and the announcement had succeeded; Docker image publication and Launchpad
 PPA upload were still in progress. Finish those publishers, verify the exact
 PPA publication if available, then record final status and push the remaining
 memory handoff.
+
+## 2026-10-11 23:24 UTC — Repair Launchpad publication polling and refresh gate inventory
+
+Confirmed the exact `.349` Jammy binary is Published in Launchpad and present
+in the public apt index; Docker publication also succeeded. The immutable
+`.349` workflow can continue polling because Launchpad's version-filtered
+binary query returns stale/empty data after publication. Changed the waiter to
+query by binary package name and filter exact version, Published status, and
+Ubuntu series locally. A mocked regression reproduces the stale-query response
+and passes with the fix; the live waiter also confirms `.349`.
+
+The first post-fix full release gate passed 13/14 checks. The sole failure was
+the red-team inventory count: the new regression script contributed four
+matches from mock Launchpad JSON and its mock API URL. Inspected all four in
+context and recorded them as test fixtures, updating the active backlog to
+12,564. Gotcha `0z1759` records the Launchpad API behavior and `0z1760` records
+the test-only count drift. The full gate must be rerun after these documentation
+and memory updates are committed and pushed.

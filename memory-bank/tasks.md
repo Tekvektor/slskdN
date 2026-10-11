@@ -47,8 +47,17 @@
 - [x] Post the fix and close GitHub issue #352 after published artifact
   verification. No open PRs or CodeQL, Dependabot, or secret-scanning alerts
   remained at the final check.
-- [ ] Finish the `.349` Docker and Launchpad PPA publisher jobs, then record
-  their final status and confirm the exact PPA package publication.
+- [x] Verify stable `.349` Docker publication and exact Launchpad PPA package
+  publication. The Jammy package is `Published` and appears in the public apt
+  index. The immutable tag run can keep waiting because its older
+  version-filtered Launchpad query returns stale data; the corrected waiter
+  queries by package and locally matches exact version, status, and series.
+- [x] Reproduce the stale Launchpad binary-query behavior with a mock regression
+  and against the live published `.349` package. The corrected waiter passes
+  both checks; its release fragment validates.
+- [ ] Refresh the four new red-team inventory matches (Launchpad response
+  fixtures and mock API URL) as test-data false positives, then rerun and record
+  the full release gate.
 
 ### Post-.344 HTTP, DHT, and Pod diagnostic-boundary hardening; .NET 10 audit — 2026-10-05
 
