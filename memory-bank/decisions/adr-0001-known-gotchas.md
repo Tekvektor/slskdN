@@ -40905,3 +40905,20 @@ attempt added more escaping than the Python raw string required.
 **Prevention:** Find headings by comparing complete input lines and assert each
 expected heading occurs exactly once before editing. If a regex is needed, test
 it against the literal heading and an inline mention before applying it.
+
+### 0z1754. Isolate DHT Lifecycle Tests From Production UDP Ports (2026-10-11)
+
+**What went wrong:** LAN-only DHT lifecycle tests inherited the production UDP
+port `50300`. The shared listener competed with another hosted-service test
+running in parallel; when the bind lost, background initialization stopped
+before invoking the overlay callback or recording `StartedAt`, and the tests
+expired after 60 seconds.
+
+**Why:** The fixture omitted `DhtPort` and `OverlayOptions`, whose defaults
+intentionally share the application's public UDP port. The background task
+logs and absorbs initialization failures, so the test only observed a missing
+readiness signal.
+
+**Prevention:** Give service unit tests explicit ephemeral DHT and overlay
+ports. Keep production port-sharing defaults unchanged and do not increase a
+test timeout to hide listener contention.
