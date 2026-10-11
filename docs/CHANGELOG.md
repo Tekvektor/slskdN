@@ -22,11 +22,6 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
-### Fixed
-
-- Disaster-mode subscriber failure diagnostics now use an injected logger,
-  avoiding process-wide logger state in parallel test runs.
-
 ## [2026101120-slskdn.349] — 2026-10-11
 
 ### Changed
