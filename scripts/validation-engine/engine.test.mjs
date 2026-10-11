@@ -79,6 +79,19 @@ function fixture() {
   return { root, config: baseConfig() };
 }
 
+function fixturePlan(root, config, options = {}) {
+  return createPlan(root, config, {
+    ...options,
+    executionContext: {
+      executor: 'local',
+      platform: process.platform,
+      architecture: process.arch,
+      nodeVersion: process.version,
+      github: null,
+    },
+  });
+}
+
 after(() => {
   for (const root of temporaryRoots) rmSync(root, { recursive: true, force: true });
 });
@@ -135,7 +148,7 @@ test('plan binds the candidate and closes test selection over its dependencies',
     minimumCases: 1,
     defaultSelected: false,
   });
-  const plan = createPlan(root, config, { testsOnly: true });
+  const plan = fixturePlan(root, config, { testsOnly: true });
   assert.deepEqual(plan.tasks.filter((task) => task.selected).map((task) => task.id), [
     'prepare',
     'unit-tests',
@@ -149,14 +162,14 @@ test('plan binds the candidate and closes test selection over its dependencies',
 
 test('executor rejects a plan whose task contract was changed after hashing', async () => {
   const { root, config } = fixture();
-  const plan = createPlan(root, config);
+  const plan = fixturePlan(root, config);
   plan.tasks[0].command = [process.execPath, '-e', 'process.exit(0)'];
   await assert.rejects(executePlan(root, config, plan), /plan digest/);
 });
 
 test('native execution records passing case counts, source identity and private evidence', async () => {
   const { root, config } = fixture();
-  const plan = createPlan(root, config);
+  const plan = fixturePlan(root, config);
   const runRoot = mkdtempSync(path.join(os.tmpdir(), 'slskdn-validation-receipt-'));
   temporaryRoots.push(runRoot);
   const result = await executePlan(root, config, plan, { runRoot });
@@ -172,10 +185,32 @@ test('native execution records passing case counts, source identity and private 
   assert.match(readFileSync(path.join(runRoot, 'receipt.json'), 'utf8'), /"status": "passed"/);
 });
 
+test('executor rejects a GitHub SHA that differs from the candidate commit', async () => {
+  const { root, config } = fixture();
+  const executionContext = {
+    executor: 'github-actions',
+    platform: process.platform,
+    architecture: process.arch,
+    nodeVersion: process.version,
+    github: { sha: 'not-the-candidate-commit' },
+  };
+  const plan = createPlan(root, config, { executionContext });
+  const result = await executePlan(root, config, plan);
+
+  assert.equal(result.receipt.status, 'incomplete');
+  assert.deepEqual(result.receipt.prerequisites, [{
+    command: 'GITHUB_SHA',
+    available: false,
+    expected: plan.candidate.commit,
+    actual: executionContext.github.sha,
+  }]);
+  assert.equal(result.receipt.tasks[0].status, 'not-run');
+});
+
 test('execution fails closed when a test reports zero active cases', async () => {
   const { root, config } = fixture();
   config.tasks[0].command = [process.execPath, '-e', 'console.log("suite completed")'];
-  const plan = createPlan(root, config);
+  const plan = fixturePlan(root, config);
   const result = await executePlan(root, config, plan);
   assert.equal(result.receipt.tasks[0].status, 'incomplete');
   assert.equal(result.receipt.status, 'failed');
@@ -196,7 +231,7 @@ test('execution blocks later tasks when a command changes the planned source', a
     '-e',
     "require('node:fs').writeFileSync('package.json', '{\\\"changed\\\":true}\\n')",
   ];
-  const plan = createPlan(root, config);
+  const plan = fixturePlan(root, config);
   const result = await executePlan(root, config, plan);
   assert.equal(result.receipt.status, 'failed');
   assert.equal(result.receipt.tasks[0].status, 'incomplete');
@@ -208,7 +243,7 @@ test('execution records timeouts and does not accept failed native commands', as
   const { root, config } = fixture();
   config.tasks[0].command = [process.execPath, '-e', 'setInterval(() => {}, 1000)'];
   config.tasks[0].timeoutSeconds = 0.1;
-  const plan = createPlan(root, config);
+  const plan = fixturePlan(root, config);
   const result = await executePlan(root, config, plan);
   assert.equal(result.receipt.tasks[0].status, 'failed');
   assert.equal(result.receipt.tasks[0].timedOut, true);
@@ -227,12 +262,12 @@ test('child environments hide sensitive values unless a task explicitly needs th
       '-e',
       `process.stdout.write(process.env.${key} ?? '')`,
     ];
-    let result = await executePlan(root, config, createPlan(root, config));
+    let result = await executePlan(root, config, fixturePlan(root, config));
     let log = path.join(result.runRoot, result.receipt.tasks[0].logFile);
     assert.equal(readFileSync(log, 'utf8'), '');
 
     config.tasks[0].passEnv = [key];
-    result = await executePlan(root, config, createPlan(root, config));
+    result = await executePlan(root, config, fixturePlan(root, config));
     log = path.join(result.runRoot, result.receipt.tasks[0].logFile);
     assert.equal(readFileSync(log, 'utf8'), 'do-not-log-me');
     assert.deepEqual(result.receipt.tasks[0].envKeys, [key]);
@@ -253,7 +288,7 @@ test('plan and executor reject dependency cycles and report missing tools', asyn
     command: [process.execPath, '-e', 'process.exit(0)'],
     dependsOn: ['unit-tests'],
   });
-  assert.throws(() => createPlan(root, config), /dependency cycle/);
+  assert.throws(() => fixturePlan(root, config), /dependency cycle/);
 
   const missingRoot = makeRoot({ 'package.json': '{}\n' });
   const missingConfig = baseConfig({
@@ -267,7 +302,7 @@ test('plan and executor reject dependency cycles and report missing tools', asyn
     }],
     requiredCommands: ['command-that-is-not-installed-validation-test'],
   });
-  const plan = createPlan(missingRoot, missingConfig);
+  const plan = fixturePlan(missingRoot, missingConfig);
   const result = await executePlan(missingRoot, missingConfig, plan);
   assert.equal(result.receipt.status, 'incomplete');
   assert.equal(result.receipt.totals.executed, 0);

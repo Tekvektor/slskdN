@@ -354,7 +354,7 @@ export function createPlan(root, config, options = {}) {
   ])]
     .map((command) => ({ command, available: commandAvailable(command) }));
   const runtimes = (config.runtimes ?? []).map((runtime) => inspectRuntime(root, runtime));
-  const executionContext = {
+  const executionContext = options.executionContext ?? {
     executor: process.env.GITHUB_ACTIONS === 'true' ? 'github-actions' : 'local',
     platform: process.platform,
     architecture: process.arch,

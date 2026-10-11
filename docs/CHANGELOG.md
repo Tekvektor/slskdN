@@ -22,7 +22,7 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
-## [2026101120-slskdn.348] — 2026-10-11
+## [2026101120-slskdn.349] — 2026-10-11
 
 ### Changed
 
@@ -36,9 +36,10 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Fixed
 
-- Validation contract tests now verify preflight diagnostics without capturing
-  process-global output, preventing concurrent test interference in hosted
-  release checks.
+- Validation contract tests isolate synthetic fixture repositories from the
+  hosted GitHub commit identity while keeping the mismatched-SHA rejection
+  regression, preventing false release-gate failures before task evidence is
+  written.
 - Transfer batch and duplicate-file lookups now use SQLite indexes. Soft-removed
   completed transfers are purged after their configured retention, while event
   history is capped at 10,000 rows and search history at 250 by default.
