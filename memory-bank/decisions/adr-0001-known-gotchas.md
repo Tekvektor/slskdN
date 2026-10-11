@@ -4,6 +4,23 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1755. Provision Every Validation Command On Hosted Release Runners (2026-10-11)
+
+**What went wrong:** The GitHub-hosted tag workflow invoked the validation
+engine without `rg`, a declared command prerequisite used by the repository's
+baseline checks. The engine stopped before running any gate task, but the step
+summary did not print the missing prerequisite, so the failed build gave no
+actionable reason.
+
+**Why:** Local environments had ripgrep installed, while the hosted workflow
+assumed a repository tool was part of the runner image. The incomplete-run
+summary exposed task totals but hid the preflight failure list.
+
+**Prevention:** Install or provision every nonstandard required command in the
+workflow before starting the release gate. Include unavailable commands and
+runtime mismatches in the gate's failure summary, and validate the hosted
+workflow setup alongside the local gate.
+
 ### 0z1740. Honor The Configured Temporary Directory In Validation Scripts (2026-10-06)
 
 **What went wrong:** `check-council-active-backlog.sh` wrote scratch files to
