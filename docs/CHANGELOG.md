@@ -22,13 +22,7 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
-### Fixed
-
-- Validation contract tests now verify preflight diagnostics without capturing
-  process-global output, preventing concurrent test interference in hosted
-  release checks.
-
-## [2026101120-slskdn.347] — 2026-10-11
+## [2026101120-slskdn.348] — 2026-10-11
 
 ### Changed
 
@@ -42,6 +36,9 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Fixed
 
+- Validation contract tests now verify preflight diagnostics without capturing
+  process-global output, preventing concurrent test interference in hosted
+  release checks.
 - Transfer batch and duplicate-file lookups now use SQLite indexes. Soft-removed
   completed transfers are purged after their configured retention, while event
   history is capped at 10,000 rows and search history at 250 by default.
