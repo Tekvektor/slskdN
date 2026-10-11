@@ -118,7 +118,14 @@ for workflow in \
     expect_literal "$workflow" "$PNPM_SETUP_ACTION"
     expect_literal "$workflow" 'install: false'
 done
+for workflow in \
+    .github/workflows/build-on-tag.yml \
+    .github/workflows/ci.yml \
+    .github/workflows/e2e-tests.yml; do
+    expect_literal "$workflow" 'sudo apt-get install -y jq ripgrep'
+done
 expect_literal packaging/scripts/run-release-gate.sh 'exec node scripts/validate-development.mjs'
+expect_literal scripts/validation-engine/config.mjs "'.github/workflows/build-on-tag.yml'"
 for task_id in \
     release-branch-sync \
     packaging-metadata \
@@ -142,6 +149,7 @@ expect_literal .github/workflows/e2e-tests.yml 'TMPDIR: ${{ runner.temp }}'
 expect_literal .github/workflows/build-on-tag.yml 'TMPDIR: ${{ runner.temp }}'
 expect_literal .github/workflows/ci.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
 expect_literal .github/workflows/e2e-tests.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
+expect_literal .github/workflows/build-on-tag.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
 reject_literal .github/workflows/ci.yml 'path: /tmp/slskdn-validation-*/'
 reject_literal .github/workflows/e2e-tests.yml 'path: /tmp/slskdn-validation-*/'
 expect_literal scripts/verify-release-artifacts.sh 'SHA256SUMS.txt'

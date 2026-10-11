@@ -19,6 +19,7 @@ import {
   discoverInventory,
   executePlan,
   globRegex,
+  main,
 } from './engine.mjs';
 
 const temporaryRoots = [];
@@ -271,6 +272,22 @@ test('plan and executor reject dependency cycles and report missing tools', asyn
   assert.equal(result.receipt.status, 'incomplete');
   assert.equal(result.receipt.totals.executed, 0);
   assert.equal(result.receipt.prerequisites.some((item) => !item.available), true);
+
+  let output = '';
+  const originalWrite = process.stdout.write;
+  process.stdout.write = (chunk) => {
+    output += chunk.toString();
+    return true;
+  };
+  try {
+    assert.equal(await main([], missingRoot, missingConfig), 1);
+  } finally {
+    process.stdout.write = originalWrite;
+  }
+  const summary = JSON.parse(output);
+  assert.deepEqual(summary.preflightFailures.map((item) => item.command), [
+    'command-that-is-not-installed-validation-test',
+  ]);
 });
 
 test('candidate digests change after tracked source edits', () => {

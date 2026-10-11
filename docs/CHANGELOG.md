@@ -22,6 +22,11 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Changed
+
+- Hosted validation workflows now install `jq` and `ripgrep`, report missing
+  preflight tools, and upload run-scoped evidence when release checks fail.
+
 ## [2026101120-slskdn.346] — 2026-10-11
 
 ### Changed

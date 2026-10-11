@@ -9,6 +9,7 @@ export const validation = {
     'slskd.sln',
     'src/web/package.json',
     'tests/e2e/package.json',
+    '.github/workflows/build-on-tag.yml',
     '.github/workflows/ci.yml',
     '.github/workflows/e2e-tests.yml',
     'packaging/scripts/run-release-gate.sh',
