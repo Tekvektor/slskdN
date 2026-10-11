@@ -124,8 +124,7 @@ while (( SECONDS < deadline )); do
 
     if ! binaries_json="$(query "$archive_api" \
         --data-urlencode 'ws.op=getPublishedBinaries' \
-        --data-urlencode "binary_name=${source_name}" \
-        --data-urlencode "version=${package_version}")"; then
+        --data-urlencode "binary_name=${source_name}")"; then
         report_status "Build succeeded; the binary publication query failed after retries."
         sleep "$poll_seconds"
         continue

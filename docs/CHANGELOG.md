@@ -22,6 +22,12 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Fixed
+
+- The Launchpad PPA publication waiter now queries by binary package name and
+  checks the exact version locally, avoiding stale version-filtered API
+  responses after a binary is published.
+
 ## [2026101120-slskdn.349] — 2026-10-11
 
 ### Changed
