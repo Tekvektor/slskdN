@@ -7501,6 +7501,22 @@ deletes only old, completed, removed transfers. Bound event and search history
 by both age and a configurable record count; keep active transfers outside the
 purge predicate.
 
+### 0z1743. Allow Controlled UI State Assertions For Concurrent Test Load (2026-10-11)
+
+**What went wrong:** The Messaging slash-command regression test waited for a
+controlled textarea value with Testing Library's one-second default timeout.
+The assertion passed alone, but timed out while the full 199-file jsdom suite
+ran concurrently. The resulting failure was in the test's timing budget, not
+the slash-command behavior.
+
+**Why it happened:** A short default wait assumes the test process can commit
+React state promptly even when many jsdom environments compete for CPU.
+
+**How to prevent it:** Use an explicit, bounded timeout for asynchronous UI
+state transitions that pass in isolation but can be delayed by the full suite.
+Keep the assertion focused on observable state; do not add sleeps or change
+product behavior to mask test-runner contention.
+
 ### 0z1556. Drain Both Redirected Process Streams Concurrently (2026-10-04)
 
 **What went wrong:** `SongIdService.RunToolAsync` awaited the child process's
