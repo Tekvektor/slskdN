@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1760. Recount Abuse-Lens Candidates After Test-Only Changes (2026-10-11)
+
+**What went wrong:** The release gate found 12,564 red-team candidates while
+the active backlog still recorded 12,560 after a test-only release-waiter
+regression was added.
+
+**Why:** The abuse-lens scan includes test and tooling source, so a regression
+fixture can change the review-queue count without adding a product defect.
+
+**Prevention:** Rerun `scripts/run-council-active-bughunt.sh` after changing
+tests or tooling, inspect and classify every count delta, and refresh the
+active backlog before rerunning the release baseline. Candidate counts are not
+confirmed bug counts.
+
 ### 0z1759. Avoid Version-Filtered Launchpad Binary Queries (2026-10-11)
 
 **What went wrong:** The PPA publication waiter passed a specific `version` to
