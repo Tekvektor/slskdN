@@ -40851,3 +40851,18 @@ workspace package manager could resolve the advertised entry point.
 **Prevention:** Add every documented pnpm command to the root manifest and
 check it with `pnpm run` or by invoking the exact command before integrating
 the command into CI or release documentation.
+
+### 0z1749. Update Workflow Validators With Runner Action Changes (2026-10-11)
+
+**What went wrong:** Replacing `pnpm/action-setup@v6` with the standalone
+`pnpm/setup@v3` allowed CI bootstrap to succeed, but the release gate stopped
+at packaging metadata validation because it still required the old action's
+literal name in the tag-build workflow.
+
+**Why:** Workflow action choices are also encoded in repository-specific
+packaging checks; changing the workflow without updating those checks leaves
+an obsolete invariant that blocks the build.
+
+**Prevention:** Search packaging validators and workflow contract checks for
+the old action name whenever changing runner setup, update their accepted
+contract to the new action, and run the same validation before pushing.
