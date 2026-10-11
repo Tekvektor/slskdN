@@ -40789,23 +40789,6 @@ conditional child rendering from the shared button tree.
 label branch and test the rendered text at wide widths as well as the icon-only
 layout at narrow widths.
 
-### 0z1729. Preserve Test Evidence Rules In Validation Plans (2026-10-11)
-
-**What went wrong:** The validation plan projection omitted each test task's
-casePattern and minimumCases. Execution received that projection, so an
-exit-zero test command could be marked passed without any active-case evidence.
-The JavaScript regex strings were also escaped twice, preventing them from
-matching whitespace and digits.
-
-**Why:** The plan was treated as display metadata instead of the immutable
-execution contract, and regex escaping was copied from an already escaped
-context.
-
-**Prevention:** Carry every test assertion field into the plan and test that a
-missing summary fails while a valid summary records its case count. In ordinary
-JavaScript strings, encode regex \\s with \\\\s exactly once in source, then
-verify the resulting RegExp against real command output.
-
 ### 0z1746. Clear Node Test Harness Context Before Launching Native Tests (2026-10-11)
 
 **What went wrong:** A validation engine invoked by `node --test` inherited
@@ -40879,3 +40862,32 @@ the artifact glob was not scoped to the current GitHub Actions job.
 **Prevention:** Set `TMPDIR` to `${{ runner.temp }}` for engine invocations and
 upload evidence only from that job-scoped directory. Do not glob a shared
 `/tmp` prefix on a persistent runner.
+
+### 0z1751. Allocate Gotcha Identifiers Across The Full Record (2026-10-11)
+
+**What went wrong:** Two unrelated lessons were added with the same gotcha ID
+`0z1729`. The duplicate made references ambiguous when the validation evidence
+lesson was combined with the earlier UI tooltip lesson.
+
+**Why:** Concurrent work assigned an identifier from a local branch without
+checking the full shared gotcha record.
+
+**Prevention:** Search the complete ADR for an ID before using it, allocate a
+unique next identifier, and check for duplicate headings after merging branches.
+
+### 0z1752. Preserve Test Evidence Rules In Validation Plans (2026-10-11)
+
+**What went wrong:** The validation plan projection omitted each test task's
+casePattern and minimumCases. Execution received that projection, so an
+exit-zero test command could be marked passed without any active-case evidence.
+The JavaScript regex strings were also escaped twice, preventing them from
+matching whitespace and digits.
+
+**Why:** The plan was treated as display metadata instead of the immutable
+execution contract, and regex escaping was copied from an already escaped
+context.
+
+**Prevention:** Carry every test assertion field into the plan and test that a
+missing summary fails while a valid summary records its case count. In ordinary
+JavaScript strings, encode regex \\s with \\\\s exactly once in source, then
+verify the resulting RegExp against real command output.
