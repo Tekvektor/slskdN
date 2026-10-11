@@ -22,6 +22,11 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Fixed
+
+- Disaster-mode subscriber failure diagnostics now use an injected logger,
+  avoiding process-wide logger state in parallel test runs.
+
 ## [2026101120-slskdn.349] — 2026-10-11
 
 ### Changed
@@ -40,6 +45,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
   hosted GitHub commit identity while keeping the mismatched-SHA rejection
   regression, preventing false release-gate failures before task evidence is
   written.
+- Disaster-mode subscriber failure diagnostics use an injected logger, keeping
+  parallel unit tests from racing through a shared process-wide logger.
 - Transfer batch and duplicate-file lookups now use SQLite indexes. Soft-removed
   completed transfers are purged after their configured retention, while event
   history is capped at 10,000 rows and search history at 250 by default.

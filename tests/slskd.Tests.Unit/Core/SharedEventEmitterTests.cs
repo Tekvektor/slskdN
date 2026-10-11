@@ -74,7 +74,9 @@ public class SharedEventEmitterTests
     public void SoulseekClientWrapper_WhenOneSubscriberThrows_ContinuesInvokingRemainingSubscribers()
     {
         var soulseekClient = new Mock<Soulseek.ISoulseekClient>();
-        using var wrapper = new SoulseekClientWrapper(soulseekClient.Object);
+        using var wrapper = new SoulseekClientWrapper(
+            soulseekClient.Object,
+            NullLogger<SoulseekClientWrapper>.Instance);
 
         var invokedHealthySubscriber = false;
         EventHandler<RoomMessageReceivedEventArgs> throwingHandler = (_, _) => throw new InvalidOperationException("boom");

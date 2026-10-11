@@ -11,7 +11,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Soulseek;
 using slskd;
-using Serilog;
 using LoggingSanitizer = slskd.Common.Security.LoggingSanitizer;
 
 public enum SoulseekHealth
@@ -38,13 +37,17 @@ public sealed class SoulseekClientWrapper : ISoulseekClient
 {
     private readonly Soulseek.ISoulseekClient client;
     private readonly EventHandler<RoomMessageReceivedEventArgs> roomMessageReceivedHandler;
+    private readonly ILogger<SoulseekClientWrapper> _logger;
     private bool disposed;
 
     public event EventHandler<RoomMessageReceivedEventArgs>? RoomMessageReceived;
 
-    public SoulseekClientWrapper(Soulseek.ISoulseekClient client)
+    public SoulseekClientWrapper(
+        Soulseek.ISoulseekClient client,
+        ILogger<SoulseekClientWrapper> logger)
     {
         this.client = client;
+        _logger = logger;
         roomMessageReceivedHandler = (sender, e) => RaiseRoomMessageReceived(sender, e);
         this.client.RoomMessageReceived += roomMessageReceivedHandler;
     }
@@ -64,7 +67,7 @@ public sealed class SoulseekClientWrapper : ISoulseekClient
             }
             catch (Exception ex)
             {
-                Log.Warning(
+                _logger.LogWarning(
                     "[VSF-DISCO] RoomMessageReceived subscriber failed with exception {Exception}",
                     LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
             }

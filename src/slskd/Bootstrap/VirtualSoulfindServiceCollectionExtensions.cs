@@ -76,7 +76,9 @@ public static class VirtualSoulfindServiceCollectionExtensions
                 sp.GetRequiredService<Identity.IProfileService>()));
         services.AddSingleton<VirtualSoulfind.Scenes.ISceneModerationService, VirtualSoulfind.Scenes.SceneModerationService>();
         services.AddSingleton<VirtualSoulfind.DisasterMode.ISoulseekClient>(sp =>
-            new VirtualSoulfind.DisasterMode.SoulseekClientWrapper(sp.GetRequiredService<Soulseek.ISoulseekClient>()));
+            new VirtualSoulfind.DisasterMode.SoulseekClientWrapper(
+                sp.GetRequiredService<Soulseek.ISoulseekClient>(),
+                sp.GetRequiredService<ILogger<VirtualSoulfind.DisasterMode.SoulseekClientWrapper>>()));
         services.AddSingleton<VirtualSoulfind.DisasterMode.ISoulseekHealthMonitor>(sp =>
             new VirtualSoulfind.DisasterMode.SoulseekHealthMonitor(
                 sp.GetRequiredService<ILogger<VirtualSoulfind.DisasterMode.SoulseekHealthMonitor>>(),
