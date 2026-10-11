@@ -7517,6 +7517,24 @@ state transitions that pass in isolation but can be delayed by the full suite.
 Keep the assertion focused on observable state; do not add sleeps or change
 product behavior to mask test-runner contention.
 
+### 0z1744. Keep Local Paths Out Of File-Operation Error Logs (2026-10-11)
+
+**What went wrong:** CodeQL traced configured download roots into diagnostics
+for staged-file cleanup, content verification, and fingerprint verification.
+The log sanitizer escaped control characters but preserved full paths, and
+logged exception objects or text could repeat those paths.
+
+**Why it happened:** Log-forging protection was treated as sufficient even
+though filesystem paths disclose local directory layout and may identify
+private files. Structured logging and exception formatting do not redact those
+values.
+
+**How to prevent it:** At these failure boundaries, log fixed operation
+context, exception type, and HRESULT only. Do not log the path, a path-derived
+filename, the exception object, or its message/string. Keep path sanitization
+for log-forging separate from privacy redaction, and verify the result with a
+fresh CodeQL analysis.
+
 ### 0z1556. Drain Both Redirected Process Streams Concurrently (2026-10-04)
 
 **What went wrong:** `SongIdService.RunToolAsync` awaited the child process's
