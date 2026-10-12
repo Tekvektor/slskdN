@@ -22,7 +22,7 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
-- Repeated audio codec profile comparisons now avoid transient string allocations.
+_Add release notes here while developing; move only shipped bullets into a dated version section when a release is cut._
 
 ## [2026101222-slskdn.350] — 2026-10-12
 
@@ -36,6 +36,7 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Changed
 
+- Repeated audio codec profile comparisons now avoid transient string allocations.
 - Container builds now reuse web assets and system-package layers when release
   metadata changes, and no longer need a `.git` directory in the build context.
 - Default log retention is 14 days, with a minimum of 2 days. Operators who
