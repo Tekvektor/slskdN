@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1771. Do Not Delete SQLite Test Files While Pools Hold Their Handles (2026-10-12)
+
+**What went wrong:** File-backed SQLite tests could pass on POSIX while their
+cleanup failed on Windows because a disposed connection remained in the
+provider pool and still held the database file open.
+
+**Why:** POSIX allows unlinking an open file; Windows rejects deletion while a
+pooled native SQLite handle still owns it. A test that deletes its database
+before disposing its service has the same problem even without pooling.
+
+**Prevention:** Dispose every service and connection that owns a test database
+before cleanup. For test-owned file databases, prefer `Pooling=False`; if a
+pooled connection is required, clear that database's specific pool only after
+its connections are closed. Keep cleanup verification on Windows as well as
+POSIX.
+
 ### 0z1770. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
 **What went wrong:** Public pull-request workflows and manual dispatches from
