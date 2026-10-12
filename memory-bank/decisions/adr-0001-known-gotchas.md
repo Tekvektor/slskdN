@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1766. Anchor Changelog Section Searches To Whole Heading Lines (2026-10-12)
+
+**What went wrong:** An automated changelog edit matched an inline mention of
+Unreleased in the introduction and inserted entries into the heading example.
+The staged changelog gate rejected the misplaced entries.
+
+**Why:** A substring search cannot distinguish prose and fenced examples from
+the actual section heading.
+
+**Prevention:** Match the complete heading line, locate the next section after
+that heading, and inspect the staged diff before committing. Keep the staged
+changelog gate enabled so misplaced entries cannot pass as release notes.
+
 ### 0z1765. Compare Actor Identifiers Without Folding URL Paths (2026-10-12)
 
 **What went wrong:** Actor-to-key binding compared entire identifiers without
