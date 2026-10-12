@@ -22,6 +22,10 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+_Add release notes here while developing; move only shipped bullets into a dated version section when a release is cut._
+
+## [2026101222-slskdn.350] — 2026-10-12
+
 ### Added
 
 - System Logs now lets administrators browse, preview, and download retained
@@ -55,6 +59,10 @@ For dev or build tags, use the same logical version string embedded in the tag.
 - Federation relationship removal is bound to the verified sender and exact
   actor identity. Public-key verification and standard inbox JSON field handling
   correctly accept valid signed messages and reject altered ones.
+- Local candidate test runs require the trusted sandbox launcher, which hides
+  operator files, secrets, service sockets, and network access from test code.
+- Validation probes and task processes use restricted environments and private
+  temporary and configuration settings to reduce exposure of unrelated values.
 
 
 ## [2026101120-slskdn.349] — 2026-10-11
