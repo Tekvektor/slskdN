@@ -30,6 +30,7 @@ export const validation = {
     'release-notes/20261012-validation-environment-isolation.md',
     'release-notes/20261012-trusted-test-sandbox.md',
     'release-notes/20261012-hosted-release-gate-evidence.md',
+    'release-notes/20261012-manual-ci-runner-choice.md',
     'docs/dev/testing-policy.md',
   ],
   requiredCommands: ['git', 'bash', 'rg', 'jq', 'python3'],

@@ -16,9 +16,13 @@ bash ./bin/lint
 ```
 
 When local test execution is unavailable, run the `CI` workflow manually on
-`main`, then pass its run ID to the release helper:
+`main` using the GitHub-hosted runner option, then pass its run ID to the
+release helper:
 
 `scripts/create-release-tag.sh --hosted-ci-run <run-id> <tag>`
+
+Dispatch the workflow with `runner=github-hosted` so the release check does not
+depend on the checkout's local SDK or caches.
 
 The helper accepts only a completed successful workflow dispatch for the exact
 current `main` commit and the repository's `ci.yml` workflow. The hosted
