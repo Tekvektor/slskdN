@@ -19192,3 +19192,17 @@ complete. Keep T-908's sender trust and serving lifecycle, cross-node Party ID
 authority, real assistive-tech and device validation, WAN/resource and
 hidden-tab measurements, the original frontend network-change cause, and
 unconfirmed scanner candidates in the evidence/design-gated follow-up list.
+
+## Current state — Credential and federation corrections complete — 2026-10-12
+
+Narrow credentials are denied before SignalR snapshots or invocations. Signed
+relationship removal is bound to the verified sender, including case-sensitive
+actor paths. Public-key import and standard inbox JSON field handling are
+corrected. The 123 focused regressions, full .NET suite (6,128 tests), repository
+lint, release-note validation, identity scan, and diff checks pass.
+
+### Next Steps
+
+No active implementation or validation work remains for these corrections.
+Unrelated validation-tool branch commits remain separate. Release tagging
+requires a separate explicit instruction.

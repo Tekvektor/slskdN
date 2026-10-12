@@ -28,6 +28,15 @@ For dev or build tags, use the same logical version string embedded in the tag.
   checks the exact version locally, avoiding stale version-filtered API
   responses after a binary is published.
 
+### Security
+
+- Narrowly scoped integration credentials are restricted from general-purpose
+  real-time hubs, while password and wildcard sessions retain existing access.
+- Federation relationship removal is bound to the verified sender and exact
+  actor identity. Public-key verification and standard inbox JSON field handling
+  correctly accept valid signed messages and reject altered ones.
+
+
 ## [2026101120-slskdn.349] — 2026-10-11
 
 ### Changed

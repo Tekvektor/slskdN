@@ -18922,3 +18922,17 @@ gotcha entries and refreshed backlog, are pushed to `main`; the worktree is
 clean. Stable `.349` remains the released product version; the post-release
 Launchpad polling correction is on `main` with a validated release-note
 fragment for the next release.
+
+## Update 2026-10-12 — Credential and federation boundary corrections
+
+SignalR now rejects narrowly scoped integration credentials before connection
+callbacks and invocations. Wildcard and legacy sessions retain existing access.
+Federation relationship removal requires the nested actor to match the verified
+sender, with case-sensitive actor identities. Real signed-request regressions
+also exposed incompatible public-key import and case-sensitive parsing of
+standard lowercase wire fields; both are corrected at their existing boundaries.
+
+The 123 focused regressions pass. Full .NET tests pass 6,128 (5,765 unit,
+74 application, 289 integration); repository lint, structured release-note
+validation, the identity scan, and diff whitespace checks pass. Gotchas
+0z1761–0z1765 precede the implementation commit. No release tag is requested.

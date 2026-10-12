@@ -7277,3 +7277,14 @@ resource completion.
 - [x] Confirm final hosted run `37326116677` completed successfully with all
   18 jobs green; verify the exact Jammy binary in the Launchpad API and public
   apt index.
+
+## Credential and federation boundary corrections — 2026-10-12
+
+- [x] Enforce narrow credential restrictions before SignalR connection callbacks
+  and invocations; preserve password, wildcard, and legacy-session access.
+- [x] Bind relationship removal to the verified actor with case-sensitive
+  identifiers; correct Ed25519 public-key import and standard inbox JSON parsing.
+- [x] Verify real hub connections and signed inbox requests, including legitimate
+  operations, other actors, missing identities, case changes, and altered bodies.
+- [x] Pass 123 focused regressions, all 6,128 .NET tests, repository lint,
+  release-note validation, and the local identity scan.

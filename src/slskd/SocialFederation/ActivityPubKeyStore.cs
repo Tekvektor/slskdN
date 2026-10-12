@@ -168,12 +168,12 @@ namespace slskd.SocialFederation
                 // Parse PEM and verify signature
                 var algorithm = SignatureAlgorithm.Ed25519;
                 var publicKeyBytes = ConvertFromPem(publicKeyPem);
-                using var key = Key.Import(algorithm, publicKeyBytes, KeyBlobFormat.PkixPublicKey);
+                var key = PublicKey.Import(algorithm, publicKeyBytes, KeyBlobFormat.PkixPublicKey);
 
                 var signatureBytes = Convert.FromBase64String(signature);
                 var messageBytes = Encoding.UTF8.GetBytes(signedString);
 
-                return algorithm.Verify(key.PublicKey, messageBytes, signatureBytes);
+                return algorithm.Verify(key, messageBytes, signatureBytes);
             }
             catch (Exception ex)
             {

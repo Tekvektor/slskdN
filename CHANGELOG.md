@@ -920,6 +920,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a dedicated `/discovery-graph` route plus modal handoff into that full atlas workspace.
 - Enabled semantic zoom lockstep across mini-map, drawer modal, and atlas so provenance/score-component detail follows any neighborhood while graph actions (`queue nearby`, downloads, compare) reuse that same substrate.
 
+### Security
+
+- Narrowly scoped integration credentials are restricted from general-purpose
+  real-time hubs, while password and wildcard sessions retain existing access.
+- Federation relationship removal is bound to the verified sender and exact
+  actor identity. Public-key verification and standard inbox JSON field handling
+  correctly accept valid signed messages and reject altered ones.
+
+
 ## [0.24.5-slskdn.52] - 2026-03-15
 
 ### Now Playing / Scrobble Integration (#39)
