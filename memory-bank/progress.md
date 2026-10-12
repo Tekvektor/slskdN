@@ -1,3 +1,21 @@
+# Update 2026-10-12 21:47 UTC — Persist runner temp for self-hosted CI
+
+The earlier runner-temp workaround covered only `actions/setup-dotnet`; later
+build and scan steps still inherited the full shared `/tmp`. All eight Linux
+self-hosted jobs in `ci.yml` and `ci-enhancements.yml` now validate the runner
+temporary directory, reject root and shared `/tmp` (including symlinks), and
+persist `TMPDIR`, `TMP`, and `TEMP` through `GITHUB_ENV`. The NuGet vulnerability
+scan output now uses the validated job temp directory. The workflow guard checks
+all Linux self-hosted jobs and rejects fixed `/tmp` or `/var/tmp` use in later
+steps. Gotcha `0z1771` records the step-scope failure.
+
+`bash scripts/check-dotnet-runtime-matrix.sh`, workflow YAML parsing, shell
+syntax, runner-temp behavior checks, `./bin/lint`, and the complete remediation
+baseline pass. The active review queue is 12,726 pattern-hit lines; four new
+matches are from the workflow guard and are not confirmed bugs. The baseline
+skips PPA upload because its optional signing secret is absent. Local
+verification is complete; hosted PR #357 checks and merge remain pending.
+
 # Update 2026-10-05 21:46 UTC — Preserve content-link cancellation and sanitize provider logs
 
 Pod content-ID validation, metadata lookup, and recording search now propagate

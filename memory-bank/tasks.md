@@ -26,6 +26,19 @@
 
 ## Active Development
 
+### Keep Linux self-hosted CI temporary files on runner storage — 2026-10-12
+
+- [x] Configure all eight Linux self-hosted jobs to validate `RUNNER_TEMP`,
+  reject shared `/tmp`, and persist `TMPDIR`, `TMP`, and `TEMP` for later steps.
+- [x] Replace fixed `/tmp` vulnerability-scan output files and extend the
+  runtime matrix guard to cover every self-hosted Linux workflow job.
+- [x] Record gotcha `0z1771`, refresh the active backlog to 12,726 candidates,
+  and pass the remediation baseline and repository lint.
+- [ ] Push the follow-up to PR #357, wait for hosted CI, then merge and verify
+  the resulting main-branch state.
+
+Status: local implementation is verified; PR #357 hosted checks are pending.
+
 ### Reported database issue #352 and stable `.349` release — 2026-10-11
 
 - [x] Reproduce issue #352's transfer-table scan root cause with SQLite query

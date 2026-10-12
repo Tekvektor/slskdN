@@ -28,6 +28,28 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
+      - name: Configure runner temporary storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${RUNNER_TEMP:-}" || "$RUNNER_TEMP" != /* || "$RUNNER_TEMP" == *$'\n'* || "$RUNNER_TEMP" == *$'\r'* || ! -d "$RUNNER_TEMP" || ! -r "$RUNNER_TEMP" || ! -w "$RUNNER_TEMP" || ! -x "$RUNNER_TEMP" ]]; then
+            printf 'RUNNER_TEMP must be an absolute writable directory\n' >&2
+            exit 1
+          fi
+          runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
+          case "$runner_temp_resolved" in
+            /|/tmp|/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+              exit 1
+              ;;
+          esac
+          if [[ "$runner_temp_resolved" == *$'\n'* || "$runner_temp_resolved" == *$'\r'* ]]; then
+            printf 'RUNNER_TEMP must not contain line breaks\n' >&2
+            exit 1
+          fi
+          : "${GITHUB_ENV:?GITHUB_ENV is required}"
+          printf 'TMPDIR=%s\nTMP=%s\nTEMP=%s\n' "$runner_temp_resolved" "$runner_temp_resolved" "$runner_temp_resolved" >> "$GITHUB_ENV"
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -39,8 +61,6 @@ jobs:
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
-        env:
-          TMPDIR: ${{ runner.temp }}
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -100,12 +120,12 @@ jobs:
           # which would cause NuGet to reject build-main-* prefixed strings as invalid semver.
           dotnet restore src/slskd/slskd.csproj -p:Version=0.0.0
           # List vulnerable packages (--vulnerable flag requires .NET 8+ SDK)
-          dotnet list src/slskd/slskd.csproj package --vulnerable --include-transitive 2>&1 | tee /tmp/nuget-vuln.txt
+          dotnet list src/slskd/slskd.csproj package --vulnerable --include-transitive 2>&1 | tee "$TMPDIR/nuget-vuln.txt"
           # Fail if any HIGH or CRITICAL severity found
-          if grep -qiE 'High|Critical' /tmp/nuget-vuln.txt; then
+          if grep -qiE 'High|Critical' "$TMPDIR/nuget-vuln.txt"; then
             echo ""
             echo "::error::NuGet vulnerability scan found HIGH or CRITICAL severity packages."
-            cat /tmp/nuget-vuln.txt
+            cat "$TMPDIR/nuget-vuln.txt"
             exit 1
           fi
 
@@ -126,7 +146,6 @@ jobs:
       - name: Release Gate
         env:
           LOCAL_IDENTITY_DENYLIST: ${{ secrets.LOCAL_IDENTITY_DENYLIST }}
-          TMPDIR: ${{ runner.temp }}
         run: bash packaging/scripts/run-release-gate.sh
 
       - name: Upload validation engine evidence
@@ -181,6 +200,28 @@ jobs:
           - "osx-x64"
           - "osx-arm64"
     steps:
+      - name: Configure runner temporary storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${RUNNER_TEMP:-}" || "$RUNNER_TEMP" != /* || "$RUNNER_TEMP" == *$'\n'* || "$RUNNER_TEMP" == *$'\r'* || ! -d "$RUNNER_TEMP" || ! -r "$RUNNER_TEMP" || ! -w "$RUNNER_TEMP" || ! -x "$RUNNER_TEMP" ]]; then
+            printf 'RUNNER_TEMP must be an absolute writable directory\n' >&2
+            exit 1
+          fi
+          runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
+          case "$runner_temp_resolved" in
+            /|/tmp|/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+              exit 1
+              ;;
+          esac
+          if [[ "$runner_temp_resolved" == *$'\n'* || "$runner_temp_resolved" == *$'\r'* ]]; then
+            printf 'RUNNER_TEMP must not contain line breaks\n' >&2
+            exit 1
+          fi
+          : "${GITHUB_ENV:?GITHUB_ENV is required}"
+          printf 'TMPDIR=%s\nTMP=%s\nTEMP=%s\n' "$runner_temp_resolved" "$runner_temp_resolved" "$runner_temp_resolved" >> "$GITHUB_ENV"
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -188,8 +229,6 @@ jobs:
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
-        env:
-          TMPDIR: ${{ runner.temp }}
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -224,6 +263,28 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Configure runner temporary storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${RUNNER_TEMP:-}" || "$RUNNER_TEMP" != /* || "$RUNNER_TEMP" == *$'\n'* || "$RUNNER_TEMP" == *$'\r'* || ! -d "$RUNNER_TEMP" || ! -r "$RUNNER_TEMP" || ! -w "$RUNNER_TEMP" || ! -x "$RUNNER_TEMP" ]]; then
+            printf 'RUNNER_TEMP must be an absolute writable directory\n' >&2
+            exit 1
+          fi
+          runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
+          case "$runner_temp_resolved" in
+            /|/tmp|/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+              exit 1
+              ;;
+          esac
+          if [[ "$runner_temp_resolved" == *$'\n'* || "$runner_temp_resolved" == *$'\r'* ]]; then
+            printf 'RUNNER_TEMP must not contain line breaks\n' >&2
+            exit 1
+          fi
+          : "${GITHUB_ENV:?GITHUB_ENV is required}"
+          printf 'TMPDIR=%s\nTMP=%s\nTEMP=%s\n' "$runner_temp_resolved" "$runner_temp_resolved" "$runner_temp_resolved" >> "$GITHUB_ENV"
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -330,6 +391,28 @@ jobs:
     needs: [build, publish, docker]
     if: startsWith(github.ref, 'refs/tags/')
     steps:
+      - name: Configure runner temporary storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${RUNNER_TEMP:-}" || "$RUNNER_TEMP" != /* || "$RUNNER_TEMP" == *$'\n'* || "$RUNNER_TEMP" == *$'\r'* || ! -d "$RUNNER_TEMP" || ! -r "$RUNNER_TEMP" || ! -w "$RUNNER_TEMP" || ! -x "$RUNNER_TEMP" ]]; then
+            printf 'RUNNER_TEMP must be an absolute writable directory\n' >&2
+            exit 1
+          fi
+          runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
+          case "$runner_temp_resolved" in
+            /|/tmp|/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+              exit 1
+              ;;
+          esac
+          if [[ "$runner_temp_resolved" == *$'\n'* || "$runner_temp_resolved" == *$'\r'* ]]; then
+            printf 'RUNNER_TEMP must not contain line breaks\n' >&2
+            exit 1
+          fi
+          : "${GITHUB_ENV:?GITHUB_ENV is required}"
+          printf 'TMPDIR=%s\nTMP=%s\nTEMP=%s\n' "$runner_temp_resolved" "$runner_temp_resolved" "$runner_temp_resolved" >> "$GITHUB_ENV"
+
       - name: Checkout
         uses: actions/checkout@v7
         with:

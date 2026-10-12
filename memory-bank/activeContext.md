@@ -1,4 +1,25 @@
-## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
+## Current state — Repair job-wide self-hosted runner temp routing — 2026-10-12 21:47 UTC
+
+Follow-up PR #357 exposed that `TMPDIR` was scoped only to setup-dotnet, while
+later build and scanner steps still used shared `/tmp`. The candidate now sets
+job-wide `TMPDIR`, `TMP`, and `TEMP` from a validated runner directory in the
+first step of every Linux self-hosted CI job. It replaces hardcoded scan output
+files, rejects runner temp paths resolving to root or `/tmp`, and guards every
+such workflow job against later `/tmp` or `/var/tmp` references.
+
+The focused workflow and shell checks, repository lint, and complete
+remediation baseline pass. The active backlog count is 12,726; the four new
+matches come from the regression guard. No hosted checks have run on this
+follow-up yet.
+
+### Next Steps
+
+- Commit and push the verified changes to PR #357.
+- Wait for the exact PR checks; repair any candidate-caused failures before
+  merging.
+- Verify the main-branch result and delete the merged topic branch.
+
+## Prior state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 
 Issue #352 is fixed and closed. Active transfer lookups use matching SQLite
 partial indexes, completed transfer retention is bounded, and event/search
