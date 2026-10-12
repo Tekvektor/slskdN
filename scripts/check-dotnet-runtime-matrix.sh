@@ -54,6 +54,50 @@ if ! rg -q "^  DOTNET_VERSION: '${target_major}\.0\.[0-9]+'$" "$repo_root/$workf
 fi
 expect_literal "$workflow" 'dotnet-version: ${{ env.DOTNET_VERSION }}'
 
+expect_dotnet_setup_temp_dir() {
+  local workflow_path="$1"
+  local workflow_name="${workflow_path#"$repo_root"/}"
+
+  if ! python3 - "$workflow_path" "$workflow_name" <<'PYTHON'
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+name = sys.argv[2]
+blocks = re.split(r"(?m)(?=^      - )", path.read_text())
+steps = [
+    block
+    for block in blocks
+    if re.search(r"(?m)^        uses: actions/setup-dotnet@v6\s*$", block)
+]
+if not steps:
+    print(f"{name} has no setup-dotnet steps", file=sys.stderr)
+    raise SystemExit(1)
+
+failed = False
+for number, step in enumerate(steps, start=1):
+    if not re.search(
+        r"(?m)^          TMPDIR: \$\{\{ runner\.temp \}\}\s*$", step
+    ):
+        print(
+            f"{name} setup-dotnet step {number} must set TMPDIR to ${{{{ runner.temp }}}}",
+            file=sys.stderr,
+        )
+        failed = True
+if failed:
+    raise SystemExit(1)
+print(f"{name}: all {len(steps)} setup-dotnet steps use runner.temp for TMPDIR")
+PYTHON
+  then
+    failed=1
+  fi
+}
+
+expect_dotnet_setup_temp_dir "$repo_root/.github/workflows/ci.yml"
+expect_dotnet_setup_temp_dir "$repo_root/.github/workflows/ci-enhancements.yml"
+
+
 if rg -n '\.NET 8\.0|\.NET 8|aspnetcore-runtime-8\.0|dotnet-runtime-8\.0|dotnet-version: .8\.0\.x.' \
   "$repo_root/packaging/flatpak" \
   "$repo_root/packaging/proxmox-lxc" \

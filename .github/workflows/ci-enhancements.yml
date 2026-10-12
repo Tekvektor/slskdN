@@ -34,6 +34,8 @@ jobs:
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
+        env:
+          TMPDIR: ${{ runner.temp }}
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -90,6 +92,8 @@ jobs:
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
+        env:
+          TMPDIR: ${{ runner.temp }}
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -230,6 +234,8 @@ jobs:
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
+        env:
+          TMPDIR: ${{ runner.temp }}
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
