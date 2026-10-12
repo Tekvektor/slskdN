@@ -25,6 +25,7 @@ export const validation = {
     'scripts/validate-development.mjs',
     'release-notes/20261012-validation-environment-isolation.md',
     'release-notes/20261012-trusted-test-sandbox.md',
+    'docs/dev/testing-policy.md',
   ],
   requiredCommands: ['git', 'bash', 'rg', 'jq', 'python3'],
   runtimes: [

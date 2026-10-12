@@ -77,6 +77,13 @@ and engine-contract tests. The default run adds repository checks and the web
 build/output checks. Browser suites remain separately selectable because they
 need more time and platform setup.
 
+During execution, the engine writes cumulative task progress to stderr when a
+task starts and finishes, with a heartbeat every minute for long tasks. The
+summary reports completed, failed, blocked, and pending tasks plus the active
+task and elapsed time. Native test-case totals update when each task finishes;
+GitHub Actions shows these live updates in the step log because rendered job
+summaries are published after the step completes.
+
 Each execution creates a fresh receipt and per-task logs in a private directory
 under the operating system's temporary directory. Receipts bind the Git commit,
 tree, dirty diff, untracked files, lock/workflow inputs, discovered test-file
