@@ -4,6 +4,35 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1767. Build Validation Child Environments From An Allowlist (2026-10-12)
+
+**What went wrong:** A credential-name denylist still passed loader options,
+Python import paths, proxy settings, arbitrary custom variables, and operator
+home/configuration paths into validation children.
+
+**Why:** Environment variable names do not define a trust boundary. Many
+non-secret values change code loading, network routing, tool configuration, or
+which user caches and settings a child process reads.
+
+**Prevention:** Construct child environments from a small platform/toolchain
+allowlist, then add only declared task settings and deliberate task-specific
+pass-through values. Force CI mode and run-owned home, temporary, config, and
+cache paths. Regressions should prove synthetic secrets and injection settings
+are absent while required executable and toolchain paths remain available.
+
+### 0z1768. Keep Runtime-Probe Call Sites When Replacing Environment Builders (2026-10-12)
+
+**What went wrong:** Refactoring validation task environments removed the old
+sanitizer while runtime inspection still called it, so creating a plan could
+throw before any task ran.
+
+**Why:** Runtime probes are child processes started during planning and are a
+separate call path from scheduled task execution.
+
+**Prevention:** Search all references when replacing environment helpers. Keep
+a shared allowlisted base for runtime probes and task environments, and run a
+plan-creation regression whenever the probe environment changes.
+
 ### 0z1766. Anchor Changelog Section Searches To Whole Heading Lines (2026-10-12)
 
 **What went wrong:** An automated changelog edit matched an inline mention of
@@ -41092,3 +41121,18 @@ readiness signal.
 **Prevention:** Give service unit tests explicit ephemeral DHT and overlay
 ports. Keep production port-sharing defaults unchanged and do not increase a
 test timeout to hide listener contention.
+
+### 0z1769. Bind Playwright Installation To The Isolated Browser Cache (2026-10-12)
+
+**What went wrong:** The E2E workflow installed Chromium in the runner's
+default Playwright cache. The validation engine gave the browser task a private
+`XDG_CACHE_HOME`, so Playwright looked for Chromium in a different directory
+and the suite failed before its tests could launch.
+
+**Why:** Browser installation and browser execution did not share an explicit
+job-scoped cache path after the engine stopped inheriting the runner's cache
+environment.
+
+**Prevention:** Bind browser installation and execution to the same
+job-scoped `PLAYWRIGHT_BROWSERS_PATH`. Keep the task's home and other caches
+isolated, and assert the browser cache binding in the engine tests.
