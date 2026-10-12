@@ -7314,3 +7314,17 @@ resource completion.
 - [x] Run the release-note preview, focused engine contracts, sandbox canaries,
   and GitHub target verification.
 - [x] Push the slskdnN security batch to `main` at `ec97d781d`; no release tag created.
+
+## Stable release `.350` — 2026-10-12
+
+- [x] Make upload cancellation and slot release transfer-specific, add retained
+  System Logs history and bounded retention, and add the opt-in server MTU cap.
+- [x] Reuse Docker layers across version changes and keep public pull request
+  workflows away from private runners.
+- [x] Keep codec matching allocation-free across supported SDKs and reserve
+  distinct ports for full-instance integration tests.
+- [x] Pass the full .NET suite (6,145 tests), full Web suite (1,295 tests),
+  `./bin/lint`, Release build, retained-log Playwright regression, Docker build
+  and startup smoke, and version-change Docker cache check.
+- [ ] Push the validated tree to `snapetech/slskdN/main`, create the authorized
+  stable tag, and verify hosted publishers and release artifacts.
