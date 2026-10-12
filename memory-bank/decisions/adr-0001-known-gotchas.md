@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1772. Ignore Stale Log Preview Requests (2026-10-12)
+
+**What went wrong:** A retained-log preview request can finish after its modal
+has been closed or another file has been selected, reopening the old preview or
+showing content for the wrong file.
+
+**Why:** Network requests outlive the UI action that started them, and promise
+continuations still update component state after the view changes.
+
+**Prevention:** Tie preview results to a cancellable request or monotonically
+increasing request identifier. Ignore success, error, and loading updates from
+any request that is no longer current; invalidate the active request when the
+preview closes or the component unmounts.
+
 ### 0z1771. Avoid MVC Action Names That Collide With ControllerBase (2026-10-12)
 
 **What went wrong:** A log-history action named `File` made reflection-based
