@@ -4,6 +4,42 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1761. Enforce Scoped Credentials At SignalR Connection Boundaries (2026-10-12)
+
+**What went wrong:** API keys restricted to a webhook scope could connect to
+SignalR hubs and receive search snapshots and application broadcasts.
+
+**Why:** Scoped credential restrictions were MVC authorization filters. SignalR
+preserved the scope claims but did not run those filters.
+
+**Prevention:** Apply a global hub filter before connection callbacks and method
+invocations. Reject narrow credentials on unmapped hubs, preserve wildcard and
+legacy sessions, and test actual connections before any snapshot is sent.
+
+### 0z1762. Bind Nested Relationship Actors To The Verified Sender (2026-10-12)
+
+**What went wrong:** Relationship removal selected its target from the nested
+Follow actor without checking that it matched the authenticated outer actor.
+
+**Why:** Verifying the outer signature authenticates the sender, not ownership
+of every identity mentioned in the signed payload.
+
+**Prevention:** Require nested Follow actors in Undo and Remove activities to
+match the verified sender before storage or mutation. Cover both another actor
+and the legitimate self-removal path with signed inbox requests.
+
+### 0z1763. Import Ed25519 Verification Material As A Public Key (2026-10-12)
+
+**What went wrong:** Valid ActivityPub inbox signatures returned unauthorized.
+The key-store verifier used the same incompatible import operation.
+
+**Why:** NSec Key.Import expects private key material; PKIX public keys must be
+loaded through PublicKey.Import. The catch converted the import failure into a
+normal invalid-signature result, hiding the broken successful path.
+
+**Prevention:** Import verification keys with PublicKey.Import and test real
+Ed25519 signatures, including successful verification and tampered payloads.
+
 ### 0z1760. Recount Abuse-Lens Candidates After Test-Only Changes (2026-10-11)
 
 **What went wrong:** The release gate found 12,564 red-team candidates while
