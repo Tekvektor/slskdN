@@ -41179,3 +41179,18 @@ the environment for later build, test, or compiler processes.
 `RUNNER_TEMP` exists and is writable, then export `TMPDIR` through
 `GITHUB_ENV`. Keep a workflow regression that checks every eligible job starts
 with this fail-closed setup.
+
+### 0z1772. Keep Packaging Guards Aligned With Job-Wide Runner Temp (2026-10-12)
+
+**What went wrong:** The workflow switched from step-scoped `TMPDIR` values to
+first-step validation and job-wide export through `GITHUB_ENV`, but packaging
+metadata validation still required the old literal. The hosted release gate
+therefore failed even though the new runner-temp setup was present.
+
+**Why:** The static packaging guard duplicated a workflow contract instead of
+using the shared check that validates every Linux self-hosted job and its
+first-step ordering.
+
+**Prevention:** When the workflow temp contract changes, update every dependent
+guard in the same change. Reuse the shared workflow-matrix check rather than
+asserting a stale step-scoped environment literal.
