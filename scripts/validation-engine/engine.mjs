@@ -592,15 +592,19 @@ export async function executePlan(root, config, plan, options = {}) {
 
   let sourceChanged = false;
   const selectedTasks = plan.tasks.filter((item) => item.selected);
+  let lastProgressSummary = null;
   const reportProgress = (currentTask = null, taskStartedAt = 0) => {
     if (typeof options.onProgress !== 'function') return;
-    options.onProgress(formatValidationProgress(
+    const summary = formatValidationProgress(
       config.repository,
       selectedTasks,
       receiptById,
       currentTask,
       currentTask ? Date.now() - taskStartedAt : 0,
-    ));
+    );
+    if (summary === lastProgressSummary) return;
+    lastProgressSummary = summary;
+    options.onProgress(summary);
   };
   for (const task of selectedTasks) {
     const dependencyReceipts = (task.dependsOn ?? []).map((id) => receiptById.get(id));
