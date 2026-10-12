@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1775. Reserve Distinct Ports For Full-Instance Tests (2026-10-12)
+
+**What went wrong:** The full-instance test runner selected each TCP port by
+opening a listener on port zero and closing it immediately. A later allocation
+could receive the same port, assigning one instance's API and mesh listeners to
+the same address and aborting startup.
+
+**Why:** A port probe is not a reservation after its socket closes. Releasing
+each probe before all ports are selected also allows concurrent test runners to
+choose the same port.
+
+**Prevention:** Track allocated ports across active test runners and keep each
+reservation until that runner has shut down, including startup-failure cleanup.
+Use the reservation set when selecting every port for an instance.
+
 ### 0z1774. Verify Span Interpolation Across Supported SDKs (2026-10-12)
 
 **What went wrong:** `Span<char>.TryWrite` with an interpolated value measured at
