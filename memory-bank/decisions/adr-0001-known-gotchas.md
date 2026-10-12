@@ -41151,3 +41151,17 @@ environment.
 **Prevention:** Bind browser installation and execution to the same
 job-scoped `PLAYWRIGHT_BROWSERS_PATH`. Keep the task's home and other caches
 isolated, and assert the browser cache binding in the engine tests.
+
+### 0z1770. Keep .NET SDK Bootstrap Temporary Files On Runner Storage (2026-10-12)
+
+**What went wrong:** `actions/setup-dotnet` could not install the pinned SDK or
+runtime on the persistent Linux runner. The runner's default `/tmp` was nearly
+full even though its job-scoped runner temp directory had ample space.
+
+**Why:** The setup step inherited the operating system's shared temporary
+directory. The later validation step already used `runner.temp`, but that did
+not help the earlier SDK bootstrap.
+
+**Prevention:** Set `TMPDIR: ${{ runner.temp }}` directly on every
+`actions/setup-dotnet` step in workflows that can use the persistent Linux
+runner. Keep the SDK pin unchanged and guard this workflow contract.
