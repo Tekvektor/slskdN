@@ -24,6 +24,9 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Fixed
 
+- Queued uploads now cancel promptly while waiting, release only their own
+  slot, and report estimates against global capacity. Retry actions apply to
+  downloads.
 - The Launchpad PPA publication waiter now queries by binary package name and
   checks the exact version locally, avoiding stale version-filtered API
   responses after a binary is published.
