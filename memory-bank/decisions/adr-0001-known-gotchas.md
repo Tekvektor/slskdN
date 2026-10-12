@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1764. Preserve ActivityPub Wire Names At The Bounded Inbox Parser (2026-10-12)
+
+**What went wrong:** Correctly signed ActivityPub JSON with lowercase actor,
+type, and object fields still returned unauthorized after public-key import
+was corrected.
+
+**Why:** The generic bounded JSON parser is case-sensitive and the activity
+model uses PascalCase properties. Default property values hid the ignored
+wire fields and made sender binding fail.
+
+**Prevention:** Use the web JSON naming contract at the inbox boundary while
+preserving the existing payload-size and depth limits. Test standard lowercase
+wire payloads, along with signature and relationship ownership checks.
+
 ### 0z1761. Enforce Scoped Credentials At SignalR Connection Boundaries (2026-10-12)
 
 **What went wrong:** API keys restricted to a webhook scope could connect to
