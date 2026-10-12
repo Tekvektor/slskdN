@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1770. Track Upload Queue Lifecycles By Transfer ID (2026-10-12)
+
+**What went wrong:** Upload queue completion matched requests by username and
+filename. Two simultaneous requests for the same shared file could cause one
+request to remove the other's queue entry or return its slot twice. A canceled
+request waiting for a slot also remained eligible to start later.
+
+**Why:** A filename identifies shared content, not a unique transfer attempt,
+and cancellation was not observed by the queue wait operation.
+
+**Prevention:** Carry the transfer ID through enqueue, slot wait, and release.
+Pass the operation cancellation token into the wait, remove canceled entries,
+and release a slot only for the matching transfer that actually acquired it.
+Regress duplicate same-file requests, cancellation before start, and repeated
+completion.
+
 ### 0z1769. Run Candidate Validation Tests Inside A Trusted Outer Sandbox (2026-10-12)
 
 **What went wrong:** Validation tasks used filtered child environments and
