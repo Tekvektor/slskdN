@@ -18968,3 +18968,8 @@ repository toolchains and package caches are installed beneath the operator
 home, which the sandbox intentionally hides. The repository-specific engine
 contracts and unit tests were run directly inside the sandbox. No release tag
 was created.
+
+The six-repository port is committed locally. Focused Node and Python engine
+contracts, including the host file, secret, network, dependency, and writable
+workspace canaries, pass inside the trusted launcher. The slskdn release-note
+preview and `scripts/verify-github-target.sh` pass; pushes to `main` remain.

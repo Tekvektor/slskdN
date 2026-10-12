@@ -7311,5 +7311,6 @@ resource completion.
 - [x] Add contract canaries for host files, ambient environment values, TCP and
   Unix sockets, disposable workspace writes, and read-only dependencies.
 - [x] Pass the focused engine contracts and sandbox canaries.
-- [ ] Run release-note preview and repository checks, then commit and push the
-  complete security batch to `main` without creating a release tag.
+- [x] Run the release-note preview, focused engine contracts, sandbox canaries,
+  and GitHub target verification.
+- [ ] Push the complete security batch to `main` without creating a release tag.
