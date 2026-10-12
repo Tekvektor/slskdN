@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1774. Verify Span Interpolation Across Supported SDKs (2026-10-12)
+
+**What went wrong:** `Span<char>.TryWrite` with an interpolated value measured at
+zero allocation under .NET SDK 10.0.401, but allocated 72 bytes per call under
+SDK 10.0.112. The older SDK therefore failed the repeated-comparison allocation
+test even though the newer SDK passed it.
+
+**Why:** Interpolated-string-handler lowering can vary between compiler SDK
+feature bands, so one toolchain's allocation result does not establish the
+allocation behavior of every supported build toolchain.
+
+**Prevention:** For allocation-sensitive formatting, use explicit span
+formatting APIs such as `TryFormat` rather than relying on interpolated-string
+lowering. Run allocation tests with the minimum supported SDK as well as the
+current SDK before claiming the path is allocation-free.
+
 ### 0z1773. Regenerate The API Surface Inventory After Adding Controller Routes (2026-10-12)
 
 **What went wrong:** New retained-log API actions were added to `LogsController`,
