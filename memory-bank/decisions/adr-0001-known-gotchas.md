@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1771. Avoid MVC Action Names That Collide With ControllerBase (2026-10-12)
+
+**What went wrong:** A log-history action named `File` made reflection-based
+authorization tests fail with `AmbiguousMatchException` because
+`ControllerBase` already exposes overloaded `File` methods.
+
+**Why:** `Type.GetMethod(name)` searches inherited public methods as well as
+controller actions, so an otherwise valid action name can make method lookup
+ambiguous.
+
+**Prevention:** Use action names that describe the endpoint, such as `View` or
+`Download`, and keep route templates explicit. When action names must match an
+inherited method, resolve the action by signature or MVC metadata instead of
+name alone.
+
 ### 0z1770. Track Upload Queue Lifecycles By Transfer ID (2026-10-12)
 
 **What went wrong:** Upload queue completion matched requests by username and
