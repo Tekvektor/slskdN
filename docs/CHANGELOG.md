@@ -36,6 +36,8 @@ _Add release notes here while developing; move only shipped bullets into a dated
 
 ### Changed
 
+- Maintainers can use a successful manual CI run to validate the exact main
+  commit before tagging when local test execution is unavailable.
 - Repeated audio codec profile comparisons now avoid transient string allocations.
 - Container builds now reuse web assets and system-package layers when release
   metadata changes, and no longer need a `.git` directory in the build context.
