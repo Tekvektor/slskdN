@@ -18,6 +18,7 @@ import {
   createPlan,
   discoverInventory,
   executePlan,
+  formatValidationProgress,
   globRegex,
   summarizeResult,
 } from './engine.mjs';
@@ -102,6 +103,22 @@ test('glob matching covers root and nested files without crossing sibling names'
   assert.equal(nested.test('src/components/a.test.jsx'), true);
   assert.equal(nested.test('src-other/a.test.js'), false);
   assert.equal(globRegex('**/*.spec.ts').test('a.spec.ts'), true);
+});
+
+test('live progress summary distinguishes completed, blocked, pending, and active tasks', () => {
+  const tasks = [
+    { id: 'passed', name: 'Passed task' },
+    { id: 'blocked', name: 'Blocked task' },
+    { id: 'running', name: 'Long task' },
+  ];
+  const results = new Map([
+    ['passed', { status: 'passed', startedAt: '2026-10-12T00:00:00.000Z' }],
+    ['blocked', { status: 'blocked' }],
+  ]);
+  assert.equal(
+    formatValidationProgress('sample', tasks, results, tasks[2], 65_000),
+    '[validation] sample: 1/3 selected tasks complete (1 passed, 0 failed, 1 blocked, 1 pending); running Long task (1m05s)',
+  );
 });
 
 test('inventory records scoped file digests and rejects empty or duplicate ownership', () => {

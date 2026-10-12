@@ -17,6 +17,7 @@ export const validation = {
     'scripts/validation-engine/config.mjs',
     'scripts/validation-engine/engine.test.mjs',
     'scripts/validate-development.mjs',
+    'docs/dev/testing-policy.md',
   ],
   requiredCommands: ['git', 'bash', 'rg', 'jq', 'python3'],
   runtimes: [

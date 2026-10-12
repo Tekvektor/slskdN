@@ -22,6 +22,7 @@ export const ENGINE_VERSION = 1;
 const ENGINE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(ENGINE_DIR, '..', '..');
 const MAX_BUFFER = 8 * 1024 * 1024;
+const PROGRESS_INTERVAL_MS = 60_000;
 const IGNORED_DIRS = new Set([
   '.git',
   '.next',
@@ -54,6 +55,24 @@ function stable(value) {
     ).join(',') + '}';
   }
   return JSON.stringify(value);
+}
+
+function formatElapsed(milliseconds) {
+  const seconds = Math.floor(milliseconds / 1000);
+  return `${Math.floor(seconds / 60)}m${String(seconds % 60).padStart(2, '0')}s`;
+}
+
+export function formatValidationProgress(repository, tasks, results, currentTask = null, elapsedMs = 0) {
+  const receipts = tasks.map((task) => results.get(task.id)).filter(Boolean);
+  const passed = receipts.filter((receipt) => receipt.status === 'passed').length;
+  const failed = receipts.filter((receipt) => ['failed', 'incomplete'].includes(receipt.status)).length;
+  const blocked = receipts.filter((receipt) => ['blocked', 'not-run'].includes(receipt.status)).length;
+  const completed = passed + failed;
+  const pending = Math.max(0, tasks.length - completed - blocked);
+  const active = currentTask
+    ? `; running ${currentTask.name ?? currentTask.id} (${formatElapsed(elapsedMs)})`
+    : '';
+  return `[validation] ${repository}: ${completed}/${tasks.length} selected tasks complete (${passed} passed, ${failed} failed, ${blocked} blocked, ${pending} pending)${active}`;
 }
 
 function git(root, args) {
@@ -572,7 +591,18 @@ export async function executePlan(root, config, plan, options = {}) {
   }
 
   let sourceChanged = false;
-  for (const task of plan.tasks.filter((item) => item.selected)) {
+  const selectedTasks = plan.tasks.filter((item) => item.selected);
+  const reportProgress = (currentTask = null, taskStartedAt = 0) => {
+    if (typeof options.onProgress !== 'function') return;
+    options.onProgress(formatValidationProgress(
+      config.repository,
+      selectedTasks,
+      receiptById,
+      currentTask,
+      currentTask ? Date.now() - taskStartedAt : 0,
+    ));
+  };
+  for (const task of selectedTasks) {
     const dependencyReceipts = (task.dependsOn ?? []).map((id) => receiptById.get(id));
     const failedDependency = dependencyReceipts.find((item) => item?.status !== 'passed');
     if (failedDependency) {
@@ -582,6 +612,7 @@ export async function executePlan(root, config, plan, options = {}) {
         reason: 'dependency did not pass',
         required: task.required !== false,
       });
+      reportProgress();
       continue;
     }
     if (captureCandidate(root, config.inputs ?? [], {
@@ -594,22 +625,33 @@ export async function executePlan(root, config, plan, options = {}) {
         reason: 'candidate source changed after planning',
         required: task.required !== false,
       });
+      reportProgress();
       break;
     }
     const configuredTask = config.tasks.find((item) => item.id === task.id);
     if (!configuredTask) fail('Selected task is missing from the registered configuration: ' + task.id);
-    const taskReceipt = await runCommand(
-      configuredTask,
-      root,
-      path.join(runRoot, task.id + '.log'),
-      options
-    );
+    const taskStartedAt = Date.now();
+    reportProgress(task, taskStartedAt);
+    const heartbeat = setInterval(() => reportProgress(task, taskStartedAt), PROGRESS_INTERVAL_MS);
+    heartbeat.unref();
+    let taskReceipt;
+    try {
+      taskReceipt = await runCommand(
+        configuredTask,
+        root,
+        path.join(runRoot, task.id + '.log'),
+        options
+      );
+    } finally {
+      clearInterval(heartbeat);
+    }
     taskReceipt.inventory = (configuredTask.inventoryLanes ?? []).map((lane) => ({
       lane,
       discoveredFiles: plan.inventoryCounts[lane] ?? 0,
       inventorySha256: plan.inventoryLaneDigests[lane],
     }));
     receiptById.set(task.id, taskReceipt);
+    reportProgress();
     if (captureCandidate(root, config.inputs ?? [], {
       entries: plan.inventory,
     }).sourceSha256 !== plan.candidate.sourceSha256) {
@@ -655,6 +697,7 @@ export async function executePlan(root, config, plan, options = {}) {
     tasks,
     totals,
   };
+  reportProgress();
   writeFileSync(path.join(runRoot, 'receipt.json'), JSON.stringify(receipt, null, 2), { mode: 0o600 });
   return { receipt, runRoot, exitCode: status === 'passed' ? 0 : 1 };
 }
@@ -721,7 +764,9 @@ export async function main(argv = process.argv.slice(2), root = DEFAULT_ROOT, co
         plan.prerequisites.length + ' command prerequisites available.\n');
     return 0;
   }
-  const result = await executePlan(root, loaded, plan);
+  const result = await executePlan(root, loaded, plan, {
+    onProgress: (summary) => process.stderr.write(summary + '\n'),
+  });
   process.stdout.write(JSON.stringify(summarizeResult(loaded.repository, result), null, 2) + '\n');
   return result.exitCode;
 }
