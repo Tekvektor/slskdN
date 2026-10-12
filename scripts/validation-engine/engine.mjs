@@ -420,9 +420,11 @@ export function createPlan(root, config, options = {}) {
       cwd: task.cwd ?? '.',
       casePattern: task.casePattern ?? null,
       minimumCases: task.minimumCases ?? null,
+      browserCache: task.browserCache ?? null,
       envKeys: [...new Set([
         ...Object.keys(task.env ?? {}),
         ...(task.passEnv ?? []),
+        ...(task.browserCache === 'playwright' ? ['PLAYWRIGHT_BROWSERS_PATH'] : []),
       ])].sort(),
       inventoryLanes: task.inventoryLanes ?? [],
     })),
@@ -434,6 +436,9 @@ export function createPlan(root, config, options = {}) {
 export function isolatedTaskEnvironment(task, runRoot, inherited = process.env) {
   if (typeof task?.id !== 'string' || !/^[a-z0-9][a-z0-9-]*$/.test(task.id)) {
     fail('Validation task ID must be a safe lowercase identifier.');
+  }
+  if (task.browserCache !== undefined && task.browserCache !== 'playwright') {
+    fail('Validation task requests an unsupported browser cache: ' + task.id);
   }
   const env = inheritedToolchainEnvironment(inherited);
   const approvedPassEnv = APPROVED_TASK_PASS_ENVIRONMENT.get(task.id) ?? new Set();
@@ -474,6 +479,10 @@ export function isolatedTaskEnvironment(task, runRoot, inherited = process.env) 
     DOTNET_NOLOGO: '1',
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1',
   });
+  if (task.browserCache === 'playwright') {
+    const cacheRoot = inherited.RUNNER_TEMP || inherited.TMPDIR || inherited.TEMP || os.tmpdir();
+    env.PLAYWRIGHT_BROWSERS_PATH = path.join(path.resolve(cacheRoot), 'slskdn-playwright-browsers');
+  }
   if (task.kind === 'test') env.NODE_ENV = 'test';
   return env;
 }
