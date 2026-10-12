@@ -7313,4 +7313,4 @@ resource completion.
 - [x] Pass the focused engine contracts and sandbox canaries.
 - [x] Run the release-note preview, focused engine contracts, sandbox canaries,
   and GitHub target verification.
-- [ ] Push the complete security batch to `main` without creating a release tag.
+- [x] Push the slskdnN security batch to `main` at `ec97d781d`; no release tag created.
