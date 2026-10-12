@@ -32,6 +32,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Changed
 
+- Container builds now reuse web assets and system-package layers when release
+  metadata changes, and no longer need a `.git` directory in the build context.
 - Default log retention is 14 days, with a minimum of 2 days. Operators who
   set one day must increase `retention.logs`.
 
