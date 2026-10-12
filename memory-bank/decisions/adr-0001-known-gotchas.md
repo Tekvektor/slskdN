@@ -41165,3 +41165,17 @@ not help the earlier SDK bootstrap.
 **Prevention:** Set `TMPDIR: ${{ runner.temp }}` directly on every
 `actions/setup-dotnet` step in workflows that can use the persistent Linux
 runner. Keep the SDK pin unchanged and guard this workflow contract.
+
+### 0z1771. Export Runner Temporary Storage For The Whole Self-Hosted Job (2026-10-12)
+
+**What went wrong:** A .NET build on the persistent Linux runner still failed
+after the `setup-dotnet` action was pointed at runner storage. The build ran in
+a later step without `TMPDIR` and fell back to the full shared `/tmp`.
+
+**Why:** A step-level `env` applies only to that action step; it does not change
+the environment for later build, test, or compiler processes.
+
+**Prevention:** In the first step of every Linux self-hosted job, verify
+`RUNNER_TEMP` exists and is writable, then export `TMPDIR` through
+`GITHUB_ENV`. Keep a workflow regression that checks every eligible job starts
+with this fail-closed setup.
