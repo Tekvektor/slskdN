@@ -27,6 +27,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 - The Launchpad PPA publication waiter now queries by binary package name and
   checks the exact version locally, avoiding stale version-filtered API
   responses after a binary is published.
+- CI .NET setup now stages SDK downloads in the job-scoped temp directory,
+  so a full shared system temporary directory does not block builds.
 
 ### Security
 
