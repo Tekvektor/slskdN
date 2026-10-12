@@ -20,6 +20,20 @@ pooled connection is required, clear that database's specific pool only after
 its connections are closed. Keep cleanup verification on Windows as well as
 POSIX.
 
+### 0z1776. Warm Allocation Tests Through The Measured Instance (2026-10-12)
+
+**What went wrong:** A cache-statistics allocation test warmed the method on a
+different instance with an empty cache. The measured call therefore included
+the first nonempty expired-entry cleanup pass in its allocation measurement.
+
+**Why:** Calling the same method is not enough when its allocation-sensitive
+work depends on cache state. The warm-up must exercise cleanup on the instance
+whose allocation is measured.
+
+**Prevention:** Seed and remove one expired entry on the measured instance
+before populating the large mixed cache. Keep the allocation measurement around
+the real cleanup and statistics pass, and retain the existing allocation cap.
+
 ### 0z1770. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
 **What went wrong:** Public pull-request workflows and manual dispatches from
