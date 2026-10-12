@@ -22,7 +22,7 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
-_Add release notes here while developing; move only shipped bullets into a dated version section when a release is cut._
+- Repeated audio codec profile comparisons now avoid transient string allocations.
 
 ## [2026101222-slskdn.350] — 2026-10-12
 
