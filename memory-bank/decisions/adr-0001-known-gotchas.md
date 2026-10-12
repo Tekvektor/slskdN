@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1769. Run Candidate Validation Tests Inside A Trusted Outer Sandbox (2026-10-12)
+
+**What went wrong:** Validation tasks used filtered child environments and
+private temporary directories, but the test process still shared the operator's
+filesystem, service sockets, and network namespace.
+
+**Why:** Environment filtering limits inherited settings; it does not restrict
+what a test process can open or which local services it can reach.
+
+**Prevention:** For local candidate tests, copy the trusted bubblewrap launcher
+from a reviewed revision to a location outside the candidate checkout and run
+the engine through it. Require its private marker before local test tasks start,
+and keep canaries for host files, inherited secrets, service endpoints, and
+read-only dependencies.
+
 ### 0z1767. Build Validation Child Environments From An Allowlist (2026-10-12)
 
 **What went wrong:** A credential-name denylist still passed loader options,
