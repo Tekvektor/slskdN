@@ -26,6 +26,18 @@
 
 ## Active Development
 
+### Public pull-request runner isolation — 2026-10-12
+
+- [x] Route public pull-request jobs in CI and enhancement workflows to
+  GitHub-hosted runners.
+- [x] Run the Windows smoke workflow on `windows-latest`; the repository has
+  no matching self-hosted Windows runner registered.
+- [x] Limit CI token permissions globally and grant release-only write scopes
+  to the release job.
+- [ ] Complete the cross-repository runner pool design after choosing an
+  organization strategy that preserves the current GitHub account limits and
+  after local host capacity is suitable for more concurrency.
+
 ### Reported database issue #352 and stable `.349` release — 2026-10-11
 
 - [x] Reproduce issue #352's transfer-table scan root cause with SQLite query

@@ -22,6 +22,11 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Security
+
+- Public pull-request validation uses GitHub-hosted runners; persistent
+  self-hosted runners are reserved for trusted repository events.
+
 ### Fixed
 
 - The Launchpad PPA publication waiter now queries by binary package name and

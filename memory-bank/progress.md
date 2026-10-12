@@ -18973,3 +18973,12 @@ The slskdnN security batch is pushed to `main` at `ec97d781d`. Focused Node
 engine contracts, including the host file, secret, network, dependency, and
 writable workspace canaries, pass inside the trusted launcher. The release-note
 preview and `scripts/verify-github-target.sh` pass. No release tag was created.
+## Update 2026-10-12 — Isolate public PRs from persistent Actions runners
+
+SLSKDN's main CI and enhancement workflows now route public pull requests to
+GitHub-hosted runners. The Windows smoke workflow uses `windows-latest`, since
+no matching self-hosted Windows runner is registered. The main CI workflow now
+defaults to read-only `GITHUB_TOKEN` permissions and grants release publishing
+scopes only to the release job. Cross-repository runner pooling remains open
+pending an organization/runner-scope decision and recovery of local host
+capacity.

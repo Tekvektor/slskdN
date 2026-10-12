@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1770. Keep Public Pull Requests Off Persistent Runners (2026-10-12)
+
+**What went wrong:** Public pull-request workflows selected persistent
+self-hosted runners from a repository preference variable. A pull request could
+therefore run contributor-controlled code on a long-lived host with access to
+its local environment and Docker service.
+
+**Why:** Runner selection checked the preference variable but did not account
+for the triggering event. The same expression was copied into the normal CI,
+performance, load, dependency, and container workflows.
+
+**Prevention:** Route every public `pull_request` event to a GitHub-hosted
+runner explicitly. Audit all workflow files for self-hosted labels, scope
+`GITHUB_TOKEN` permissions to the jobs that need them, and use hosted runners
+when no matching local runner is registered.
+
 ### 0z1769. Run Candidate Validation Tests Inside A Trusted Outer Sandbox (2026-10-12)
 
 **What went wrong:** Validation tasks used filtered child environments and

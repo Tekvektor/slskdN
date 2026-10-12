@@ -1,3 +1,24 @@
+## Current state — Public PR runner isolation and CI capacity review — 2026-10-12
+
+Public pull-request workflows in the SLSKDN CI, enhancement, and Windows smoke
+files now select GitHub-hosted runners. The main CI token defaults to read-only;
+release publishing gets its required write scopes in the release job. Focused
+workflow syntax, trigger-policy, identity, diff, and release-note checks pass.
+No full test suite was run for this workflow-only change.
+
+Cross-repository runner pooling is still pending. All repositories remain under
+the existing personal account while its hosted-runner concurrency tier is
+unknown. The local CI hosts are under heavy load and already have active SLSKDN
+and TorrentNG jobs, so no runner agents or additional local test load were
+added. Standard hosted runner minutes remain free for the public repositories.
+
+### Next Steps
+
+- Keep public pull-request workloads on hosted runners.
+- Reassess local host capacity before adding project-specific runner agents.
+- Confirm the account concurrency plan and organization destination before any
+repository transfer or shared organization runner setup.
+
 ## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 
 Issue #352 is fixed and closed. Active transfer lookups use matching SQLite
