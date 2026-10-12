@@ -19238,10 +19238,10 @@ filters secret and local configuration files, hides host home/service/network
 surfaces, and mounts dependencies read-only. Tests verify marker matching and
 host file/TCP/Unix socket isolation. The existing environment-isolation branch
 changes are included. The sandbox changes and release-note fragment are
-committed locally; release-note preview, focused engine contracts, and GitHub
-target verification pass. Pushes to `main` remain.
+committed and pushed to `main` at `ec97d781d`; release-note preview, focused
+engine contracts, and GitHub target verification pass.
 
 Focused validation-engine and sandbox tests pass. The full local gate is not
 verified because this host's package managers, SDKs, and caches are installed
-under the operator home, which the launcher deliberately hides. Do not create a
-release tag.
+under the operator home, which the launcher deliberately hides. No release tag
+was created.
