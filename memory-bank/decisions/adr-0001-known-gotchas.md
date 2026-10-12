@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1773. Regenerate The API Surface Inventory After Adding Controller Routes (2026-10-12)
+
+**What went wrong:** New retained-log API actions were added to `LogsController`,
+but the checked-in route inventory still reported only its original action.
+
+**Why:** Controller edits do not update the generated API surface inventory
+automatically, so new routes can be omitted from the documented security and
+compatibility review surface.
+
+**Prevention:** After adding or changing controller routes, run
+`scripts/generate-route-inventory.sh docs/system-surfaces-current.md` and
+`scripts/check-route-inventory.sh`; include the generated inventory with the
+controller change.
+
 ### 0z1772. Ignore Stale Log Preview Requests (2026-10-12)
 
 **What went wrong:** A retained-log preview request can finish after its modal
