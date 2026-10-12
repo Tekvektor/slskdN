@@ -144,9 +144,9 @@ for task_id in \
     expect_literal scripts/validation-engine/config.mjs "id: '$task_id'"
 done
 reject_literal packaging/scripts/run-release-gate.sh 'timeout --preserve-status'
-expect_literal .github/workflows/ci.yml 'TMPDIR: ${{ runner.temp }}'
-expect_literal .github/workflows/e2e-tests.yml 'TMPDIR: ${{ runner.temp }}'
-expect_literal .github/workflows/build-on-tag.yml 'TMPDIR: ${{ runner.temp }}'
+# Validate the job-wide, fail-closed runner-temp setup instead of requiring a
+# step-scoped TMPDIR value that cannot reach later build and test steps.
+bash scripts/check-dotnet-runtime-matrix.sh
 expect_literal .github/workflows/ci.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
 expect_literal .github/workflows/e2e-tests.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
 expect_literal .github/workflows/build-on-tag.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
