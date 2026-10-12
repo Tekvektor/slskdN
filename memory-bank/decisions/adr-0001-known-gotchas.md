@@ -4,6 +4,18 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1765. Compare Actor Identifiers Without Folding URL Paths (2026-10-12)
+
+**What went wrong:** Actor-to-key binding compared entire identifiers without
+case sensitivity, allowing distinct case-sensitive actor paths to match.
+
+**Why:** Hostnames are case-insensitive, but actor identifiers also include URL
+paths. Applying a hostname comparison to the full identity conflates accounts.
+
+**Prevention:** Require the exact advertised actor identifier at signature and
+nested ownership boundaries. Test a signed request naming a different-case
+actor path, including a nested Follow carrying that same forged identity.
+
 ### 0z1764. Preserve ActivityPub Wire Names At The Bounded Inbox Parser (2026-10-12)
 
 **What went wrong:** Correctly signed ActivityPub JSON with lowercase actor,
