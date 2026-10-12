@@ -537,7 +537,8 @@ const TransferTable = ({
         </div>
       )}
       <div aria-label="Transfers" aria-rowcount={sorted.length} className="transfer-grid" ref={gridRef} role="grid">
-        <div className="transfer-header-row" role="row" style={{ gridTemplateColumns: headerTemplate, display: 'grid' }}>
+        {/* Same .transfer-row spacing (column-gap/padding) as the data rows, or every column drifts 6px further right */}
+        <div className="transfer-row transfer-header-row" role="row" style={{ gridTemplateColumns: headerTemplate, display: 'grid' }}>
           <div className="transfer-cell transfer-cell-check" role="columnheader">
             <Checkbox
               aria-label="Select all transfers"

@@ -139,6 +139,17 @@ describe('TransferTable', () => {
     username: 'peer-one',
   };
 
+  it('gives the header row the same grid spacing class as the data rows', () => {
+    const { container } = renderTable([completedTransfer]);
+
+    const header = container.querySelector('.transfer-header-row');
+    const row = container.querySelector('.transfer-row:not(.transfer-header-row)');
+
+    // .transfer-row carries column-gap and padding; without it the header drifts left of the rows column by column
+    expect(header.classList.contains('transfer-row')).toBe(true);
+    expect(header.style.gridTemplateColumns).toBe(row.style.gridTemplateColumns);
+  });
+
   it('aligns numeric headers the same way as their cells', () => {
     const { container } = renderTable([completedTransfer]);
 
