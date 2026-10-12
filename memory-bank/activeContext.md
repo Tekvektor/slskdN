@@ -1,10 +1,11 @@
 ## Current state — Public PR runner isolation and CI capacity review — 2026-10-12
 
 Public pull-request workflows in the SLSKDN CI, enhancement, and Windows smoke
-files now select GitHub-hosted runners. The main CI token defaults to read-only;
-release publishing gets its required write scopes in the release job. Focused
-workflow syntax, trigger-policy, identity, diff, and release-note checks pass.
-No full test suite was run for this workflow-only change.
+files now select GitHub-hosted runners. Manual dispatches from refs other than
+`main` also use hosted runners. The main CI token defaults to read-only; release
+publishing gets its required write scopes in the release job. Focused workflow
+syntax, trigger-policy, identity, diff, and release-note checks pass. No full
+test suite was run for this workflow-only change.
 
 Cross-repository runner pooling is still pending. All repositories remain under
 the existing personal account while its hosted-runner concurrency tier is

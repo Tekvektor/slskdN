@@ -22,7 +22,7 @@ jobs:
     name: Build and Test
     # Public pull requests always use GitHub-hosted runners. Self-hosted runners
     # are reserved for trusted tag and manual runs.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
     timeout-minutes: 120
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -161,7 +161,7 @@ jobs:
   
   publish:
     name: Publish
-    runs-on: ${{ vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     strategy:
@@ -209,7 +209,7 @@ jobs:
   
   docker:
     name: Build Docker Image
-    runs-on: ${{ vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     env:
@@ -321,7 +321,7 @@ jobs:
 
   release:
     name: Create Release
-    runs-on: ${{ vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
     needs: [build, publish, docker]
     if: startsWith(github.ref, 'refs/tags/')
     permissions:

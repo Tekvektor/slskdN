@@ -30,6 +30,7 @@
 
 - [x] Route public pull-request jobs in CI and enhancement workflows to
   GitHub-hosted runners.
+- [x] Route manual dispatches from non-main refs to GitHub-hosted runners.
 - [x] Run the Windows smoke workflow on `windows-latest`; the repository has
   no matching self-hosted Windows runner registered.
 - [x] Limit CI token permissions globally and grant release-only write scopes
