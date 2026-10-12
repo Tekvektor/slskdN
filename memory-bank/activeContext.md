@@ -19230,3 +19230,17 @@ pushed.
 Run repository lint, validate and preview the release note after committing,
 then integrate this branch carefully with the existing validation-progress PR.
 No publication has been performed.
+## Current state — Trusted local validation sandbox — 2026-10-12
+
+The validation engine now requires the trusted outer bubblewrap marker before
+local test tasks execute. The launcher creates a disposable source snapshot,
+filters secret and local configuration files, hides host home/service/network
+surfaces, and mounts dependencies read-only. Tests verify marker matching and
+host file/TCP/Unix socket isolation. The existing environment-isolation branch
+changes are included; the trusted sandbox security commit and the release-note
+preview remain to be completed before pushing to `main`.
+
+Focused validation-engine and sandbox tests pass. The full local gate is not
+verified because this host's package managers, SDKs, and caches are installed
+under the operator home, which the launcher deliberately hides. Do not create a
+release tag.

@@ -58,6 +58,18 @@ node scripts/validate-development.mjs --task browser-e2e
 node scripts/validate-development.mjs --task web-browser-e2e
 ```
 
+Local execution of test tasks requires the trusted Linux bubblewrap launcher.
+When evaluating an unreviewed branch, copy `trusted-test-launcher.mjs` from a
+reviewed revision to a location outside the checkout and run:
+
+```bash
+node /path/to/trusted-test-launcher.mjs "$PWD" -- node scripts/validate-development.mjs --tests-only
+```
+
+Run planning for an unreviewed candidate through that launcher too, because
+planning imports its validation configuration. GitHub Actions remains
+responsible for hosted validation.
+
 `--plan` discovers test files, records the Git candidate and supported runtime
 versions, and reports command availability. It does not execute tests.
 `--tests-only` runs registered unit, regression, integration-smoke, release-note,

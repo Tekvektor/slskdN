@@ -18953,3 +18953,18 @@ E2E tasks remain separately excluded by policy. Node 24.21.0, pnpm 12.4.1,
 .NET 10.0.401, and Python 3.14.8 match the declared runtime matrix. The first
 attempt hit a full `/tmp` tmpfs; the successful run used disk-backed temporary
 storage.
+## Update 2026-10-12 — Trusted outer sandbox for local validation
+
+Local validation tasks now require a private marker from the trusted Linux
+bubblewrap launcher. The launcher snapshots candidate source, removes ambient
+credentials and local configuration, hides the operator home, temporary files,
+service sockets, and network, and mounts dependency directories read-only. The
+launcher contract checks that host files and TCP/Unix endpoints stay
+unreachable, secrets are not inherited, and only the disposable workspace is
+writable. Focused engine and sandbox tests pass across the six sibling repos.
+
+The runner's full `--tests-only` gate was not run in this local sandbox: several
+repository toolchains and package caches are installed beneath the operator
+home, which the sandbox intentionally hides. The repository-specific engine
+contracts and unit tests were run directly inside the sandbox. No release tag
+was created.

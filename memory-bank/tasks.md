@@ -7303,3 +7303,13 @@ resource completion.
   7,303 active cases, with the three browser E2E suites separately excluded by
   policy. This covers all tests-only tasks and adds the repository checks and
   web build/output checks.
+## Trusted local validation sandbox — 2026-10-12
+
+- [x] Import today's validation environment-isolation commits and gotcha notes.
+- [x] Add a trusted bubblewrap boundary for local validation tasks, with a
+  read-only candidate workspace dependency mount and marker verification.
+- [x] Add contract canaries for host files, ambient environment values, TCP and
+  Unix sockets, disposable workspace writes, and read-only dependencies.
+- [x] Pass the focused engine contracts and sandbox canaries.
+- [ ] Run release-note preview and repository checks, then commit and push the
+  complete security batch to `main` without creating a release tag.
