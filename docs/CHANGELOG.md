@@ -24,9 +24,16 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Added
 
+- System Logs now lets administrators browse, preview, and download retained
+  daily log files.
 - An optional MTU cap can limit TCP segment size for the Soulseek server
   connection on networks where packet sizing causes connection stalls. It is
   disabled by default.
+
+### Changed
+
+- Default log retention is 14 days, with a minimum of 2 days. Operators who
+  set one day must increase `retention.logs`.
 
 ### Fixed
 

@@ -185,6 +185,26 @@
   gap: 0.5rem;
 }
 
+.logs-history-actions,
+.logs-history-row-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.logs-history-name {
+  overflow-wrap: anywhere;
+}
+
+.logs-history-preview {
+  font-family: var(--slskd-monospace-font, monospace);
+  font-size: 0.85rem;
+  margin: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 @media only screen and (max-width: 516px) {
   .system-jobs-dashboard .system-jobs-filters > .ui.dropdown {
     flex: 1 1 100%;
