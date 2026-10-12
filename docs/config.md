@@ -927,6 +927,21 @@ soulseek:
       transfer: 60000
 ```
 
+### Server MTU
+
+The optional `mtu` value caps the TCP segment size used for the Soulseek server connection. Leave it unset to use the operating system default. Systems with jumbo frames enabled can try `1500` if the server connection stalls; the setting applies to the server connection only.
+
+| Command-Line | Environment Variable | Description |
+| --- | --- | --- |
+| `--slsk-connection-mtu` | `SLSKD_SLSK_CONNECTION_MTU` | Optional server TCP MTU cap; valid values are 1280 through 9000 |
+
+#### **YAML**
+```yaml
+soulseek:
+  connection:
+    mtu: 1500 # optional; remove or use null for the operating system default
+```
+
 ### Buffers
 
 Buffer options control the application's internal buffer to batch socket reads and writes. The host Operating System controls actual socket buffer sizes (.NET is not great in this department currently, and the behavior is not consistent cross-platform).

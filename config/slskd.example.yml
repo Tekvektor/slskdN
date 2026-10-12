@@ -475,6 +475,7 @@
 #    child_limit: 25
 #    logging: false
 #  connection:
+#    mtu: ~ # optional server TCP MTU cap (1280-9000); unset uses the operating system default
 #    timeout:
 #      connect: 10000
 #      inactivity: 60000

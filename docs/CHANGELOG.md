@@ -22,6 +22,12 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Added
+
+- An optional MTU cap can limit TCP segment size for the Soulseek server
+  connection on networks where packet sizing causes connection stalls. It is
+  disabled by default.
+
 ### Fixed
 
 - Queued uploads now cancel promptly while waiting, release only their own

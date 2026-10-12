@@ -2891,6 +2891,15 @@ namespace slskd
             public class ConnectionOptions
             {
                 /// <summary>
+                ///     Gets an optional path MTU cap for the Soulseek server TCP connection. Null uses the operating system default.
+                /// </summary>
+                [Argument(default, "slsk-connection-mtu")]
+                [EnvironmentVariable("SLSK_CONNECTION_MTU")]
+                [Description("optional MTU cap for the Soulseek server TCP connection")]
+                [Range(1280, 9000)]
+                public int? Mtu { get; init; }
+
+                /// <summary>
                 ///     Gets connection timeout options.
                 /// </summary>
                 [Validate]
