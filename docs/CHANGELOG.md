@@ -36,8 +36,9 @@ For dev or build tags, use the same logical version string embedded in the tag.
   write scopes declared by workflows that publish.
 
 - Third-party workflow actions are pinned to verified commit SHAs. Dependency
-  and container scans now fail when they find high or critical vulnerabilities,
-  and required test failures are no longer hidden as successful runs.
+  scans fail on high or critical vulnerabilities, while the container scan
+  blocks high or critical findings with available fixes. Required test failures
+  are no longer hidden as successful runs.
 
 - Manual CI runs can select a GitHub-hosted runner while tag builds retain the
   configured runner policy.
