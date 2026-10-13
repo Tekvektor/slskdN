@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1817. Probe Runtimes With Private Tool Homes (2026-10-13)
+
+**What went wrong:** The validation plan reported the installed .NET SDK as
+unavailable inside the trusted sandbox because the runtime version probe
+discarded `DOTNET_CLI_HOME` and inherited no usable home directory.
+
+**Why:** Runtime probing used the restricted toolchain environment without
+creating the private home directories that task execution already provides.
+
+**Prevention:** Give every runtime probe a fresh private home, temporary,
+XDG, and .NET CLI directory. Remove that directory after probing, and test the
+probe with a fake runtime that verifies operator paths and unrelated variables
+are not inherited.
+
 ### 0z1807. Budget E2E Timeouts For Sequential Capability Lifetimes (2026-10-13)
 
 **What went wrong:** A browser test waited for a two-minute stream ticket to
