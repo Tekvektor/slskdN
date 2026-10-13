@@ -22,16 +22,17 @@ main process.
 ### 0z1794. Exclude Non-Source Files Under Credential Directories (2026-10-12)
 
 **What went wrong:** Credential-like files without a recognized extension,
-such as `credentials/private-key`, were still copied into the local test
-sandbox.
+such as `credentials/private-key`, and environment-style credential files such
+as `tokens.env` were still copied into the local test sandbox.
 
 **Why:** The filter checked credential names at the file boundary but did not
 treat a credential-named parent directory as sensitive, while a broad directory
 rule would also hide legitimate source files such as `tokens/index.ts`.
 
 **Prevention:** Exclude files inside credential-named directories unless their
-file extension is on the explicit source-code allowlist. Keep tests for both
-credential data and source files beneath token/authentication directories.
+file extension is on the explicit source-code allowlist. Recognize environment
+credential suffixes as well as extensionless credential names. Keep tests for
+both credential data and source files beneath token/authentication directories.
 
 ### 0z1792. Pin Sandbox Mount Sources Before Applying Host Masks (2026-10-12)
 
@@ -62,20 +63,6 @@ those files from extensionless credential data.
 credential/config extensions, while allowing source files with unrelated
 extensions. Keep contract tests for both credential files and token-named
 source code.
-
-### 0z1792. Filter Credential Folders Without Hiding Their Source Files (2026-10-13)
-
-**What went wrong:** The sandbox filter matched credential names only at the
-file leaf, so extensionless files and environment-style credentials nested in
-credential folders could still enter the source snapshot.
-
-**Why:** Preserving code such as `token.js` and `tokens.rs` narrowed matching
-to known credential filenames, but the matcher did not distinguish data files
-inside credential folders from source files stored there.
-
-**Prevention:** Recognize `.env` credential variants and non-source files under
-credential-named folders while retaining source-language files. Test the
-filtered snapshot itself for both hidden credentials and retained source.
 
 ### 0z1787. Pin Actions Before Enabling SHA-Only Repository Policy (2026-10-13)
 
