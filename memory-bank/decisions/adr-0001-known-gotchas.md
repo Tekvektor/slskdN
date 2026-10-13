@@ -37,6 +37,19 @@ validated and served from.
 directory. Create an empty `wwwroot` beside the built assembly before startup,
 and keep the service loopback-only with DHT and Soulseek connections disabled.
 
+### 0z1789. Keep Release Fragment Bodies Within Their Validator Limit (2026-10-13)
+
+**What went wrong:** Adding the publisher-recovery behavior to an existing CI
+release fragment made its body longer than the 400-character limit, so the
+release-note preview rejected the change.
+
+**Why:** The fragment's earlier text was valid, but the validator measures the
+whole body after edits and also requires a concise user-impact description.
+
+**Prevention:** Rerun release-note preview after editing a fragment. Keep its
+body between 30 and 400 characters while retaining the affected audience and
+the practical impact.
+
 ### 0z1786. Do Not Trust Pull Request Authors For Persistent Runners (2026-10-13)
 
 **What went wrong:** CI routed pull requests authored by `snapetech` to a
