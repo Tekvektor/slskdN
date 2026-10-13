@@ -31652,6 +31652,19 @@ the payload uses the same few types.
 first use. Add a regression that exercises repeated deserialization and
 confirms the shared instance is reused.
 
+### 0z1802. Use The Product Environment Prefix In Option Docs (2026-10-13)
+
+**What went wrong:** A new configuration reference used the fork branding in
+environment-variable names, but the application binder still requires the
+established `SLSKD_` prefix.
+
+**Why:** Option attributes specify only the setting suffix; the configuration
+provider supplies the environment prefix independently.
+
+**Prevention:** Verify each documented name against the provider prefix and a
+binding test. Keep the established prefix unless the application explicitly
+changes and tests that contract.
+
 ### 4. Copyright Headers - Wrong Company Attribution
 
 **The Rule**: New slskdN files use `company="slskdN Team"`, existing upstream files keep `company="slskd Team"`.
