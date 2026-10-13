@@ -19,6 +19,20 @@ private task log with a visible truncation marker, hash the bytes actually
 persisted, and terminate a task's process group when descendants outlive its
 main process.
 
+### 0z1794. Exclude Non-Source Files Under Credential Directories (2026-10-12)
+
+**What went wrong:** Credential-like files without a recognized extension,
+such as `credentials/private-key`, were still copied into the local test
+sandbox.
+
+**Why:** The filter checked credential names at the file boundary but did not
+treat a credential-named parent directory as sensitive, while a broad directory
+rule would also hide legitimate source files such as `tokens/index.ts`.
+
+**Prevention:** Exclude files inside credential-named directories unless their
+file extension is on the explicit source-code allowlist. Keep tests for both
+credential data and source files beneath token/authentication directories.
+
 ### 0z1792. Pin Sandbox Mount Sources Before Applying Host Masks (2026-10-12)
 
 **What went wrong:** The launcher resolved bind sources by host path after
