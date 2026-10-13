@@ -11,9 +11,10 @@ boundary.
 PR #357 already isolates runner-owned temporary storage in Linux self-hosted
 jobs and scopes release write permissions to the publisher. This follow-up
 removes blanket failure suppression from the test and scan workflow, pins its
-external actions, and makes high/critical dependency and image findings fail
-their scan jobs. The standalone load harness remains on hosted Linux after the
-prior local SIGBUS.
+external actions across workflows, and makes high/critical dependency and image
+findings fail their scan jobs. The repository's default workflow token is now
+read-only. The standalone load harness remains on hosted Linux after the prior
+local SIGBUS.
 
 The merged `68b36d3` validation run executed 15/15 tasks and failed two checks
 because `main` advanced during the run; the release-branch-sync check and the

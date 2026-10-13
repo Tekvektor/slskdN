@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1784. Default GitHub Actions Tokens to Read Only (2026-10-13)
+
+**What went wrong:** The repository default granted write access to
+`GITHUB_TOKEN`, so workflows that did not declare their own permissions
+inherited a credential broader than the checks required.
+
+**Why:** The repository setting had not been reduced as the workflow set grew.
+Explicit permissions in some workflows obscured the broader inherited default
+for the rest.
+
+**Prevention:** Set the repository default to read-only. Workflows that publish
+or otherwise write must declare their required scopes explicitly, and a policy
+check should cover every workflow plus the live repository setting.
+
 ### 0z1783. Distinguish Action SHA Pins From Version Tags (2026-10-13)
 
 **What went wrong:** The action-pin check treated valid forty-character commit
