@@ -64,6 +64,9 @@ When evaluating an unreviewed branch, copy `trusted-test-launcher.mjs` and
 outside the checkout, keeping them together. The launcher snapshots only paths
 in the Git index, hides the original checkout and common host configuration and
 data roots, and runs candidate code offline. Stage new candidate files first.
+The launcher opens each workspace, run-data, dependency, cache, and marker
+source before masking host paths, then binds those pinned sources through
+inherited file descriptors.
 
 ```bash
 node /path/to/trusted-test-launcher.mjs "$PWD" -- node scripts/validate-development.mjs --tests-only
@@ -88,7 +91,8 @@ GitHub Actions shows these live updates in the step log because rendered job
 summaries are published after the step completes.
 
 Each execution creates a fresh receipt and per-task logs in a private directory
-under the operating system's temporary directory. Receipts bind the Git commit,
+under the operating system's temporary directory. Each log is capped at 16 MiB
+and carries a marker when output was truncated. Receipts bind the Git commit,
 tree, dirty diff, untracked files, lock/workflow inputs, discovered test-file
 digests, runtime versions, and (on GitHub Actions) the workflow run and attempt.
 Test tasks pass only when their native command succeeds and reports at least
