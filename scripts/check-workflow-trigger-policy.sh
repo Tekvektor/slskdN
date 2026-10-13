@@ -58,9 +58,9 @@ done < <(find "$repo_root/.github/workflows" -maxdepth 1 -type f \( -name '*.yml
 ci_workflow="$repo_root/.github/workflows/ci.yml"
 ci_enhancements_workflow="$repo_root/.github/workflows/ci-enhancements.yml"
 for workflow in "$ci_workflow" "$ci_enhancements_workflow"; do
-  if ! rg -Fq "github.event_name == 'pull_request' && github.event.pull_request.user.login != 'snapetech'" "$workflow" ||
+  if ! rg -Fq "github.event_name == 'pull_request' ||" "$workflow" ||
     ! rg -Fq "&& 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON" "$workflow"; then
-    printf '%s must route untrusted pull requests to hosted runners while preserving explicit runner preference\n' "${workflow#"$repo_root"/}" >&2
+    printf '%s must route every pull request to hosted runners while preserving explicit runner preference\n' "${workflow#"$repo_root"/}" >&2
     failed=1
   fi
 done

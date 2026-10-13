@@ -28,12 +28,10 @@ For dev or build tags, use the same logical version string embedded in the tag.
   main CI workflow now uses read-only token permissions by default and grants
   release write access only to its release job.
 
-- Pull requests from contributors other than `snapetech` are routed to
-  GitHub-hosted runners; `snapetech` pull requests and trusted `main`
-  validation may use the configured local pool. External contributors still
-  require workflow approval, and workflow edits must be reviewed before
-  approval. The repository Actions token now defaults to read-only, with
-  write scopes declared by workflows that publish.
+- All pull request validation uses GitHub-hosted runners regardless of author.
+  Persistent local runners are reserved for trusted `main` validation. The
+  repository Actions token defaults to read-only, with write scopes declared
+  by workflows that publish.
 
 - Third-party workflow actions are pinned to verified commit SHAs. Dependency
   scans fail on high or critical vulnerabilities, while the container scan
