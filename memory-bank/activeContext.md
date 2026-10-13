@@ -1,25 +1,64 @@
-## Current state — Repair job-wide self-hosted runner temp routing — 2026-10-12 21:47 UTC
+## Current state — Trusted branch CI and runner-temp stability — 2026-10-13
 
-Follow-up PR #357 exposed that `TMPDIR` was scoped only to setup-dotnet, while
-later build and scanner steps still used shared `/tmp`. The candidate now sets
-job-wide `TMPDIR`, `TMP`, and `TEMP` from a validated runner directory in the
-first step of every Linux self-hosted CI job. It replaces hardcoded scan output
-files, rejects runner temp paths resolving to root or `/tmp`, and guards every
-such workflow job against later `/tmp` or `/var/tmp` references.
+SLSKDN runner-temp work is continuing on PR #357. The candidate validates
+runner-owned temporary storage in the first step of every Linux self-hosted job,
+exports TMPDIR, TMP, and TEMP job-wide, and updates the runtime matrix and
+packaging guard. Current main already routes public pull requests to
+GitHub-hosted runners and keeps non-main manual dispatches hosted. This
+follow-up adds trusted branch-push validation while leaving release publishing
+tag-gated.
 
-The focused workflow and shell checks, repository lint, and complete
-remediation baseline pass. The active backlog count is 12,726; the four new
-matches come from the regression guard. No hosted checks have run on this
-follow-up yet.
+The previous local PR run was not green: 13 of 14 validation tasks passed,
+with the Web unit-test task failing, and a separate load-test job exited with
+SIGBUS. The failing Web task reported failures in Contacts, Integrations, and
+Admin Policies. The load-test runner's shared /tmp was full. The workflows will
+route pull-request validation to hosted runners, keep the full .NET branch gate
+on the server runner, and run the standalone load test on GitHub-hosted Linux.
+The next exact-head checks will determine whether runner routing clears these
+failures.
 
 ### Next Steps
 
-- Commit and push the verified changes to PR #357.
-- Wait for the exact PR checks; repair any candidate-caused failures before
-  merging.
-- Verify the main-branch result and delete the merged topic branch.
+- Add all-branch push filtering to the validation workflow and pin the local
+  .NET gate to the server runner.
+- Keep public pull requests hosted and keep release/publish jobs tag-gated.
+- Rerun workflow contract checks and the current PR CI; report every failure
+  and actual execution count.
 
-## Prior state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
+## Prior state — Public PR runner isolation and CI capacity review — 2026-10-12
+
+Public pull-request workflows in the SLSKDN CI, enhancement, and Windows smoke
+files now select GitHub-hosted runners. Manual dispatches from refs other than
+`main` also use hosted runners; trusted `main` dispatches can opt into hosted
+or follow configured runner policy. The main CI token defaults to read-only;
+release publishing gets its required write scopes in the release job. Focused
+workflow syntax, trigger-policy, identity, diff, and release-note checks pass.
+
+The previously failing allocation assertion now warms expired-entry cleanup on
+the measured `DescriptorRetriever` instance, with its `<4 KiB` cap unchanged.
+The local engine planned one unit-test task but executed zero because `pnpm` and
+the .NET CLI home were unavailable. A direct filtered run also executed zero:
+the scratch package cache lacks the pinned .NET 10.0.12 reference pack. The
+fresh candidate scan reports 217 callback/event, 434 remote-text, 12,732
+red-team, and 836 mutable-ownership matches. After accounting for updated
+ledger descriptions, its only branch-added red-team match is expected
+CI-permission changelog text. PR #358 still needs hosted validation on this
+exact source before merge.
+
+Cross-repository runner pooling is still pending. All repositories remain under
+the existing personal account while its hosted-runner concurrency tier is
+unknown. The local CI hosts are under heavy load and already have active SLSKDN
+and TorrentNG jobs, so no runner agents or additional local test load were
+added. Standard hosted runner minutes remain free for the public repositories.
+
+### Next Steps
+
+- Keep public pull-request workloads on hosted runners.
+- Reassess local host capacity before adding project-specific runner agents.
+- Confirm the account concurrency plan and organization destination before any
+repository transfer or shared organization runner setup.
+
+## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 
 Issue #352 is fixed and closed. Active transfer lookups use matching SQLite
 partial indexes, completed transfer retention is bounded, and event/search
@@ -19266,3 +19305,25 @@ Focused validation-engine and sandbox tests pass. The full local gate is not
 verified because this host's package managers, SDKs, and caches are installed
 under the operator home, which the launcher deliberately hides. No release tag
 was created.
+
+## Current state — Stable `.350` release validation — 2026-10-12
+
+Upload queue cancellation and capacity forecasts are consistent by transfer
+ID. System Logs exposes retained daily files, retention is bounded at two days,
+and the optional server MTU cap remains disabled by default. Docker version
+changes reuse the web and system-package layers; public pull requests use
+GitHub-hosted runners. Codec matching is allocation-free across supported SDKs,
+and full-instance tests reserve distinct ports.
+
+The full .NET suite passes 6,145 tests, the Web suite passes 1,295 tests, and
+`./bin/lint` passes. The Release build has zero warnings and errors. The
+retained-log Playwright regression passes against that build. The no-`.git`
+Docker build, container version smoke, and version-change cache check pass.
+Release-note preview, local identity scan, route inventory, and GitHub target
+verification pass.
+
+### Next Steps
+
+Fetch and verify current `origin/main`, push the validated tree to
+`snapetech/slskdN/main`, create the authorized stable `.350` tag, verify hosted
+release publishers and artifacts, then remove task-scoped scratch data.

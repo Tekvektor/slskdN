@@ -20,6 +20,7 @@
 // </copyright>
 namespace slskd.Core.API
 {
+    using System.IO;
     using System.Linq;
     using Asp.Versioning;
     using Microsoft.AspNetCore.Authorization;
@@ -46,6 +47,53 @@ namespace slskd.Core.API
         public IActionResult Logs()
         {
             return Ok(Program.LogBuffer.ToArray());
+        }
+
+        /// <summary>
+        ///     Lists retained daily application log files.
+        /// </summary>
+        [HttpGet("files")]
+        [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)]
+        public IActionResult Files()
+        {
+            Response.Headers.CacheControl = "no-store";
+            return Ok(LogFileCatalog.List(Program.LogDirectory, Program.AppName));
+        }
+
+        /// <summary>
+        ///     Reads a retained application log file.
+        /// </summary>
+        /// <param name="fileName">The log file name.</param>
+        [HttpGet("files/{fileName}")]
+        [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)]
+        [Produces("text/plain")]
+        public IActionResult View(string fileName)
+        {
+            if (!LogFileCatalog.TryResolve(Program.LogDirectory, Program.AppName, fileName, out var path))
+            {
+                return NotFound();
+            }
+
+            Response.Headers.CacheControl = "no-store";
+            return PhysicalFile(path, "text/plain; charset=utf-8", enableRangeProcessing: true);
+        }
+
+        /// <summary>
+        ///     Downloads a retained application log file.
+        /// </summary>
+        /// <param name="fileName">The log file name.</param>
+        [HttpGet("files/{fileName}/download")]
+        [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)]
+        [Produces("text/plain")]
+        public IActionResult Download(string fileName)
+        {
+            if (!LogFileCatalog.TryResolve(Program.LogDirectory, Program.AppName, fileName, out var path))
+            {
+                return NotFound();
+            }
+
+            Response.Headers.CacheControl = "no-store";
+            return PhysicalFile(path, "text/plain", fileName, enableRangeProcessing: true);
         }
     }
 }

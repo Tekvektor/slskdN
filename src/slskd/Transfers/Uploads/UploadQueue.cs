@@ -40,40 +40,32 @@ namespace slskd.Transfers
         /// <summary>
         ///     Awaits the start of an upload.
         /// </summary>
-        /// <param name="username">The username of the remote user.</param>
-        /// <param name="filename">The filename for which to await the start.</param>
+        /// <param name="id">The unique transfer identifier.</param>
+        /// <param name="cancellationToken">The cancellation token for this upload.</param>
         /// <returns>The operation context.</returns>
-        Task AwaitStartAsync(string username, string filename);
+        Task AwaitStartAsync(Guid id, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Signals the completion of an upload.
         /// </summary>
-        /// <param name="username">The username of the remote user.</param>
-        /// <param name="filename">The completed filename.</param>
-        void Complete(string username, string filename);
+        /// <param name="id">The unique transfer identifier.</param>
+        void Complete(Guid id);
 
         /// <summary>
         ///     Gracefully attempts to signal the completion of an upload, returning false if a problem is encountered
         ///     (such as the upload not being tracked currently).
         /// </summary>
-        /// <param name="username">The username of the remote user.</param>
-        /// <param name="filename">The completed filename.</param>
+        /// <param name="id">The unique transfer identifier.</param>
         /// <returns>A value indicating whether a problem was encountered.</returns>
-        bool TryComplete(string username, string filename);
+        bool TryComplete(Guid id);
 
         /// <summary>
         ///     Enqueues an upload.
         /// </summary>
+        /// <param name="id">The unique transfer identifier.</param>
         /// <param name="username">The username of the remote user.</param>
         /// <param name="filename">The filename to enqueue.</param>
-        void Enqueue(string username, string filename);
-
-        /// <summary>
-        ///     Gets information about the specified <paramref name="groupName"/>.
-        /// </summary>
-        /// <param name="groupName">The name of the group.</param>
-        /// <returns>The group information.</returns>
-        UploadGroup GetGroupInfo(string groupName);
+        void Enqueue(Guid id, string username, string filename);
 
         /// <summary>
         ///     Computes the estimated queue position of the specified <paramref name="filename"/> for the specified <paramref name="username"/>.
@@ -89,10 +81,8 @@ namespace slskd.Transfers
         ///     or zero if the transfer could start immediately.
         /// </summary>
         /// <param name="username">The username for which to estimate.</param>
-        /// <returns>
-        ///     The estimated queue position if the user were to enqueue a file, or zero if the transfer could start immediately.
-        /// </returns>
-        int ForecastPosition(string username);
+        /// <returns>A consistent snapshot of the queue position and group slot capacity.</returns>
+        UploadQueueForecast ForecastPosition(string username);
     }
 
     /// <summary>
@@ -127,6 +117,7 @@ namespace slskd.Transfers
         private IDisposable? OptionsMonitorRegistration { get; set; }
         private object SyncRoot { get; } = new object();
         private ConcurrentDictionary<string, List<Upload>> Uploads { get; set; } = new ConcurrentDictionary<string, List<Upload>>();
+        private Dictionary<Guid, Upload> UploadsById { get; } = new Dictionary<Guid, Upload>();
         private IUserService Users { get; }
 
         /// <summary>
@@ -141,36 +132,45 @@ namespace slskd.Transfers
         /// <summary>
         ///     Awaits the start of an upload.
         /// </summary>
-        /// <param name="username">The username of the remote user.</param>
-        /// <param name="filename">The filename for which to await the start.</param>
+        /// <param name="id">The unique transfer identifier.</param>
+        /// <param name="cancellationToken">The cancellation token for this upload.</param>
         /// <returns>The operation context.</returns>
-        public Task AwaitStartAsync(string username, string filename)
+        public async Task AwaitStartAsync(Guid id, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                TryComplete(id);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            Task waitTask;
             Monitor.Enter(SyncRoot);
 
             try
             {
-                if (!Uploads.TryGetValue(username, out var list))
+                if (!UploadsById.TryGetValue(id, out var upload))
                 {
-                    throw new SlskdException($"No enqueued uploads for user {username}");
-                }
-
-                var upload = list.FirstOrDefault(e => e.Filename == filename);
-
-                if (upload == default)
-                {
-                    throw new SlskdException($"File {filename} is not enqueued for user {username}");
+                    throw new SlskdException($"Upload {id} is not enqueued");
                 }
 
                 upload.Ready = DateTime.UtcNow;
                 Log.Debug("Ready: {File} for {User} at {Time}", upload.Filename, upload.Username, upload.Enqueued);
-
-                return upload.TaskCompletionSource.Task;
+                waitTask = upload.TaskCompletionSource.Task;
             }
             finally
             {
                 Monitor.Exit(SyncRoot);
                 Process();
+            }
+
+            try
+            {
+                await waitTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                TryComplete(id);
+                throw;
             }
         }
 
@@ -178,21 +178,9 @@ namespace slskd.Transfers
         ///     Gracefully attempts to signal the completion of an upload, returning false if a problem is encountered
         ///     (such as the upload not being tracked currently).
         /// </summary>
-        /// <param name="username">The username of the remote user.</param>
-        /// <param name="filename">The completed filename.</param>
+        /// <param name="id">The unique transfer identifier.</param>
         /// <returns>A value indicating whether a problem was encountered.</returns>
-        public bool TryComplete(string username, string filename)
-        {
-            try
-            {
-                Complete(username, filename);
-                return true;
-            }
-            catch (SlskdException)
-            {
-                return false;
-            }
-        }
+        public bool TryComplete(Guid id) => Remove(id);
 
         /// <summary>
         ///     Signals the completion of an upload.
@@ -200,72 +188,36 @@ namespace slskd.Transfers
         /// <remarks>
         ///     Will not throw on repeated attempts.
         /// </remarks>
-        /// <param name="username">The username of the remote user.</param>
-        /// <param name="filename">The completed filename.</param>
-        public void Complete(string username, string filename)
-        {
-            Monitor.Enter(SyncRoot);
-
-            try
-            {
-                if (!Uploads.TryGetValue(username, out var list))
-                {
-                    throw new SlskdException($"No enqueued uploads for user {username}");
-                }
-
-                var upload = list.FirstOrDefault(e => e.Filename == filename);
-
-                if (upload == default)
-                {
-                    throw new SlskdException($"File {filename} is not enqueued for user {username}");
-                }
-
-                list.Remove(upload);
-                Log.Debug("Complete: {File} for {User} at {Time}", upload.Filename, upload.Username, upload.Enqueued);
-
-                // ensure the slot is returned to the group from which it was acquired the group may have been removed during the
-                // transfer. if so, do nothing.
-                if (Groups.ContainsKey(upload.Group ?? string.Empty))
-                {
-                    var group = Groups[upload.Group ?? string.Empty];
-
-                    group.UsedSlots = Math.Max(0, group.UsedSlots - 1);
-                    Log.Debug("Group {Group} slots: {Used}/{Available}", group.Name, group.UsedSlots, group.Slots);
-                }
-
-                if (!list.Any() && Uploads.TryRemove(username, out _))
-                {
-                    Log.Debug("Cleaned up tracking list for {User}; no more queued uploads to track", username);
-                }
-            }
-            finally
-            {
-                Monitor.Exit(SyncRoot);
-                Process();
-            }
-        }
+        /// <param name="id">The unique transfer identifier.</param>
+        public void Complete(Guid id) => Remove(id);
 
         /// <summary>
         ///     Enqueues an upload.
         /// </summary>
+        /// <param name="id">The unique transfer identifier.</param>
         /// <param name="username">The username of the remote user.</param>
         /// <param name="filename">The filename to enqueue.</param>
-        public void Enqueue(string username, string filename)
+        public void Enqueue(Guid id, string username, string filename)
         {
             Monitor.Enter(SyncRoot);
 
             try
             {
-                var upload = new Upload() { Username = username, Filename = filename };
+                if (UploadsById.ContainsKey(id))
+                {
+                    throw new SlskdException($"Upload {id} is already enqueued");
+                }
 
-                Uploads.AddOrUpdate(
-                    key: username,
-                    addValue: new List<Upload>(new[] { upload }),
-                    updateValueFactory: (key, list) =>
-                    {
-                        list.Add(upload);
-                        return list;
-                    });
+                var upload = new Upload() { Id = id, Username = username, Filename = filename };
+                UploadsById.Add(id, upload);
+
+                if (!Uploads.TryGetValue(username, out var list))
+                {
+                    list = new List<Upload>();
+                    Uploads[username] = list;
+                }
+
+                list.Add(upload);
 
                 Log.Debug("Enqueued: {File} for {User} at {Time}", upload.Filename, upload.Username, upload.Enqueued);
             }
@@ -274,21 +226,6 @@ namespace slskd.Transfers
                 Monitor.Exit(SyncRoot);
                 Process();
             }
-        }
-
-        /// <summary>
-        ///     Gets information about the specified <paramref name="groupName"/>.
-        /// </summary>
-        /// <param name="groupName">The name of the group.</param>
-        /// <returns>The group information.</returns>
-        public UploadGroup GetGroupInfo(string groupName)
-        {
-            if (Groups.TryGetValue(groupName, out var group))
-            {
-                return group;
-            }
-
-            throw new NotFoundException($"A group with the name {groupName} could not be found");
         }
 
         /// <summary>
@@ -390,26 +327,26 @@ namespace slskd.Transfers
         ///     or zero if the transfer could start immediately.
         /// </summary>
         /// <param name="username">The username for which to estimate.</param>
-        /// <returns>
-        ///     The estimated queue position if the user were to enqueue a file, or zero if the transfer could start immediately.
-        /// </returns>
-        public int ForecastPosition(string username)
+        /// <returns>A consistent snapshot of the queue position and group slot capacity.</returns>
+        public UploadQueueForecast ForecastPosition(string username)
         {
             Monitor.Enter(SyncRoot);
 
             try
             {
                 var groupName = Users.GetGroup(username);
-
-                // if there's a slot available, the user will enter the queue at position 0 (will start immediately)
-                if (Groups.TryGetValue(groupName, out var groupRecord) && groupRecord.SlotAvailable)
-                {
-                    return 0;
-                }
-
-                if (groupRecord == null)
+                if (!Groups.TryGetValue(groupName, out var groupRecord))
                 {
                     throw new NotFoundException($"A group with the name {groupName} could not be found");
+                }
+
+                var totalUsedSlots = Groups.Values.Sum(group => (long)group.UsedSlots);
+                var globalSlotAvailable = totalUsedSlots < GlobalSlots;
+
+                // A group slot is useful only when the application-wide limit also has room.
+                if (groupRecord.SlotAvailable && globalSlotAvailable)
+                {
+                    return new UploadQueueForecast(0, groupRecord.Slots);
                 }
 
                 // the Uploads dictionary is keyed by username; gather all of the users that belong to the same group as the requested user
@@ -419,18 +356,63 @@ namespace slskd.Transfers
                 // rotation (worst case), the user's start position will be equal to the number of users downloading or waiting, + 1.
                 if (groupRecord.Strategy == QueueStrategy.RoundRobin)
                 {
-                    return uploadsForGroup.Count() + 1;
+                    return new UploadQueueForecast(uploadsForGroup.Count() + 1, groupRecord.Slots);
                 }
 
                 // for FIFO queues, the user will enter the queue at the very back. return the total number of uploads in progress and
                 // enqueued, + 1.
-                return uploadsForGroup
+                var position = uploadsForGroup
                     .SelectMany(group => group.Value)
                     .Count() + 1;
+                return new UploadQueueForecast(position, groupRecord.Slots);
             }
             finally
             {
                 Monitor.Exit(SyncRoot);
+            }
+        }
+
+        private bool Remove(Guid id)
+        {
+            Monitor.Enter(SyncRoot);
+
+            try
+            {
+                if (!UploadsById.Remove(id, out var upload))
+                {
+                    return false;
+                }
+
+                if (Uploads.TryGetValue(upload.Username, out var list))
+                {
+                    list.Remove(upload);
+                    if (list.Count == 0)
+                    {
+                        Uploads.TryRemove(upload.Username, out _);
+                        Log.Debug("Cleaned up tracking list for {User}; no more queued uploads to track", upload.Username);
+                    }
+                }
+
+                Log.Debug("Complete: {File} for {User} at {Time}", upload.Filename, upload.Username, upload.Enqueued);
+
+                if (upload.SlotAcquired)
+                {
+                    // The configuration can remove a group while a transfer is active.
+                    if (Groups.TryGetValue(upload.Group, out var group))
+                    {
+                        group.UsedSlots = Math.Max(0, group.UsedSlots - 1);
+                        Log.Debug("Group {Group} slots: {Used}/{Available}", group.Name, group.UsedSlots, group.Slots);
+                    }
+
+                    upload.SlotAcquired = false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                Monitor.Exit(SyncRoot);
+                Process();
             }
         }
 
@@ -589,6 +571,7 @@ namespace slskd.Transfers
                 // to the proper place upon completion.
                 selectedUpload.Started = DateTime.UtcNow;
                 selectedUpload.Group = selectedGroup.Name;
+                selectedUpload.SlotAcquired = true;
                 selectedGroup.UsedSlots++;
 
                 selectedUpload.TaskCompletionSource.SetResult();

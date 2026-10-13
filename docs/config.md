@@ -927,6 +927,21 @@ soulseek:
       transfer: 60000
 ```
 
+### Server MTU
+
+The optional `mtu` value caps the TCP segment size used for the Soulseek server connection. Leave it unset to use the operating system default. Systems with jumbo frames enabled can try `1500` if the server connection stalls; the setting applies to the server connection only.
+
+| Command-Line | Environment Variable | Description |
+| --- | --- | --- |
+| `--slsk-connection-mtu` | `SLSKD_SLSK_CONNECTION_MTU` | Optional server TCP MTU cap; valid values are 1280 through 9000 |
+
+#### **YAML**
+```yaml
+soulseek:
+  connection:
+    mtu: 1500 # optional; remove or use null for the operating system default
+```
+
 ### Buffers
 
 Buffer options control the application's internal buffer to batch socket reads and writes. The host Operating System controls actual socket buffer sizes (.NET is not great in this department currently, and the behavior is not consistent cross-platform).
@@ -1189,7 +1204,7 @@ Transfers can be configured to be removed from the UI after they are complete by
 
 Files (on disk) can be configured to be deleted after the age of their last access time exceeds the configured time.  Completed and incomplete files can be configured separately.
 
-Application logs are removed after 30 days by default, but this can be configured as well.
+Application logs are removed after 14 days by default. Configure at least 2 days of retention; Serilog's daily rollover needs more than one day to keep the active file safely.
 
 All retention periods are specified in minutes, with the exception of `logs`, which is in days.
 
@@ -1209,7 +1224,7 @@ retention:
   files:
     complete: 20160 # 2 weeks
     incomplete: 43200 # 30 days
-  logs: 30 # days
+  logs: 14 # days (minimum 2)
 ```
 
 # Integrations

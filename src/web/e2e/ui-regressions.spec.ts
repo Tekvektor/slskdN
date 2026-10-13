@@ -1258,6 +1258,62 @@ test.describe('UI regression coverage', () => {
       .toBe(false);
   });
 
+  test('browses and downloads retained System Logs history', async ({
+    page,
+    request,
+  }) => {
+    const node = getNode();
+    const logName = 'slskd-20261012.log';
+    await waitForHealth(request, node.baseUrl);
+    await login(page, node);
+
+    await page.route('**/hub/logs/negotiate*', async (route) => {
+      await route.fulfill({
+        contentType: 'application/json',
+        json: { error: 'live logs are not needed for this history check' },
+        status: 503,
+      });
+    });
+    await page.route(/\/api\/v0\/logs\/files$/u, async (route) => {
+      await route.fulfill({
+        contentType: 'application/json',
+        json: [{
+          lastModified: '2026-10-12T10:20:30Z',
+          length: 20,
+          name: logName,
+        }],
+      });
+    });
+    await page.route(`**/api/v0/logs/files/${logName}/download`, async (route) => {
+      await route.fulfill({ body: 'downloaded log record', contentType: 'text/plain' });
+    });
+    await page.route(`**/api/v0/logs/files/${logName}`, async (route) => {
+      await route.fulfill({ body: 'previewed log record', contentType: 'text/plain' });
+    });
+
+    await page.goto(`${node.baseUrl}/system/logs`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.getByRole('button', { name: 'History' }).click();
+    await expect(page.getByText(logName, { exact: true })).toBeVisible();
+
+    const view = page.getByRole('button', { name: `View ${logName}` });
+    await view.hover();
+    await expect(page.getByText(`Open ${logName} to inspect its contents.`, { exact: true }))
+      .toBeVisible();
+    await view.click();
+    await expect(page.getByText('previewed log record', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close' }).click();
+
+    const download = page.getByRole('button', { name: `Download ${logName}` });
+    await download.hover();
+    await expect(page.getByText(`Download ${logName} for offline review.`, { exact: true }))
+      .toBeVisible();
+    const downloadedFile = page.waitForEvent('download');
+    await download.click();
+    expect((await downloadedFile).suggestedFilename()).toBe(logName);
+  });
+
   test('explains and recovers completed-transfer cleanup at 320px', async ({
     page,
     request,

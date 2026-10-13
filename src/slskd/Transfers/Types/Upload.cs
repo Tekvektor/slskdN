@@ -28,7 +28,9 @@ namespace slskd.Transfers
         public DateTime Enqueued { get; set; } = DateTime.UtcNow;
         public string Filename { get; set; } = string.Empty;
         public string Group { get; set; } = string.Empty;
+        public Guid Id { get; set; }
         public DateTime? Ready { get; set; } = null;
+        public bool SlotAcquired { get; set; }
         public DateTime? Started { get; set; } = null;
         public TaskCompletionSource TaskCompletionSource { get; set; } = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         public string Username { get; set; } = string.Empty;
