@@ -41811,3 +41811,15 @@ missed a required constructor argument in the vendored transfer contract.
 **Prevention:** When constructing transfer event arguments, include the
 required offset explicitly and use the shared constructor patterns already
 present in lifecycle tests.
+
+### 0z1788. Keep Peer Accept Loops Alive After Transient Socket Errors (2026-10-13)
+
+**What went wrong:** An unexpected socket error from an accept operation faulted
+the background listener loop while its listening state stayed true.
+
+**Why:** The loop handled exceptions only when shutdown was already in progress,
+and its fire-and-forget task swallowed later faults.
+
+**Prevention:** Retry transient accept failures with capped backoff and emit a
+diagnostic for each retry; preserve shutdown as a terminal condition and test
+that a later connection is still accepted.
