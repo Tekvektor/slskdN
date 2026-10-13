@@ -17,6 +17,20 @@ in the full user journey.
 startup and browser setup. Run the full journey headlessly after changing its
 timeout budget.
 
+### 0z1808. Locate Shrinkable Buttons By Their Accessible Label (2026-10-13)
+
+**What went wrong:** A Playwright test looked up a compact `ShrinkableButton` by
+its tooltip text and waited for the full test timeout because the button's
+accessible name remained its visible label.
+
+**Why:** Tooltips explain an action but do not replace the control's accessible
+name. Responsive buttons may hide their text while retaining a concise label
+such as `Sync`.
+
+**Prevention:** Locate the control by its accessible label, scope repeated
+labels to the containing row or section, and assert the tooltip text separately
+after hovering. Do not treat popup content as the button's name.
+
 ### 0z1806. Keep Moq Expression Closings Formatter-Safe (2026-10-13)
 
 **What went wrong:** A new Moq setup added whitespace between the
