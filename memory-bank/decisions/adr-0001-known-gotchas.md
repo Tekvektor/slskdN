@@ -33,7 +33,7 @@ finishes.
 task and handle its expected cancellation before disposing fixtures or deleting
 their files. Keep test timeouts long enough for the workload on hosted runners.
 
-### 0z1823. Keep Message Text Selection Independent From Composer Focus (2026-10-13)
+### 0z1824. Keep Message Text Selection Independent From Composer Focus (2026-10-13)
 
 **What went wrong:** Clicking anywhere inside a room card focused the message
 composer. That moved keyboard focus while a user was selecting or copying a
@@ -46,6 +46,17 @@ type, including clicks on selectable conversation text.
 Use explicit controls when an action needs to focus it; do not attach composer
 focus to the containing card. Cover both text interaction and focus behavior in
 the room UI.
+
+### 0z1825. Keep Known-Gotcha Identifiers Unique (2026-10-13)
+
+**What went wrong:** Two separate entries used identifier `0z1823`, making
+references to the message-selection note ambiguous.
+
+**Why:** A new entry reused the latest identifier without checking the full
+living document for collisions.
+
+**Prevention:** Search the complete gotcha log before assigning an identifier.
+Correct a duplicate in the same change and keep each entry's identifier unique.
 
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
