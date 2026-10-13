@@ -21,6 +21,20 @@ third-party actions to verified commit SHAs, use `set -euo pipefail` for
 pipelines, and set scanners to fail at the documented severity threshold. If a
 check is advisory, label it advisory and keep it out of required-gate claims.
 
+### 0z1780. Keep GitHub Actions Step Environment Outside Script Blocks (2026-10-13)
+
+**What went wrong:** The load-test step's `env` mapping was indented inside its
+multiline `run` script, so the intended `BASE_URL` variable was not supplied to
+the test process.
+
+**Why:** A workflow edit moved step keys without preserving their YAML level.
+The workflow remained parseable, but the shell received `env:` and
+`BASE_URL:` as script text instead of step configuration.
+
+**Prevention:** Keep step-level `env`, `run`, and action keys at the same YAML
+indentation. Validate the complete workflow after edits and inspect script
+blocks when moving keys between steps.
+
 ### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
 **What went wrong:** Public pull requests and manual runs from refs outside
