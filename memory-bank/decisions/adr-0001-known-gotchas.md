@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
+
+**What went wrong:** A Windows test could not delete its temporary share
+database after repository disposal because a scalar/count query had returned
+without disposing its `SqliteDataReader`.
+
+**Why:** Disposing a command or connection does not make reader ownership
+implicit; a live reader can retain the underlying SQLite handle and file lock.
+POSIX unlink semantics can hide this resource leak.
+
+**Prevention:** Prefer `ExecuteScalar` for single-value queries. For row reads,
+scope both reader and command before the connection leaves scope. Review every
+`ExecuteReader` call when changing SQLite repositories, and verify file-backed
+database cleanup on Windows.
+
 ### 0z1820. Complete Enqueue Waits When Background Downloads End (2026-10-13)
 
 **What went wrong:** A download could reach a terminal failure in its background
