@@ -117,6 +117,18 @@ while the socket error code is stable.
 `SocketErrorCode`. Keep message checks only for non-socket wrappers that do
 not expose a structured network error.
 
+### 0z1815. Qualify Filesystem Calls When Domain Types Share Their Names (2026-10-13)
+
+**What went wrong:** A filesystem replacement helper in `Application` used
+unqualified `File` calls and failed to compile because the file also imports
+domain types named `File`.
+
+**Why:** The compiler resolves imported names from multiple namespaces, so
+`File` was ambiguous between the filesystem API and application models.
+
+**Prevention:** Use `System.IO.File` explicitly in files that import another
+`File` type, and compile the owning project after adding filesystem code.
+
 ### 0z1806. Keep Moq Expression Closings Formatter-Safe (2026-10-13)
 
 **What went wrong:** A new Moq setup added whitespace between the
