@@ -4,6 +4,36 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1793. Bound Validation Output And Reap Task Descendants (2026-10-12)
+
+**What went wrong:** Validation output could accumulate in an unbounded pump
+queue or log, and a task that left a descendant holding stdout open could keep
+the runner waiting after the main command exited.
+
+**Why:** Bounding only the parser's retained tail does not bound data queued
+between the reader and consumer, persisted diagnostics, or the lifetime of
+inherited pipes.
+
+**Prevention:** Bound the pump queue, retain a fixed diagnostic tail, cap the
+private task log with a visible truncation marker, hash the bytes actually
+persisted, and terminate a task's process group when descendants outlive its
+main process.
+
+### 0z1792. Pin Sandbox Mount Sources Before Applying Host Masks (2026-10-12)
+
+**What went wrong:** The launcher resolved bind sources by host path after
+Bubblewrap had masked their parent directories, so a source under a masked
+tree could become unavailable or resolve against a different mount.
+
+**Why:** Bubblewrap applies mount operations sequentially inside its new
+namespace. A path lookup performed after a parent is covered sees the sandbox's
+current filesystem rather than the original host path.
+
+**Prevention:** Open every workspace, run-data, dependency, cache, and marker
+source before starting Bubblewrap; pass those descriptors as inherited child
+stdio and bind `/proc/self/fd/N` only after the host masks are installed.
+Keep contract coverage for mount ordering and a live sandbox canary.
+
 ### 0z1791. Preserve Extensionless Credential Files In Sandbox Filtering (2026-10-13)
 
 **What went wrong:** Narrowing the sandbox's sensitive-path filter to known
