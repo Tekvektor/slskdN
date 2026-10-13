@@ -28,6 +28,8 @@ _Add release notes here while developing; move only shipped bullets into a dated
   configured runner policy.
 - The README includes a Ko-fi link for users who want to support maintenance.
 - The Unraid template exposes the optional Soulseek server MTU setting.
+- System requirements explain storage growth and how to place application data,
+  downloads, and shared files on storage.
 
 ## [2026101222-slskdn.350] — 2026-10-12
 
@@ -47,6 +49,8 @@ _Add release notes here while developing; move only shipped bullets into a dated
   configured runner policy.
 - The README includes a Ko-fi link for users who want to support maintenance.
 - The Unraid template exposes the optional Soulseek server MTU setting.
+- System requirements explain storage growth and how to place application data,
+  downloads, and shared files on storage.
 - Repeated audio codec profile comparisons now avoid transient string allocations.
 - Container builds now reuse web assets and system-package layers when release
   metadata changes, and no longer need a `.git` directory in the build context.
