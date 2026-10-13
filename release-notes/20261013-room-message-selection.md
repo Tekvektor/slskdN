@@ -1,7 +1,7 @@
 ---
 category: fixed
 audience: users
-area: web messaging
+area: web-messaging
 action: none
 breaking: false
 ---

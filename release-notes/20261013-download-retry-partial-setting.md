@@ -1,7 +1,7 @@
 ---
 category: changed
 audience: operators
-area: download configuration
+area: download-configuration
 action: none
 breaking: false
 ---
