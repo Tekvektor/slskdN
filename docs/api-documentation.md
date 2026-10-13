@@ -97,12 +97,22 @@ Pass the full room name as the `roomName` query value; URL-encode it as normal f
 
 #### Searches
 - `POST /api/v0/searches` - Start a new search
-- `GET /api/v0/searches` - List all searches
+- `GET /api/v0/searches?limit=250&afterStartedAt=2026-08-20T12%3A00%3A00Z&afterId=00000000-0000-0000-0000-000000000001&source=wishlist` - List a page of searches
 - `GET /api/v0/searches/{id}` - Get search details
 - `GET /api/v0/searches/{id}/responses` - Get search responses
 - `PUT /api/v0/searches/{id}` - Update search
 - `DELETE /api/v0/searches/{id}` - Cancel/delete search
 - `DELETE /api/v0/searches` - Clear all searches
+
+Search listing remains a plain JSON array. `limit` controls the maximum number
+of rows, `offset` skips previously requested rows, and `source` optionally
+filters to `manual`, `wishlist`, or `auto-replace`. To continue a changing
+search list without shifting its page boundary, pass the last row's
+`startedAt` as `afterStartedAt` and its `id` as `afterId`; supply both values
+together and do not combine them with a nonzero offset. The default limit is
+500. The Web UI starts with the live hub's capped 500-row snapshot, then uses
+REST continuation pages of 250; if the hub is unavailable, its REST fallback
+starts at 250. It merges page rows into the live list.
 
 #### Search Actions
 - `POST /api/v0/searches/{searchId}/items/{itemId}/download` - Download search result
@@ -133,6 +143,15 @@ counts or lengths, and filters that exceed the timeout return `400 Bad Request`.
 The scrape endpoint configured by `metrics.url` accepts the same query
 parameters and continues to use its configured Basic authentication.
 
+#### Reports
+
+- `GET /api/v0/telemetry/reports/transfers/summary` - Summarize completed transfers
+
+The summary defaults to the seven days ending at the request time. Supply
+`start` and `end` to choose another interval. Each direction is grouped by
+final transfer state; successful rows report the count and `totalBytes` based
+on bytes actually transferred.
+
 ### Transfer APIs
 
 #### Downloads
@@ -141,6 +160,8 @@ parameters and continues to use its configured Basic authentication.
 - `GET /api/v0/transfers/downloads/{username}/{id}` - Get download details
 - `GET /api/v0/transfers/downloads/{username}/{id}/position` - Get queue position
 - `DELETE /api/v0/transfers/downloads/{username}/{id}` - Cancel download
+- `GET /api/v0/transfers/changes` - Read a transfer snapshot or incremental changes
+- `GET /api/v0/transfers/history` - Read a stable page of successful history
 
 Each queued file may include `batchId`, `batchExternalId`, `searchId`, and
 `searchText`. These optional values are retained with the download request and
@@ -167,6 +188,24 @@ tokens, collision policy, filesystem-safety rules, and CLI/YAML configuration.
 Transfer timestamp fields are serialized as UTC ISO 8601 values with a `Z`
 suffix. Convert them to local time only for display; retain the UTC value for
 sorting and comparisons.
+
+The transfer changes response keeps its existing shape for unpaged requests.
+For a bounded initial snapshot, add `limit` (1 through 500); `direction` may be
+`download` or `upload`. The response includes `hasMore` and, when another page
+exists, `nextAfterRequestedAt` and `nextAfterId`. Continue the same snapshot by
+passing its `cursor` as `asOf` and both continuation values as
+`afterRequestedAt` and `afterId`. Pages are ordered by request time, newest
+first, with transfer ID as a stable tie-breaker. Both continuation values must
+be supplied together and require the original `asOf` watermark. A continuation
+keeps that snapshot boundary, so rows changed afterward arrive through the
+incremental `since` query instead. The `since` and page parameters cannot be
+combined.
+
+Successful history has a separate stable page route. It accepts `direction`,
+an optional `asOf` watermark, `offset`, and `limit` (1 through 500; default
+250). The Web UI loads active and unsuccessful rows in bounded pages and loads
+successful history separately. Its retry and cancel-all actions apply to loaded
+rows; the completed-row clear action applies to the server list.
 
 #### Download requests
 

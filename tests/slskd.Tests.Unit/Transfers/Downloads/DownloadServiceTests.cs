@@ -114,6 +114,74 @@ public class DownloadServiceTests
     }
 
     [Fact]
+    public async Task ListPage_UsesRequestedAtAndIdContinuationWithoutRepeatingRows()
+    {
+        var databasePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
+        var options = new DbContextOptionsBuilder<TransfersDbContext>()
+            .UseSqlite($"Data Source={databasePath}")
+            .Options;
+        var requestedAt = new DateTime(2026, 10, 13, 12, 0, 0, DateTimeKind.Utc);
+        var downloadIds = new[]
+        {
+            Guid.Parse("00000000-0000-0000-0000-000000000001"),
+            Guid.Parse("00000000-0000-0000-0000-000000000002"),
+            Guid.Parse("00000000-0000-0000-0000-000000000003"),
+        };
+
+        slskd.Transfers.Transfer CreateTransfer(Guid id, TransferDirection direction, bool removed = false)
+            => new()
+            {
+                Id = id,
+                Username = "alice",
+                Direction = direction,
+                Filename = $"{id:N}.flac",
+                RequestedAt = requestedAt,
+                State = TransferStates.InProgress,
+                Removed = removed,
+            };
+
+        try
+        {
+            await using (var context = new TransfersDbContext(options))
+            {
+                await context.Database.EnsureCreatedAsync();
+                context.Transfers.AddRange(
+                    downloadIds
+                        .Select(id => CreateTransfer(id, TransferDirection.Download))
+                        .Concat(new[]
+                        {
+                            CreateTransfer(Guid.NewGuid(), TransferDirection.Download, removed: true),
+                            CreateTransfer(Guid.NewGuid(), TransferDirection.Upload),
+                        }));
+                await context.SaveChangesAsync();
+            }
+
+            using var service = CreateDownloadService(options, new Mock<ISoulseekClient>());
+            var firstPage = service.ListPage(transfer => true, false, null, null, limit: 2);
+            var last = Assert.IsType<slskd.Transfers.Transfer>(firstPage.LastOrDefault());
+            var secondPage = service.ListPage(
+                transfer => true,
+                false,
+                last.RequestedAt,
+                last.Id,
+                limit: 2);
+
+            Assert.Equal(downloadIds.Reverse().Take(2), firstPage.Select(transfer => transfer.Id));
+            Assert.Equal(downloadIds.Take(1), secondPage.Select(transfer => transfer.Id));
+            Assert.Empty(service.ListPage(
+                transfer => true,
+                false,
+                secondPage.Single().RequestedAt,
+                secondPage.Single().Id,
+                limit: 2));
+        }
+        finally
+        {
+            DeleteDatabase(databasePath);
+        }
+    }
+
+    [Fact]
     public async Task PruneRemoved_DeletesOnlyExpiredTerminalRequestsWithoutRemainingDownloads()
     {
         var databasePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Guid.NewGuid():N}.db");

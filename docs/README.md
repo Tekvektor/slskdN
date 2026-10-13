@@ -21,6 +21,7 @@ completed workstream notes, and incident reports live under
 
 ## 📘 User Guides
 
+- [Dashboard](dashboard.md) - Seven-day totals for successful downloads and uploads
 - [SongID and Discovery](songid-discovery.md) - Native identification and Discovery Graph workflows
 - [System Admin Surfaces](system-surfaces.md) - Guided System UI for policies, integrations, diagnostics, source providers, and local preferences
 - [Transfer Operations](transfer-operations.md) - Completed-download paths, template tokens, collision policy, permissions, request-history retention, and UTC API timestamps

@@ -301,6 +301,60 @@ public class SearchServiceLifecycleTests
     }
 
     [Fact]
+    public async Task ListAsync_ContinuesByStartedAtAndIdAfterANewSearchArrives()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<SearchDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        var startedAt = new DateTime(2026, 10, 13, 12, 0, 0, DateTimeKind.Utc);
+        var firstId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
+        var cursorId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        var nextId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        var olderId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        await using (var context = new SearchDbContext(options))
+        {
+            await context.Database.EnsureCreatedAsync();
+            context.Searches.AddRange(
+                new slskd.Search.Search { Id = firstId, StartedAt = startedAt, Source = "Wishlist" },
+                new slskd.Search.Search { Id = cursorId, StartedAt = startedAt, Source = "wishlist" },
+                new slskd.Search.Search { Id = nextId, StartedAt = startedAt, Source = "wishlist" },
+                new slskd.Search.Search { Id = olderId, StartedAt = startedAt.AddHours(-1), Source = "wishlist" });
+            await context.SaveChangesAsync();
+        }
+
+        using var service = new SearchService(
+            CreateSearchHub().Object,
+            new TestOptionsMonitor<slskd.Options>(new slskd.Options()),
+            Mock.Of<ISoulseekClient>(),
+            new SearchDbContextFactory(options),
+            Mock.Of<ISoulseekSafetyLimiter>());
+
+        var firstPage = await service.ListAsync(limit: 2, source: "wishlist");
+        Assert.Equal([firstId, cursorId], firstPage.Select(search => search.Id));
+
+        await using (var context = new SearchDbContext(options))
+        {
+            context.Searches.Add(new slskd.Search.Search
+            {
+                Id = Guid.NewGuid(),
+                StartedAt = startedAt.AddHours(1),
+                Source = "wishlist",
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var continuation = await service.ListAsync(
+            limit: 2,
+            source: "wishlist",
+            afterStartedAt: firstPage[^1].StartedAt,
+            afterId: firstPage[^1].Id);
+
+        Assert.Equal([nextId, olderId], continuation.Select(search => search.Id));
+    }
+
+    [Fact]
     public async Task NotifyTrafficObserverAsync_WhenOneResponseFails_Continues()
     {
         var observer = new Mock<ITrafficObserver>();

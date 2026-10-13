@@ -1,7 +1,8 @@
 # Transfer Operations
 
 This guide covers completed-download destinations, collision behavior, path
-tokens, and the API metadata used by those tokens.
+tokens, request retention, UTC timestamps, and paging through search and
+transfer history.
 
 ## Completed download destinations
 
@@ -110,6 +111,28 @@ expired.
 Transfer timestamps persisted in the database are returned as UTC ISO 8601
 values with a `Z` suffix. Clients can compare them as UTC instants and convert
 them for display in the user's local time zone.
+
+## Browsing long lists
+
+The Web UI starts search history from the live hub's capped snapshot of up to
+500 rows. It then fetches API pages of 250. The search-list API keeps its array
+response and accepts `limit`, `offset`, and an optional source filter. The Web
+UI continues with the last row's `startedAt` and `id`, so new live searches do
+not shift older page boundaries. Selecting **Load more searches** appends
+another page; existing loaded rows, selected searches, and live updates remain
+in the list.
+
+The transfer view initially fetches up to 100 active or unsuccessful records
+per direction. **Load more transfers** requests the next server page without
+loading the entire active list. Each page keeps its original snapshot and uses
+request time plus transfer ID as its continuation position. Updates that
+arrive after that snapshot continue through the live feed and incremental API
+changes. Successful history uses its own stable page of 250 rows.
+
+Filters, retries, cancels, and per-row removals apply to loaded rows. The UI
+shows how many rows are loaded and explains this scope. Clearing completed
+rows uses the server-side bulk action and covers the matching completed rows
+even when older history pages are not loaded.
 
 ## CLI and environment variables
 

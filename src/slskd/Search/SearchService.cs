@@ -72,8 +72,16 @@ namespace slskd.Search
         /// <param name="limit">Maximum number of searches to return (0 for unlimited, which is the default).</param>
         /// <param name="offset">Number of searches to skip (for pagination).</param>
         /// <param name="source">Optional source filter (e.g. "manual", "wishlist", "auto-replace").</param>
+        /// <param name="afterStartedAt">Optional start-time component of a stable descending continuation.</param>
+        /// <param name="afterId">Optional ID tie-breaker for the continuation.</param>
         /// <returns>The list of searches matching the specified expression, or all searches if no expression is specified.</returns>
-        Task<List<Search>> ListAsync(Expression<Func<Search, bool>>? expression = null, int limit = 0, int offset = 0, string? source = null);
+        Task<List<Search>> ListAsync(
+            Expression<Func<Search, bool>>? expression = null,
+            int limit = 0,
+            int offset = 0,
+            string? source = null,
+            DateTime? afterStartedAt = null,
+            Guid? afterId = null);
 
         /// <summary>
         ///     Updates the specified <paramref name="search"/>.
@@ -293,8 +301,16 @@ namespace slskd.Search
         /// <param name="limit">Maximum number of searches to return (0 for unlimited, which is the default).</param>
         /// <param name="offset">Number of searches to skip (for pagination).</param>
         /// <param name="source">Optional source filter (e.g. "manual", "wishlist", "auto-replace").</param>
+        /// <param name="afterStartedAt">Optional start-time component of a stable descending continuation.</param>
+        /// <param name="afterId">Optional ID tie-breaker for the continuation.</param>
         /// <returns>The list of searches matching the specified expression, or all searches if no expression is specified.</returns>
-        public Task<List<Search>> ListAsync(Expression<Func<Search, bool>>? expression = null, int limit = 0, int offset = 0, string? source = null)
+        public Task<List<Search>> ListAsync(
+            Expression<Func<Search, bool>>? expression = null,
+            int limit = 0,
+            int offset = 0,
+            string? source = null,
+            DateTime? afterStartedAt = null,
+            Guid? afterId = null)
         {
             expression ??= s => true;
             using var context = ContextFactory.CreateDbContext();
@@ -306,11 +322,21 @@ namespace slskd.Search
             if (!string.IsNullOrWhiteSpace(source))
             {
                 var sourceFilter = source!.Trim().ToLowerInvariant();
-                query = query.Where(s => s.Source.ToLowerInvariant() == sourceFilter);
+                query = query.Where(s => s.Source.ToLower() == sourceFilter);
+            }
+
+            if (afterStartedAt.HasValue && afterId.HasValue)
+            {
+                var startedAt = afterStartedAt.Value;
+                var id = afterId.Value;
+                query = query.Where(s =>
+                    s.StartedAt < startedAt ||
+                    (s.StartedAt == startedAt && s.Id.CompareTo(id) < 0));
             }
 
             query = query
                 .OrderByDescending(s => s.StartedAt)
+                .ThenByDescending(s => s.Id)
                 .WithoutResponses();
 
             if (offset > 0)

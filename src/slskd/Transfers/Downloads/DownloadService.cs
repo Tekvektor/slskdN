@@ -142,6 +142,22 @@ namespace slskd.Transfers.Downloads
         List<Transfer> List(Expression<Func<Transfer, bool>>? expression = null, bool includeRemoved = false);
 
         /// <summary>
+        ///     Returns a stable page of downloads ordered by request time, newest first.
+        /// </summary>
+        /// <param name="expression">The transfer predicate.</param>
+        /// <param name="includeRemoved">Whether to include soft-removed records.</param>
+        /// <param name="afterRequestedAt">The request time of the previous page's last record.</param>
+        /// <param name="afterId">The ID of the previous page's last record.</param>
+        /// <param name="limit">The maximum number of records to return.</param>
+        /// <returns>The requested page.</returns>
+        List<Transfer> ListPage(
+            Expression<Func<Transfer, bool>> expression,
+            bool includeRemoved,
+            DateTime? afterRequestedAt,
+            Guid? afterId,
+            int limit);
+
+        /// <summary>
         ///     Streams retryable failed downloads in stable oldest-first order.
         /// </summary>
         /// <param name="endedBefore">The exclusive completion-time cutoff.</param>
@@ -1055,6 +1071,46 @@ namespace slskd.Transfers.Downloads
             catch (Exception ex)
             {
                 Log.Error("Failed to list downloads: {Exception}", LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
+                throw;
+            }
+        }
+
+        public List<Transfer> ListPage(
+            Expression<Func<Transfer, bool>> expression,
+            bool includeRemoved,
+            DateTime? afterRequestedAt,
+            Guid? afterId,
+            int limit)
+        {
+            expression ??= t => true;
+
+            try
+            {
+                using var context = ContextFactory.CreateDbContext();
+                var query = context.Transfers
+                    .AsNoTracking()
+                    .Where(t => t.Direction == TransferDirection.Download)
+                    .Where(t => !t.Removed || includeRemoved)
+                    .Where(expression);
+
+                if (afterRequestedAt.HasValue && afterId.HasValue)
+                {
+                    var requestedAt = afterRequestedAt.Value;
+                    var id = afterId.Value;
+                    query = query.Where(t =>
+                        t.RequestedAt < requestedAt ||
+                        (t.RequestedAt == requestedAt && t.Id.CompareTo(id) < 0));
+                }
+
+                return query
+                    .OrderByDescending(t => t.RequestedAt)
+                    .ThenByDescending(t => t.Id)
+                    .Take(limit)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to page downloads: {Exception}", LoggingSanitizer.SanitizeExternalIdentifier(ex.ToString()));
                 throw;
             }
         }

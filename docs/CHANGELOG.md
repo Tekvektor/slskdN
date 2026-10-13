@@ -24,6 +24,11 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Added
 
+- The Dashboard is now the default home and summarizes successful transfers
+  over the last seven days using actual transferred bytes. Search and active
+  transfer lists can load additional bounded API pages while keeping live
+  updates and existing selections; search continuations remain stable as new
+  searches arrive, and completed transfer history remains separately paged.
 - Completed downloads support relative destination templates, source/search/batch
   tokens, rename or overwrite collision handling, and optional Unix modes for
   newly created files and directories. Optional request metadata is available
