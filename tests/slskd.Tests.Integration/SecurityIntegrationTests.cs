@@ -84,7 +84,7 @@ public class SecurityIntegrationTests
     public void PathGuard_BlocksTraversal()
     {
         // Arrange
-        var testRoot = "/home/user/downloads";
+        var testRoot = Path.Combine(Path.GetTempPath(), "slskdn-security-integration-downloads");
         var maliciousPath = "../../../etc/passwd";
 
         // Act
@@ -106,7 +106,7 @@ public class SecurityIntegrationTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.StartsWith(testRoot, result);
+        Assert.Equal(Path.Combine(testRoot, "music", "album", "track.flac"), result);
     }
 
     [Fact]

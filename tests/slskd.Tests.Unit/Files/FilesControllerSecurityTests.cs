@@ -89,7 +89,7 @@ namespace slskd.Tests.Unit.Files
             var validPath = "test-file.txt";
             var base64Path = Convert.ToBase64String(Encoding.UTF8.GetBytes(validPath));
 
-            var fullPath = "/test/downloads/test-file.txt";
+            var fullPath = Path.GetFullPath(Path.Combine("/test/downloads", validPath));
             mockFileService.Setup(s => s.DeleteFilesAsync(It.IsAny<string>()))
                 .ReturnsAsync(new Dictionary<string, OneOf<bool, Exception>>
                 {

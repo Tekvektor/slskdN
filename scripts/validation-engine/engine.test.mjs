@@ -1,6 +1,7 @@
 // Copyright (c) slskdN Team. All rights reserved.
 import assert from 'node:assert/strict';
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -323,9 +324,19 @@ test('child environments hide sensitive values unless a task explicitly needs th
     config.runtimes = [{
       command: process.execPath,
       args: ['-e', `process.stdout.write(process.env[${JSON.stringify(key)}] ?? 'not-inherited')`],
+    }, {
+      command: process.execPath,
+      args: ['-e', `process.stdout.write(JSON.stringify({ home: process.env.HOME, dotnetHome: process.env.DOTNET_CLI_HOME, nugetPackages: process.env.NUGET_PACKAGES, secret: process.env[${JSON.stringify(key)}] ?? null }))`],
     }];
     const plan = createPlan(root, config);
     assert.equal(plan.runtimes[0].version, 'not-inherited');
+    const probeEnvironment = JSON.parse(plan.runtimes[1].version);
+    assert.notEqual(probeEnvironment.home, injected.HOME);
+    assert.notEqual(probeEnvironment.dotnetHome, injected.DOTNET_CLI_HOME);
+    assert.notEqual(probeEnvironment.nugetPackages, injected.NUGET_PACKAGES);
+    assert.equal(probeEnvironment.secret, null);
+    assert.match(probeEnvironment.home, /slskdn-validation-runtime-probe-/u);
+    assert.equal(existsSync(probeEnvironment.home), false);
 
     config.tasks[0].kind = 'check';
     config.tasks[0].command = [

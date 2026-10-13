@@ -41,6 +41,7 @@ public sealed class ExperimentalFeatureGraphServiceCollectionExtensionsTests
         finally
         {
             setAppDirectory.Invoke(null, new object[] { previousAppDirectory });
+            slskd.Tests.Unit.SqliteTestDatabase.ClearPool($"Data Source={Path.Combine(temporaryDirectory, "pods.db")}");
             Directory.Delete(temporaryDirectory, recursive: true);
         }
     }

@@ -1514,7 +1514,7 @@ public class DownloadServiceTests
         }
         finally
         {
-            System.IO.File.Delete(databasePath);
+            DeleteDatabase(databasePath);
         }
     }
 
@@ -1936,7 +1936,7 @@ public class DownloadServiceTests
 
             if (System.IO.File.Exists(databasePath))
             {
-                System.IO.File.Delete(databasePath);
+                DeleteDatabase(databasePath);
             }
         }
     }
@@ -2017,7 +2017,7 @@ public class DownloadServiceTests
 
             if (System.IO.File.Exists(databasePath))
             {
-                System.IO.File.Delete(databasePath);
+                DeleteDatabase(databasePath);
             }
         }
     }
@@ -2113,7 +2113,7 @@ public class DownloadServiceTests
 
             if (System.IO.File.Exists(databasePath))
             {
-                System.IO.File.Delete(databasePath);
+                DeleteDatabase(databasePath);
             }
         }
     }
@@ -2540,6 +2540,7 @@ public class DownloadServiceTests
 
     private static void DeleteDatabase(string databasePath)
     {
+        slskd.Tests.Unit.SqliteTestDatabase.ClearPool($"Data Source={databasePath}");
         if (System.IO.File.Exists(databasePath))
         {
             System.IO.File.Delete(databasePath);

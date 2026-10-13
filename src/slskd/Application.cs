@@ -3231,7 +3231,7 @@ namespace slskd
 
                 Log.Debug("Saved cache to temp file {File}", temp);
 
-                System.IO.File.Move(temp, destination, overwrite: true);
+                ReplaceBrowseCacheFile(temp, destination);
 
                 sw.Stop();
                 Log.Information("Browse response cached successfully in {Duration}ms", sw.ElapsedMilliseconds);
@@ -3258,6 +3258,17 @@ namespace slskd
         internal static FileStream OpenBrowseCacheReadStream(string cacheFilename)
         {
             return new FileStream(cacheFilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        }
+
+        internal static void ReplaceBrowseCacheFile(string sourceFilename, string destinationFilename)
+        {
+            if (OperatingSystem.IsWindows() && System.IO.File.Exists(destinationFilename))
+            {
+                System.IO.File.Replace(sourceFilename, destinationFilename, null);
+                return;
+            }
+
+            System.IO.File.Move(sourceFilename, destinationFilename, overwrite: true);
         }
 
         private void State_OnChange((State Previous, State Current) state)

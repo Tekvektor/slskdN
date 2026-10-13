@@ -122,6 +122,7 @@ public class SourceDiscoveryServiceTests
         }
         finally
         {
+            slskd.Tests.Unit.SqliteTestDatabase.ClearPool($"Data Source={Path.Combine(appDirectory, "discovery.db")}");
             System.IO.Directory.Delete(appDirectory, recursive: true);
         }
     }
