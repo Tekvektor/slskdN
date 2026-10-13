@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1847. Include New Environment Options In Every Maintained Installer Template (2026-10-13)
+
+**What went wrong:** The completed-download collision option was added to
+configuration documentation, but the Unraid template did not expose its
+`SLSKD_DOWNLOAD_DESTINATION_EXISTS` environment variable. The packaging
+metadata validator caught the mismatch.
+
+**Why:** Updating the application configuration and the central configuration
+reference did not update the separately maintained Unraid environment list.
+
+**Prevention:** When adding a documented `SLSKD_*` environment option, update
+each supported installer template that promises environment overrides and run
+the packaging metadata validator before release.
+
 ### 0z1846. Preserve Trusted Playwright Cache Mounts (2026-10-13)
 
 **What went wrong:** The trusted launcher mounted the preinstalled Playwright
