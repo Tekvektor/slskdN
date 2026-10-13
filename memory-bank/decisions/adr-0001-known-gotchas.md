@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1839. Keep Paged Snapshot Watermarks At API Precision (2026-10-13)
+
+**What went wrong:** The first transfer page filtered with a timestamp that had
+sub-millisecond precision, while its continuation cursor exposed only Unix
+milliseconds. Later pages could therefore use a slightly earlier snapshot
+boundary and omit rows near that boundary.
+
+**Why:** The query watermark and serialized cursor were derived at different
+precisions.
+
+**Prevention:** Quantize the initial watermark to the cursor's serialized
+precision before querying the first page. Use that exact value for every page
+and cover the precision boundary in controller tests.
+
 ### 0z1838. Match Mock Arguments To The Service Interface (2026-10-13)
 
 **What went wrong:** A search-list controller test placed the source filter in
