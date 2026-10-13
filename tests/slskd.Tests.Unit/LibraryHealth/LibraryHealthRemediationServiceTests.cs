@@ -63,7 +63,8 @@ public class LibraryHealthRemediationServiceTests
             .ReturnsAsync(new TrackTarget { MusicBrainzRecordingId = "rec-2", Artist = "Artist", Title = "Track Two" });
 
         var requests = new ConcurrentBag<MultiSourceDownloadRequest>();
-        var firstDownloadQueued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var allDownloadsQueued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queuedDownloadCount = 0;
         var multiSource = new Mock<IMultiSourceDownloadService>();
         multiSource
             .Setup(service => service.FindVerifiedSourcesAsync(It.IsAny<string>(), 0, null, It.IsAny<CancellationToken>()))
@@ -95,7 +96,10 @@ public class LibraryHealthRemediationServiceTests
             .Callback<MultiSourceDownloadRequest, CancellationToken>((request, _) =>
             {
                 requests.Add(request);
-                firstDownloadQueued.TrySetResult();
+                if (Interlocked.Increment(ref queuedDownloadCount) == 2)
+                {
+                    allDownloadsQueued.TrySetResult();
+                }
             })
             .ReturnsAsync((MultiSourceDownloadRequest request, CancellationToken _) => new MultiSourceDownloadResult
             {
@@ -135,11 +139,15 @@ public class LibraryHealthRemediationServiceTests
             It.IsAny<LibraryIssueStatus>(),
             It.IsAny<CancellationToken>()), Times.Never);
 
-        await firstDownloadQueued.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await allDownloadsQueued.Task.WaitAsync(TimeSpan.FromSeconds(2));
         Assert.Contains(
             requests,
             request => request.TargetMusicBrainzRecordingId == "rec-1" &&
                 request.OutputPath == Path.Combine(albumDirectory, "Artist - Track One.flac"));
+        Assert.Contains(
+            requests,
+            request => request.TargetMusicBrainzRecordingId == "rec-2" &&
+                request.OutputPath == Path.Combine(albumDirectory, "Artist - Track Two.flac"));
     }
 
     [Fact]

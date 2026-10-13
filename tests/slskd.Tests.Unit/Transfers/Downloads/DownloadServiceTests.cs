@@ -695,7 +695,7 @@ public class DownloadServiceTests
         System.IO.Directory.CreateDirectory(workDirectory);
 
         var databaseOptions = new DbContextOptionsBuilder<TransfersDbContext>()
-            .UseSqlite($"Data Source={databasePath}")
+            .UseSqlite($"Data Source={databasePath};Pooling=False")
             .Options;
         await using (var context = new TransfersDbContext(databaseOptions))
         {
