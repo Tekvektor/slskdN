@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1820. Complete Enqueue Waits When Background Downloads End (2026-10-13)
+
+**What went wrong:** A download could reach a terminal failure in its background
+task while the locally queued task continued waiting for a separate remote
+enqueue acknowledgement. Shutdown then waited indefinitely for that orphaned
+enqueue task, and tests could not safely release file-backed SQLite databases.
+
+**Why:** Download execution and the enqueue acknowledgement waiter are separate
+tasks. Expected remote failures complete the observed download task without
+raising the state callback that normally releases the waiter.
+
+**Prevention:** Make the acknowledgement wait race against the observed
+download task's completion, and release it with the latest persisted transfer
+state when the download ends first. Cover both successful and failed terminal
+paths with a shutdown-drain regression test.
+
 ### 0z1819. Match Fixture Copy Paths To Solution Build Configuration (2026-10-13)
 
 **What went wrong:** A unit-test build copied a helper executable from the
