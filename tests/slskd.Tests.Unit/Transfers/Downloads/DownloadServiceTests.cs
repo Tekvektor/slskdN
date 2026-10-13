@@ -179,6 +179,61 @@ public class DownloadServiceTests
     }
 
     [Fact]
+    public async Task EnqueueAsync_PersistsBatchAndSearchContextForDestinationTemplates()
+    {
+        var databasePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
+        var options = new DbContextOptionsBuilder<TransfersDbContext>()
+            .UseSqlite($"Data Source={databasePath}")
+            .Options;
+        await using (var context = new TransfersDbContext(options))
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
+
+        var batchId = Guid.NewGuid();
+        var searchId = Guid.NewGuid();
+        var service = CreateDownloadService(options, CreateHangingSoulseekClient());
+
+        try
+        {
+            var (enqueued, failed) = await service.EnqueueAsync(
+                "alice",
+                new[]
+                {
+                    new DownloadEnqueueRequest
+                    {
+                        Filename = @"Music\Jazz\track.flac",
+                        Size = 1234,
+                        BatchId = batchId,
+                        BatchExternalId = "batch-42",
+                        SearchId = searchId,
+                        SearchText = "artist album",
+                    },
+                },
+                CancellationToken.None);
+
+            Assert.Single(enqueued);
+            Assert.Empty(failed);
+
+            await using var verificationContext = new TransfersDbContext(options);
+            var transfer = await verificationContext.Transfers.SingleAsync(item => item.Id == enqueued[0].Id);
+            var request = await verificationContext.DownloadRequests.SingleAsync(item => item.Id == transfer.RequestId);
+
+            Assert.Equal(batchId, request.BatchId);
+            Assert.Equal("batch-42", request.BatchExternalId);
+            Assert.Equal(searchId, request.SearchId);
+            Assert.Equal("artist album", request.SearchText);
+            Assert.True(service.TryCancel(transfer.Id));
+            await service.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            service.Dispose();
+            DeleteDatabase(databasePath);
+        }
+    }
+
+    [Fact]
     public async Task EnqueueAsync_GlobalDownloadExclusionRejectsBeforeCreatingTransfer()
     {
         var databasePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
@@ -2276,9 +2331,43 @@ public class DownloadServiceTests
             destination);
     }
 
+    [Fact]
+    public void ResolveCompletedDestinationDirectory_TokenTemplate_UsesPersistedRequestMetadata()
+    {
+        var options = CreateDownloadLayoutOptions(
+            completedLayout: "batch_id",
+            subdirectory: "${SOURCE_USERNAME}/${SOURCE_PATH}/${SOURCE_DIRECTORY}/${BATCH_EXTERNAL_ID}/${SEARCH_ID}/${SEARCH_TEXT}");
+        var batchId = Guid.NewGuid();
+        var searchId = Guid.NewGuid();
+        var transfer = new slskd.Transfers.Transfer
+        {
+            Id = Guid.NewGuid(),
+            Username = "alice",
+            Direction = TransferDirection.Download,
+            Filename = @"Music\Jazz\Track.flac",
+            BatchId = batchId,
+            RequestedAt = DateTime.UtcNow,
+        };
+        var request = new DownloadRequest
+        {
+            BatchId = batchId,
+            BatchExternalId = "batch-42",
+            SearchId = searchId,
+            SearchText = "artist album",
+        };
+
+        using var service = CreateDownloadServiceForLayoutTest(options);
+        var destination = ResolveCompletedDestinationDirectory(service, transfer, request);
+
+        Assert.Equal(
+            System.IO.Path.Combine(options.Directories.Downloads, "alice", "Music", "Jazz", "Jazz", "batch-42", searchId.ToString("D"), "artist album"),
+            destination);
+    }
+
     private static slskd.Options CreateDownloadLayoutOptions(
         string? completedLayout = null,
-        string? configuredDefault = null)
+        string? configuredDefault = null,
+        string? subdirectory = null)
     {
         return new slskd.Options
         {
@@ -2289,10 +2378,20 @@ public class DownloadServiceTests
             Global = new slskd.Options.GlobalOptions
             {
                 Download = completedLayout is null
-                    ? new slskd.Options.GlobalOptions.GlobalDownloadOptions()
+                    ? new slskd.Options.GlobalOptions.GlobalDownloadOptions
+                    {
+                        Destination = new slskd.Options.GlobalOptions.GlobalDownloadOptions.DownloadDestinationOptions
+                        {
+                            Subdirectory = subdirectory,
+                        },
+                    }
                     : new slskd.Options.GlobalOptions.GlobalDownloadOptions
                     {
                         CompletedLayout = completedLayout,
+                        Destination = new slskd.Options.GlobalOptions.GlobalDownloadOptions.DownloadDestinationOptions
+                        {
+                            Subdirectory = subdirectory,
+                        },
                     },
             },
             Destinations = new slskd.Options.DestinationsOptions
@@ -2325,12 +2424,12 @@ public class DownloadServiceTests
             new EventBus(new EventService(Mock.Of<Microsoft.EntityFrameworkCore.IDbContextFactory<EventsDbContext>>())));
     }
 
-    private static string ResolveCompletedDestinationDirectory(DownloadService service, slskd.Transfers.Transfer transfer)
+    private static string ResolveCompletedDestinationDirectory(DownloadService service, slskd.Transfers.Transfer transfer, DownloadRequest? request = null)
     {
         var method = typeof(DownloadService).GetMethod("ResolveCompletedDestinationDirectory", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveCompletedDestinationDirectory was not found.");
 
-        return Assert.IsType<string>(method.Invoke(service, [transfer, null]));
+        return Assert.IsType<string>(method.Invoke(service, [transfer, request]));
     }
 
     private static async Task<slskd.Transfers.Transfer> WaitForTransferAsync(Func<slskd.Transfers.Transfer?> finder, TimeSpan timeout)

@@ -443,17 +443,7 @@ namespace slskd.Files
             UnixFileMode? unixCreateMode = options?.UnixCreateMode
                 ?? (!string.IsNullOrWhiteSpace(configuredFileMode) ? configuredFileMode.ToUnixFileMode() : null);
 
-            if (!Directory.Exists(path))
-            {
-                if (!OperatingSystem.IsWindows() && unixCreateMode.HasValue)
-                {
-                    Directory.CreateDirectory(path, unixCreateMode.Value.WithExecuteFlagsForEachReadFlag());
-                }
-                else
-                {
-                    Directory.CreateDirectory(path);
-                }
-            }
+            EnsureDirectory(path, unixCreateMode);
 
             var streamOptions = new FileStreamOptions
             {
@@ -480,14 +470,7 @@ namespace slskd.Files
             }
             catch (DirectoryNotFoundException) when (!Directory.Exists(path))
             {
-                if (!OperatingSystem.IsWindows() && unixCreateMode.HasValue)
-                {
-                    Directory.CreateDirectory(path, unixCreateMode.Value.WithExecuteFlagsForEachReadFlag());
-                }
-                else
-                {
-                    Directory.CreateDirectory(path);
-                }
+                EnsureDirectory(path, unixCreateMode);
 
                 return new FileStream(filename, streamOptions);
             }
@@ -496,6 +479,52 @@ namespace slskd.Files
                 // the operation above can throw quite a few exceptions, all granular variations of
                 // IOException. to make handling downstream easier, wrap them all up and re-throw.
                 throw new IOException($"Failed to create file {filename}: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        ///     Creates a directory and applies the requested mode to directories created by this call.
+        /// </summary>
+        /// <param name="directory">The directory to create.</param>
+        /// <param name="unixMode">An optional chmod-style base mode used on non-Windows systems.</param>
+        public virtual void EnsureDirectory(string directory, UnixFileMode? unixMode = null)
+        {
+            ArgumentNullException.ThrowIfNullOrWhiteSpace(directory, nameof(directory));
+
+            var fullPath = Path.GetFullPath(directory);
+            if (Directory.Exists(fullPath))
+            {
+                return;
+            }
+
+            if (OperatingSystem.IsWindows() || !unixMode.HasValue)
+            {
+                Directory.CreateDirectory(fullPath);
+                return;
+            }
+
+            var missingDirectories = new List<string>();
+            var currentDirectory = fullPath;
+            while (!Directory.Exists(currentDirectory))
+            {
+                missingDirectories.Add(currentDirectory);
+                var parentDirectory = Path.GetDirectoryName(currentDirectory);
+                if (string.IsNullOrEmpty(parentDirectory) || parentDirectory == currentDirectory)
+                {
+                    break;
+                }
+
+                currentDirectory = parentDirectory;
+            }
+
+            var directoryMode = unixMode.Value.WithExecuteFlagsForEachReadFlag();
+            Directory.CreateDirectory(fullPath, directoryMode);
+
+            // The create-mode overload still observes the process umask. Reapply the configured
+            // mode only to paths that were absent when this operation began.
+            foreach (var path in missingDirectories)
+            {
+                File.SetUnixFileMode(path, directoryMode);
             }
         }
 
@@ -514,11 +543,12 @@ namespace slskd.Files
         /// <param name="deleteSourceDirectoryIfEmptyAfterMove">
         ///     An optional value indicating whether the parent directory of the source file should be deleted if it is empty after the move.
         /// </param>
+        /// <param name="unixDirectoryMode">An optional Unix mode to apply when creating destination directories.</param>
         /// <returns>The fully qualified filename of the resulting file.</returns>
         /// <exception cref="ArgumentNullException">Thrown if either of the specified file or directories are null or contain only whitespace.</exception>
         /// <exception cref="FileNotFoundException">Thrown if the specified <paramref name="sourceFilename"/> does not exist.</exception>
         /// <exception cref="IOException">Thrown if the file can't be moved, or the <paramref name="deleteSourceDirectoryIfEmptyAfterMove"/> option is set and the operation fails.</exception>
-        public virtual string MoveFile(string sourceFilename, string destinationDirectory, UnixFileMode? unixFileMode = null, bool overwrite = false, bool deleteSourceDirectoryIfEmptyAfterMove = false)
+        public virtual string MoveFile(string sourceFilename, string destinationDirectory, UnixFileMode? unixFileMode = null, bool overwrite = false, bool deleteSourceDirectoryIfEmptyAfterMove = false, UnixFileMode? unixDirectoryMode = null)
         {
             ArgumentNullException.ThrowIfNullOrWhiteSpace(sourceFilename, nameof(sourceFilename));
             ArgumentNullException.ThrowIfNullOrWhiteSpace(destinationDirectory, nameof(destinationDirectory));
@@ -532,17 +562,7 @@ namespace slskd.Files
             UnixFileMode? unixCreateMode = unixFileMode
                 ?? (!string.IsNullOrWhiteSpace(configuredFileMode) ? configuredFileMode.ToUnixFileMode() : null);
 
-            if (!Directory.Exists(destinationDirectory))
-            {
-                if (!OperatingSystem.IsWindows() && unixCreateMode.HasValue)
-                {
-                    Directory.CreateDirectory(destinationDirectory, unixCreateMode.Value.WithExecuteFlagsForEachReadFlag());
-                }
-                else
-                {
-                    Directory.CreateDirectory(destinationDirectory);
-                }
-            }
+            EnsureDirectory(destinationDirectory, unixDirectoryMode ?? unixCreateMode);
 
             var destinationFilename = Path.Combine(destinationDirectory, Path.GetFileName(sourceFilename));
 

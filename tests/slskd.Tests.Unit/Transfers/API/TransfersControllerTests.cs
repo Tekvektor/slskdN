@@ -121,6 +121,45 @@ public class TransfersControllerTests
     }
 
     [Fact]
+    public async Task EnqueueAsync_PreservesOptionalBatchAndSearchMetadata()
+    {
+        var batchId = Guid.NewGuid();
+        var searchId = Guid.NewGuid();
+        List<DownloadEnqueueRequest> queued = new();
+        var downloads = new Mock<IDownloadService>();
+        downloads
+            .Setup(service => service.EnqueueAsync(
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<DownloadEnqueueRequest>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<string, IEnumerable<DownloadEnqueueRequest>, CancellationToken>((_, files, _) => queued = files.ToList())
+            .ReturnsAsync((new List<SlskdTransfer>(), new List<string>()));
+
+        var controller = CreateController(downloads);
+        var result = await controller.EnqueueAsync(
+            "alice",
+            new[]
+            {
+                new QueueDownloadRequest
+                {
+                    Filename = "Music/track.flac",
+                    Size = 10,
+                    BatchId = batchId,
+                    BatchExternalId = "batch-42",
+                    SearchId = searchId,
+                    SearchText = "artist album",
+                },
+            });
+
+        Assert.Equal(201, Assert.IsType<ObjectResult>(result).StatusCode);
+        var request = Assert.Single(queued);
+        Assert.Equal(batchId, request.BatchId);
+        Assert.Equal("batch-42", request.BatchExternalId);
+        Assert.Equal(searchId, request.SearchId);
+        Assert.Equal("artist album", request.SearchText);
+    }
+
+    [Fact]
     public async Task EnqueueAsync_WithConfiguredDestination_PassesNormalizedDestination()
     {
         var destination = System.IO.Directory.CreateTempSubdirectory("slskdn-transfer-destination-");

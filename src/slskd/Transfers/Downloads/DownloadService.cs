@@ -683,10 +683,13 @@ namespace slskd.Transfers.Downloads
                                         OriginalFilename = file.Filename,
                                         Size = file.Size,
                                         BatchId = file.BatchId,
+                                        BatchExternalId = file.BatchExternalId,
                                         DestinationDirectory = file.DestinationDirectory,
                                         State = DownloadRequestState.Active,
                                         CreatedAt = DateTime.UtcNow,
                                         WishlistItemId = file.WishlistItemId,
+                                        SearchId = file.SearchId,
+                                        SearchText = file.SearchText,
                                         BitRate = file.BitRate,
                                         SampleRate = file.SampleRate,
                                         BitDepth = file.BitDepth,
@@ -1672,6 +1675,11 @@ namespace slskd.Transfers.Downloads
                     ? OptionsMonitor.CurrentValue.Permissions.File.Mode.ToUnixFileMode()
                     : null;
 
+                var destinationPermissionsMode = OptionsMonitor.CurrentValue.Global.Download.Destination.Permissions.Mode;
+                System.IO.UnixFileMode? completedUnixFileMode = !string.IsNullOrWhiteSpace(destinationPermissionsMode)
+                    ? destinationPermissionsMode.ToUnixFileMode()
+                    : unixFileMode;
+
                 var retryOptions = OptionsMonitor.CurrentValue.Global.Download.Retry;
                 var maxRetryDelay = Math.Max(30_000, retryOptions.MaxDelay);
                 var incompleteStrategy = (retryOptions.Partial ?? retryOptions.Incomplete).ToEnum<RetryIncompleteStrategy>();
@@ -1786,14 +1794,7 @@ namespace slskd.Transfers.Downloads
 
                     if (!System.IO.Directory.Exists(directory))
                     {
-                        if (!OperatingSystem.IsWindows() && createMode.HasValue)
-                        {
-                            System.IO.Directory.CreateDirectory(directory, createMode.Value.WithExecuteFlagsForEachReadFlag());
-                        }
-                        else
-                        {
-                            System.IO.Directory.CreateDirectory(directory);
-                        }
+                        Files.EnsureDirectory(directory, createMode);
                     }
 
                     var probeFilename = System.IO.Path.Combine(directory, $".slskdn-write-probe-{Guid.NewGuid():N}.tmp");
@@ -1942,7 +1943,7 @@ namespace slskd.Transfers.Downloads
 
                 EnsureDirectoryReady(
                     destinationDirectory,
-                    unixFileMode,
+                    completedUnixFileMode,
                     transfer.Filename,
                     "Destination");
 
@@ -1950,9 +1951,13 @@ namespace slskd.Transfers.Downloads
                 var finalFilename = Files.MoveFile(
                     sourceFilename: incompleteFilename,
                     destinationDirectory: destinationDirectory,
-                    unixFileMode: unixFileMode,
-                    overwrite: false,
-                    deleteSourceDirectoryIfEmptyAfterMove: true);
+                    unixFileMode: completedUnixFileMode,
+                    overwrite: string.Equals(
+                        OptionsMonitor.CurrentValue.Global.Download.Destination.Exists,
+                        "overwrite",
+                        StringComparison.OrdinalIgnoreCase),
+                    deleteSourceDirectoryIfEmptyAfterMove: true,
+                    unixDirectoryMode: completedUnixFileMode);
 
                 Log.Debug("Moved file {Filename} to {Destination}",
                     LoggingSanitizer.SanitizeFilePath(transfer.Filename), LoggingSanitizer.SanitizeFilePath(finalFilename));
@@ -2595,10 +2600,29 @@ namespace slskd.Transfers.Downloads
                 return NormalizeCompletedDestination(explicitDestination, options);
             }
 
+            var destinationOptions = options.Global.Download.Destination;
+            if (destinationOptions.Subdirectory is not null)
+            {
+                var subdirectory = DownloadDestinationTemplate.Render(destinationOptions.Subdirectory, transfer, request);
+                var configuredDestination = string.IsNullOrEmpty(subdirectory)
+                    ? completedRoot
+                    : System.IO.Path.Combine(completedRoot, subdirectory);
+                return NormalizeCompletedDestination(configuredDestination, options);
+            }
+
             var template = options.Global.Download.CompletedPathTemplate;
             if (!string.IsNullOrWhiteSpace(template))
             {
                 return NormalizeCompletedDestination(RenderCompletedPathTemplate(transfer, completedRoot, template, request), options);
+            }
+
+            if (string.IsNullOrWhiteSpace(options.Global.Download.CompletedLayout))
+            {
+                var defaultSubdirectory = DownloadDestinationTemplate.Render("${SOURCE_DIRECTORY}", transfer, request);
+                var defaultDestination = string.IsNullOrEmpty(defaultSubdirectory)
+                    ? completedRoot
+                    : System.IO.Path.Combine(completedRoot, defaultSubdirectory);
+                return NormalizeCompletedDestination(defaultDestination, options);
             }
 
             var layout = ParseCompletedDownloadLayout(options.Global.Download.CompletedLayout);

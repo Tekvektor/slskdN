@@ -108,13 +108,40 @@ Pass the full room name as the `roomName` query value; URL-encode it as normal f
 - `POST /api/v0/searches/{searchId}/items/{itemId}/download` - Download search result
 - `POST /api/v0/searches/{searchId}/items/{itemId}/stream` - Stream search result (Pod/Mesh only)
 
+The search-result download action retains the originating search ID and query
+with the queued request. Both values are available to completed-destination
+templates.
+
 ### Transfer APIs
 
 #### Downloads
+- `POST /api/v0/transfers/downloads/{username}` - Queue one or more downloads
 - `GET /api/v0/transfers/downloads` - List downloads
 - `GET /api/v0/transfers/downloads/{username}/{id}` - Get download details
 - `GET /api/v0/transfers/downloads/{username}/{id}/position` - Get queue position
 - `DELETE /api/v0/transfers/downloads/{username}/{id}` - Cancel download
+
+Each queued file may include `batchId`, `batchExternalId`, `searchId`, and
+`searchText`. These optional values are retained with the download request and
+can be used by the global completed-destination template. Existing clients can
+continue to omit them. A request-level `destination` query value chooses its
+root and keeps its existing precedence over the global subdirectory template.
+
+```json
+[
+  {
+    "filename": "Music/Album/Track.flac",
+    "size": 24823104,
+    "batchId": "c681ca67-a187-4d7f-8e6d-13699f468ad7",
+    "batchExternalId": "lidarr-album-481",
+    "searchId": "7b82c49b-39d7-4ac4-a61d-97144f7336bc",
+    "searchText": "Artist Album"
+  }
+]
+```
+
+See [Transfer Operations](transfer-operations.md) for supported destination
+tokens, collision policy, filesystem-safety rules, and CLI/YAML configuration.
 
 #### Uploads
 - `GET /api/v0/transfers/uploads` - List uploads

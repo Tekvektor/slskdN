@@ -46,7 +46,8 @@ for configuration and first-login steps.
 - [Search and discovery](docs/soulseek-native-discovery.md) — search peers and
   review optional discovery tools.
 - [Browse and download](docs/advanced-features.md) — select files and folders,
-  choose a destination, and follow transfer progress.
+  choose a destination, and follow transfer progress. [Transfer Operations](docs/transfer-operations.md)
+  explains path templates, file-name collisions, and permissions.
 - [Wishlist and Lidarr](docs/lidarr-integration.md) — configure background
   acquisition workflows and their safeguards.
 - [Messages, rooms, and pods](docs/pods-and-rooms.md) — review the distinct

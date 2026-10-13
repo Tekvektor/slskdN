@@ -88,6 +88,9 @@ public sealed class EnvironmentVariableConfigurationSourceTests
         Set("DOWNLOAD_RETRY_ATTEMPTS", "3");
         Set("DOWNLOAD_RETRY_DELAY", "1250");
         Set("DOWNLOAD_RETRY_MAX_DELAY", "8000");
+        Set("DOWNLOAD_DESTINATION_SUBDIRECTORY", "${SOURCE_USERNAME}/${SOURCE_PATH}");
+        Set("DOWNLOAD_DESTINATION_EXISTS", "overwrite");
+        Set("DOWNLOAD_DESTINATION_PERMISSIONS_MODE", "0750");
         Set("RETENTION_SEARCH", "90");
         Set("RETENTION_EVENTS", "21");
         Set("RETENTION_EVENTS_MAX_COUNT", "7500");
@@ -116,6 +119,9 @@ public sealed class EnvironmentVariableConfigurationSourceTests
             Assert.Equal(3, options.Global.Download.Retry.Attempts);
             Assert.Equal(1250, options.Global.Download.Retry.Delay);
             Assert.Equal(8000, options.Global.Download.Retry.MaxDelay);
+            Assert.Equal("${SOURCE_USERNAME}/${SOURCE_PATH}", options.Global.Download.Destination.Subdirectory);
+            Assert.Equal("overwrite", options.Global.Download.Destination.Exists);
+            Assert.Equal("0750", options.Global.Download.Destination.Permissions.Mode);
             Assert.Equal(90, options.Retention.Search);
             Assert.Equal(21, options.Retention.Events);
             Assert.Equal(7500, options.Retention.EventsMaxCount);
@@ -145,7 +151,7 @@ public sealed class EnvironmentVariableConfigurationSourceTests
         var configuration = new ConfigurationBuilder()
             .AddCommandLine(
                 typeof(slskd.Options),
-                commandLine: "slskdn --download-retry-attempts 4 --download-retry-partial resume --download-retry-incomplete overwrite --retention-search 120 --retention-events-max-count 9000 --retention-transfers-upload-succeeded 60 --retention-transfers-download-errored 180 --retention-files-complete 240 --retention-logs 30")
+                commandLine: "slskdn --download-retry-attempts 4 --download-retry-partial resume --download-retry-incomplete overwrite --download-destination-subdirectory ${SOURCE_USERNAME}/${SOURCE_PATH} --download-destination-exists overwrite --download-destination-permissions-mode 0750 --retention-search 120 --retention-events-max-count 9000 --retention-transfers-upload-succeeded 60 --retention-transfers-download-errored 180 --retention-files-complete 240 --retention-logs 30")
             .Build();
         var options = new slskd.Options();
         configuration.GetSection("slskd").Bind(options);
@@ -153,6 +159,9 @@ public sealed class EnvironmentVariableConfigurationSourceTests
         Assert.Equal("overwrite", options.Global.Download.Retry.Incomplete);
         Assert.Equal("resume", options.Global.Download.Retry.Partial);
         Assert.Equal("resume", options.Global.Download.Retry.Partial ?? options.Global.Download.Retry.Incomplete);
+        Assert.Equal("${SOURCE_USERNAME}/${SOURCE_PATH}", options.Global.Download.Destination.Subdirectory);
+        Assert.Equal("overwrite", options.Global.Download.Destination.Exists);
+        Assert.Equal("0750", options.Global.Download.Destination.Permissions.Mode);
         Assert.Equal(4, options.Global.Download.Retry.Attempts);
         Assert.Equal(120, options.Retention.Search);
         Assert.Equal(9000, options.Retention.EventsMaxCount);

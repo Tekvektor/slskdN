@@ -24,6 +24,10 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Added
 
+- Completed downloads support relative destination templates, source/search/batch
+  tokens, rename or overwrite collision handling, and optional Unix modes for
+  newly created files and directories. Optional request metadata is available
+  through the Web UI and download API.
 - The System files view can calculate directory sizes on demand and remove
   selected completed or incomplete items in one reviewed batch. Batch API
   responses report per-item outcomes, and path checks reject roots, overlaps,

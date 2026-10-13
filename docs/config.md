@@ -370,8 +370,11 @@ A change to slot limits requires an application restart to take effect, while sp
 | `--upload-speed-limit`   | `SLSKD_UPLOAD_SPEED_LIMIT`   | The total upload speed limit, in kibibytes       |
 | `--download-slots`       | `SLSKD_DOWNLOAD_SLOTS`       | The limit for the total number of download slots |
 | `--download-speed-limit` | `SLSKD_DOWNLOAD_SPEED_LIMIT` | The total download speed limit, in kibibytes     |
-| `--download-completed-layout` | `SLSKD_DOWNLOAD_COMPLETED_LAYOUT` | Completed download folder layout. Default: `remote_folder` to preserve source folder/file names. Other values: `uploader_folder`, `batch_id`, or `flat` |
-| `--download-completed-path-template` | `SLSKD_DOWNLOAD_COMPLETED_PATH_TEMPLATE` | Optional path template that overrides `--download-completed-layout`. Tokens: `{uploader}`, `{remote_folder}`, `{remote_parent}`, `{remote_filename}`, `{batch_id}`, `{request_name}`, `{date}` / `{date:yyyy-MM}`. Example: `{uploader}/{remote_folder}` |
+| `--download-destination-subdirectory` | `SLSKD_DOWNLOAD_DESTINATION_SUBDIRECTORY` | Relative completed-download path template. When omitted, explicit legacy layout/template settings remain active; otherwise the source directory is used. See [Transfer Operations](transfer-operations.md) for supported tokens and safety rules. |
+| `--download-destination-exists` | `SLSKD_DOWNLOAD_DESTINATION_EXISTS` | Behavior when a completed filename already exists: `rename` (default) or `overwrite` |
+| `--download-destination-permissions-mode` | `SLSKD_DOWNLOAD_DESTINATION_PERMISSIONS_MODE` | Optional chmod-style mode applied to new completed files and directories on non-Windows systems |
+| `--download-completed-layout` | `SLSKD_DOWNLOAD_COMPLETED_LAYOUT` | Legacy completed-download layout: `remote_folder`, `uploader_folder`, `batch_id`, or `flat`. Used only when `destination.subdirectory` is omitted. |
+| `--download-completed-path-template` | `SLSKD_DOWNLOAD_COMPLETED_PATH_TEMPLATE` | Legacy path template used only when `destination.subdirectory` is omitted. Tokens: `{uploader}`, `{remote_folder}`, `{remote_parent}`, `{remote_filename}`, `{batch_id}`, `{request_name}`, `{date}` / `{date:yyyy-MM}`. |
 | `--download-retry-partial` | `SLSKD_DOWNLOAD_RETRY_PARTIAL` | How to handle partial files between direct download attempts: `resume` or `overwrite` |
 | `--download-retry-incomplete` | `SLSKD_DOWNLOAD_RETRY_INCOMPLETE` | Legacy alias for the retry strategy; `partial` takes precedence when both are set |
 | `--download-retry-attempts` | `SLSKD_DOWNLOAD_RETRY_ATTEMPTS` | Maximum direct download attempts (1–20) |
@@ -387,8 +390,13 @@ transfers:
   download:
     slots: 500
     speed_limit: 1000
-    completed_layout: remote_folder
-    # When set, completed_path_template overrides completed_layout.
+    destination:
+      subdirectory: '${SOURCE_DIRECTORY}'
+      exists: rename # rename or overwrite
+      permissions:
+        # mode: '0644' # chmod-style mode; new directories get corresponding execute bits (non-Windows only)
+    # Legacy layout and template keys are read only when destination.subdirectory is omitted.
+    # completed_layout: remote_folder
     # completed_path_template: '{uploader}/{remote_folder}'
     retry:
       partial: resume # resume or overwrite
@@ -410,6 +418,13 @@ transfers:
 ```
 
 The older `global` key is still accepted so existing deployments can upgrade without an immediate edit. New configuration should use `transfers`.
+
+An explicit per-request destination continues to take precedence over the
+global subdirectory template. Generated destinations are normalized under the
+configured download roots before any file is moved. Existing legacy layout and
+template settings remain effective when `destination.subdirectory` is absent.
+See [Transfer Operations](transfer-operations.md) for token behavior, API
+metadata, collision handling, and directory permissions.
 
 Download auto-retry is enabled by default, and `max_attempts: 5` bounds retry
 churn per persisted download request across process restarts. Existing legacy

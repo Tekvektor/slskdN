@@ -488,6 +488,58 @@ public sealed class TransfersDbContextTests
             migrations[nameof(Z08032026_AutoReplaceAttemptsMigration)]);
         Assert.IsType<Z10112026_TransferLookupIndexesMigration>(
             migrations[nameof(Z10112026_TransferLookupIndexesMigration)]);
+        Assert.IsType<Z10132026_DownloadRequestOriginMetadataMigration>(
+            migrations[nameof(Z10132026_DownloadRequestOriginMetadataMigration)]);
+    }
+
+    [Fact]
+    public void DownloadRequestOriginMetadataMigration_AddsNullableColumnsIdempotently()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"slskdn-download-origin-{Guid.NewGuid():N}.db");
+        var connectionString = $"Data Source={databasePath}";
+
+        try
+        {
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "CREATE TABLE DownloadRequests (Id TEXT PRIMARY KEY NOT NULL)";
+                command.ExecuteNonQuery();
+            }
+
+            var migration = new Z10132026_DownloadRequestOriginMetadataMigration(
+                new ConnectionStringDictionary(new()
+                {
+                    [Database.Transfers] = connectionString,
+                }));
+
+            Assert.True(migration.NeedsToBeApplied());
+            migration.Apply();
+            Assert.False(migration.NeedsToBeApplied());
+            migration.Apply();
+
+            using var verificationConnection = new SqliteConnection(connectionString);
+            verificationConnection.Open();
+            using var verificationCommand = verificationConnection.CreateCommand();
+            verificationCommand.CommandText = "PRAGMA table_info(DownloadRequests)";
+            using var reader = verificationCommand.ExecuteReader();
+            var columns = new List<string>();
+            while (reader.Read())
+            {
+                columns.Add(reader.GetString(reader.GetOrdinal("name")));
+            }
+
+            Assert.Contains("BatchExternalId", columns);
+            Assert.Contains("SearchId", columns);
+            Assert.Contains("SearchText", columns);
+            Assert.False(migration.NeedsToBeApplied());
+        }
+        finally
+        {
+            slskd.Tests.Unit.SqliteTestDatabase.ClearPool(connectionString);
+            System.IO.File.Delete(databasePath);
+        }
     }
 
     [Fact]

@@ -1291,22 +1291,118 @@ namespace slskd
                 public DownloadRetryOptions Retry { get; init; } = new DownloadRetryOptions();
 
                 /// <summary>
-                ///     Gets the completed download folder layout.
+                ///     Gets the destination path and collision policy for completed downloads.
+                /// </summary>
+                [Validate]
+                public DownloadDestinationOptions Destination { get; init; } = new();
+
+                /// <summary>
+                ///     Gets the legacy completed download folder layout. Used only when
+                ///     <see cref="DownloadDestinationOptions.Subdirectory"/> is not set.
                 /// </summary>
                 [Argument(default, "download-completed-layout")]
                 [EnvironmentVariable("DOWNLOAD_COMPLETED_LAYOUT")]
-                [Description("completed download folder layout: remote_folder, uploader_folder, batch_id, or flat")]
-                public string CompletedLayout { get; init; } = "remote_folder";
+                [Description("legacy completed download folder layout: remote_folder, uploader_folder, batch_id, or flat")]
+                public string? CompletedLayout { get; init; }
 
                 /// <summary>
-                ///     Gets the completed download path template. When set, takes precedence over CompletedLayout.
+                ///     Gets the legacy completed download path template. Used only when
+                ///     <see cref="DownloadDestinationOptions.Subdirectory"/> is not set.
                 ///     Supported tokens: {uploader}, {remote_folder}, {remote_parent}, {remote_filename}, {batch_id},
                 ///     {request_name}, {date}, {date:format}. Path separator is /.
                 /// </summary>
                 [Argument(default, "download-completed-path-template")]
                 [EnvironmentVariable("DOWNLOAD_COMPLETED_PATH_TEMPLATE")]
-                [Description("completed download path template, e.g. {uploader}/{remote_folder}")]
+                [Description("legacy completed download path template, e.g. {uploader}/{remote_folder}")]
                 public string CompletedPathTemplate { get; init; } = string.Empty;
+
+                /// <summary>
+                ///     Destination behavior for completed downloads.
+                /// </summary>
+                public sealed class DownloadDestinationOptions : IValidatableObject
+                {
+                    /// <summary>
+                    ///     Gets an optional relative subdirectory template. When omitted and no legacy layout is configured,
+                    ///     the source directory name is used.
+                    /// </summary>
+                    [Argument(default, "download-destination-subdirectory")]
+                    [EnvironmentVariable("DOWNLOAD_DESTINATION_SUBDIRECTORY")]
+                    [Description("relative completed-download subdirectory; supports SOURCE_USERNAME, SOURCE_PATH, SOURCE_DIRECTORY, BATCH_ID, BATCH_EXTERNAL_ID, SEARCH_ID, and SEARCH_TEXT tokens")]
+                    public string? Subdirectory { get; init; }
+
+                    /// <summary>
+                    ///     Gets the behavior when the completed filename already exists: rename or overwrite.
+                    /// </summary>
+                    [Argument(default, "download-destination-exists")]
+                    [EnvironmentVariable("DOWNLOAD_DESTINATION_EXISTS")]
+                    [Description("completed download collision behavior: rename or overwrite")]
+                    public string Exists { get; init; } = "rename";
+
+                    /// <summary>
+                    ///     Gets permissions applied to newly created download files and directories.
+                    /// </summary>
+                    [Validate]
+                    public DownloadDestinationPermissionsOptions Permissions { get; init; } = new();
+
+                    /// <summary>
+                    ///     Validates the destination settings.
+                    /// </summary>
+                    /// <param name="validationContext">The validation context.</param>
+                    /// <returns>Validation errors, if any.</returns>
+                    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+                    {
+                        if (!string.Equals(Exists, "rename", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(Exists, "overwrite", StringComparison.OrdinalIgnoreCase))
+                        {
+                            yield return new ValidationResult("Field Exists must be either 'rename' or 'overwrite'");
+                        }
+
+                        if (Subdirectory is not null)
+                        {
+                            string? validationError = null;
+                            try
+                            {
+                                slskd.Transfers.Downloads.DownloadDestinationTemplate.Validate(Subdirectory);
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                validationError = ex.Message;
+                            }
+
+                            if (validationError is not null)
+                            {
+                                yield return new ValidationResult($"Field Subdirectory is invalid: {validationError}");
+                            }
+                        }
+                    }
+                }
+
+                /// <summary>
+                ///     Permissions for newly created completed-download paths.
+                /// </summary>
+                public sealed class DownloadDestinationPermissionsOptions : IValidatableObject
+                {
+                    /// <summary>
+                    ///     Gets the chmod-style mode applied to newly created completed-download files and directories.
+                    /// </summary>
+                    [Argument(default, "download-destination-permissions-mode")]
+                    [EnvironmentVariable("DOWNLOAD_DESTINATION_PERMISSIONS_MODE")]
+                    [Description("chmod mode for newly created completed-download files and directories (non-Windows only)")]
+                    public string? Mode { get; init; }
+
+                    /// <summary>
+                    ///     Validates the configured mode.
+                    /// </summary>
+                    /// <param name="validationContext">The validation context.</param>
+                    /// <returns>Validation errors, if any.</returns>
+                    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+                    {
+                        if (!string.IsNullOrEmpty(Mode) && !Regex.IsMatch(Mode, "^[0-7]{3,4}$", RegexOptions.CultureInvariant))
+                        {
+                            yield return new ValidationResult("Field Mode is invalid. Specify a three- or four-character chmod mode containing only digits 0-7");
+                        }
+                    }
+                }
 
                 /// <summary>
                 ///     Gets a value indicating whether auto-replace for stuck downloads is enabled.

@@ -231,6 +231,73 @@ namespace slskd.Tests.Unit.Files
         }
 
         [Fact]
+        public void EnsureDirectory_AppliesModeToNewNestedDirectoriesAndPreservesExistingParentMode()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var existingParent = Path.Combine(Temp, "existing-parent");
+            var destination = Path.Combine(existingParent, "new", "nested");
+            Directory.CreateDirectory(existingParent);
+            File.SetUnixFileMode(existingParent, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var mode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
+
+            FileService.EnsureDirectory(destination, mode);
+
+            Assert.Equal(mode, File.GetUnixFileMode(Path.Combine(existingParent, "new")));
+            Assert.Equal(mode, File.GetUnixFileMode(destination));
+            Assert.Equal(
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute,
+                File.GetUnixFileMode(existingParent));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MoveFile_AppliesRequestedExistingFilePolicy(bool overwrite)
+        {
+            var downloads = Path.Combine(Temp, "downloads");
+            var incomplete = Path.Combine(Temp, "incomplete");
+            Directory.CreateDirectory(downloads);
+            Directory.CreateDirectory(incomplete);
+            OptionsMonitorMock.Setup(o => o.CurrentValue).Returns(new Options
+            {
+                Directories = new Options.DirectoriesOptions
+                {
+                    Downloads = downloads,
+                    Incomplete = incomplete,
+                },
+                Permissions = new Options.PermissionsOptions
+                {
+                    File = new Options.PermissionsOptions.FileOptions { Mode = string.Empty },
+                },
+            });
+
+            var existingFilename = Path.Combine(downloads, "track.flac");
+            var sourceFilename = Path.Combine(incomplete, "track.flac");
+            File.WriteAllText(existingFilename, "previous");
+            File.WriteAllText(sourceFilename, "incoming");
+
+            var movedFilename = FileService.MoveFile(sourceFilename, downloads, overwrite: overwrite);
+
+            Assert.Equal("incoming", File.ReadAllText(movedFilename));
+            Assert.False(File.Exists(sourceFilename));
+            if (overwrite)
+            {
+                Assert.Equal(existingFilename, movedFilename);
+            }
+            else
+            {
+                Assert.NotEqual(existingFilename, movedFilename);
+                Assert.Equal("previous", File.ReadAllText(existingFilename));
+            }
+        }
+
+        [Fact]
         public void MoveFile_Does_Not_Fail_When_Source_Directory_Cleanup_Races_With_Other_Files()
         {
             var downloads = Path.Combine(Temp, "downloads");
