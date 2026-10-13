@@ -42000,3 +42000,16 @@ is on the validated default branch.
 request. After merge, move the exact shipped bullets into the dated version
 section on the default branch and run the exact-head release gate before
 tagging.
+
+### 0z1808. Clear SQLite Pools Before Deleting File-Backed Test Databases (2026-10-13)
+
+**What went wrong:** Windows tests failed while deleting temporary SQLite
+databases even though their contexts and connections had been disposed.
+
+**Why:** Disposed Microsoft.Data.Sqlite connections can remain open in the
+default connection pool. Linux permits unlinking an open file, while Windows
+keeps the file locked.
+
+**Prevention:** Disable pooling for temporary file-backed database tests or
+clear SQLite pools after disposing test services and before deleting their
+database files or containing directories. Keep the Windows test job enabled.
