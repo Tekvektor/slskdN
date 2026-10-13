@@ -4,6 +4,30 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1785. Keep API Load Tests Authenticated and Offline (2026-10-13)
+
+**What went wrong:** The load-test runner started the application with default
+authentication but sent requests to authenticated endpoints without a token.
+Those requests received authorization failures, which became job failures when
+the previous error suppression was removed. Its search request also sent
+`query`, while the API request model requires `searchText`, and used a
+nonexistent `/application/state` route instead of the controller's
+`/application` route. The default app configuration also enables public DHT,
+which an API-only load test does not need to contact.
+
+**Why:** The harness had no isolated test configuration or authentication
+header even though its application-state and search endpoints require
+authorization, and it guessed the POST body instead of following the API
+request model.
+
+**Prevention:** Configure loopback-only test authentication explicitly, or
+issue a disposable test token and send it with every authenticated request.
+Use a dedicated test config with loopback-only HTTP, authentication disabled,
+and public DHT disabled. Use controller route attributes and API request-model
+field names, then verify endpoint status codes before making a load job
+required. Avoid network searches unless the test has an isolated Soulseek
+fixture. Do not use live Soulseek credentials for API-only load tests.
+
 ### 0z1784. Default GitHub Actions Tokens to Read Only (2026-10-13)
 
 **What went wrong:** The repository default granted write access to
@@ -31,29 +55,44 @@ at a token boundary.
 hexadecimal characters for a commit pin. Add a test case for a valid SHA that
 begins with a digit as well as mutable and version-tag references.
 
-### 0z1784. Keep API Load Tests Authenticated and Offline (2026-10-13)
+### 0z1782. Quote Paths Inside Bash Prefix Removal (2026-10-13)
 
-**What went wrong:** The load-test runner started the application with default
-authentication but sent requests to authenticated endpoints without a token.
-Those requests received authorization failures, which became job failures when
-the previous error suppression was removed. Its search request also sent
-`query`, while the API request model requires `searchText`, and used a
-nonexistent `/application/state` route instead of the controller's
-`/application` route. The default app configuration also enables public DHT,
-which an API-only load test does not need to contact.
+**What went wrong:** ShellCheck flagged prefix removal that expanded a root
+directory variable as part of a shell pattern without quoting it.
 
-**Why:** The harness had no isolated test configuration or authentication
-header even though its application-state and search endpoints require
-authorization, and it guessed the POST body instead of following the API
-request model.
+**Why:** Quoting the full parameter expansion does not quote expansions inside
+the removal pattern, so glob characters in a path could be treated as pattern
+syntax.
 
-**Prevention:** Configure loopback-only test authentication explicitly, or
-issue a disposable test token and send it with every authenticated request.
-Use a dedicated test config with loopback-only HTTP, authentication disabled,
-and public DHT disabled. Use controller route attributes and API request-model
-field names, then verify endpoint status codes before making a load job
-required. Avoid network searches unless the test has an isolated Soulseek
-fixture. Do not use live Soulseek credentials for API-only load tests.
+**Prevention:** Quote variables inside bash parameter-removal patterns, for
+example `${path#"$root"/}`, and run ShellCheck on changed shell scripts.
+
+### 0z1781. Keep Workflow Policy Checks Aligned With Runner Rules (2026-10-13)
+
+**What went wrong:** A repository check required every pull request to use a
+hosted runner even after trusted same-repository authors were explicitly
+allowed to use the local pool.
+
+**Why:** The runner policy changed without updating the static workflow
+contract, so valid workflow expressions failed validation.
+
+**Prevention:** Update the policy contract and its test together whenever
+trusted events or authors change runner eligibility. Exercise both trusted and
+untrusted cases so the guard reflects the actual security boundary.
+
+### 0z1780. Keep GitHub Actions Step Environment Outside Script Blocks (2026-10-13)
+
+**What went wrong:** The load-test step's `env` mapping was indented inside its
+multiline `run` script, so the intended `BASE_URL` variable was not supplied to
+the test process.
+
+**Why:** A workflow edit moved step keys without preserving their YAML level.
+The workflow remained parseable, but the shell received `env:` and
+`BASE_URL:` as script text instead of step configuration.
+
+**Prevention:** Keep step-level `env`, `run`, and action keys at the same YAML
+indentation. Validate the complete workflow after edits and inspect script
+blocks when moving keys between steps.
 
 ### 0z1779. Make Security Scans Fail When Findings Are Detected (2026-10-13)
 
@@ -71,45 +110,6 @@ more authoritative than they were.
 third-party actions to verified commit SHAs, use `set -euo pipefail` for
 pipelines, and set scanners to fail at the documented severity threshold. If a
 check is advisory, label it advisory and keep it out of required-gate claims.
-
-### 0z1780. Keep GitHub Actions Step Environment Outside Script Blocks (2026-10-13)
-
-**What went wrong:** The load-test step's `env` mapping was indented inside its
-multiline `run` script, so the intended `BASE_URL` variable was not supplied to
-the test process.
-
-**Why:** A workflow edit moved step keys without preserving their YAML level.
-The workflow remained parseable, but the shell received `env:` and
-`BASE_URL:` as script text instead of step configuration.
-
-**Prevention:** Keep step-level `env`, `run`, and action keys at the same YAML
-indentation. Validate the complete workflow after edits and inspect script
-blocks when moving keys between steps.
-
-### 0z1781. Keep Workflow Policy Checks Aligned With Runner Rules (2026-10-13)
-
-**What went wrong:** A repository check required every pull request to use a
-hosted runner even after trusted same-repository authors were explicitly
-allowed to use the local pool.
-
-**Why:** The runner policy changed without updating the static workflow
-contract, so valid workflow expressions failed validation.
-
-**Prevention:** Update the policy contract and its test together whenever
-trusted events or authors change runner eligibility. Exercise both trusted and
-untrusted cases so the guard reflects the actual security boundary.
-
-### 0z1782. Quote Paths Inside Bash Prefix Removal (2026-10-13)
-
-**What went wrong:** ShellCheck flagged prefix removal that expanded a root
-directory variable as part of a shell pattern without quoting it.
-
-**Why:** Quoting the full parameter expansion does not quote expansions inside
-the removal pattern, so glob characters in a path could be treated as pattern
-syntax.
-
-**Prevention:** Quote variables inside bash parameter-removal patterns, for
-example `${path#"$root"/}`, and run ShellCheck on changed shell scripts.
 
 ### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
