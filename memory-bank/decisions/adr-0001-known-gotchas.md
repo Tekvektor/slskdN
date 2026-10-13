@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1783. Distinguish Action SHA Pins From Version Tags (2026-10-13)
+
+**What went wrong:** The action-pin check treated valid forty-character commit
+SHAs beginning with a digit as version tags because it matched only the first
+character after `@`.
+
+**Why:** The regular expression did not require the version reference to end
+at a token boundary.
+
+**Prevention:** Parse the full action reference and require exactly forty
+hexadecimal characters for a commit pin. Add a test case for a valid SHA that
+begins with a digit as well as mutable and version-tag references.
+
 ### 0z1779. Make Security Scans Fail When Findings Are Detected (2026-10-13)
 
 **What went wrong:** CI benchmark and load jobs used blanket
