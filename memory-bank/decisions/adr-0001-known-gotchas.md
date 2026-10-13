@@ -6,11 +6,10 @@
 
 ### 0z1847. Include New Environment Options In Every Maintained Installer Template (2026-10-13)
 
-**What went wrong:** The completed-download collision and permissions options
-were added to configuration documentation, but the Unraid template did not
-expose their `SLSKD_DOWNLOAD_DESTINATION_EXISTS` and
-`SLSKD_DOWNLOAD_DESTINATION_PERMISSIONS_MODE` environment variables. The
-packaging metadata validator caught the mismatches in sequence.
+**What went wrong:** Several options documented as environment variables were
+absent from the Unraid template. The mismatches included completed-download
+path, collision, and permissions settings, retry controls, and retention
+settings; the packaging metadata validator exposed them incrementally.
 
 **Why:** Updating the application configuration and the central configuration
 reference did not update the separately maintained Unraid environment list.
