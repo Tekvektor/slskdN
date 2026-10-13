@@ -38,6 +38,12 @@ For dev or build tags, use the same logical version string embedded in the tag.
   responses report per-item outcomes, and path checks reject roots, overlaps,
   and unsafe targets before deletion.
 
+### Changed
+
+- Pull request checks cancel superseded runs while scheduled checks remain
+  independent. The local identity check also runs on changes to `main`; release
+  builds keep their existing tag-only triggers.
+
 ### Fixed
 
 - Download workers that end before the remote enqueue acknowledgement no
