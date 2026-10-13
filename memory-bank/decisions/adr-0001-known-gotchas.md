@@ -31589,10 +31589,11 @@ escape the application directory.
 **Why:** Checking whether an input is relative does not prove that its
 canonicalized destination remains beneath the intended root.
 
-**Prevention:** Resolve the configured path against the application directory,
-then use `Path.GetRelativePath` on the canonical paths and reject parent
-traversal before checking whether the directory exists. Keep tests for direct
-and nested traversal as well as the root directory itself.
+**Prevention:** Resolve the configured path against the application directory
+and use `PathGuard.NormalizeAbsolutePathWithinRoots` before checking existence.
+That resolves existing symlink components as well as `..` traversal. Keep tests
+for direct and nested traversal, the root directory, and symlinks that target
+outside the application directory.
 
 ### 0z1798. Test Configuration Bindings Against CLR Option Names (2026-10-13)
 
