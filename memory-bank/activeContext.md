@@ -1,16 +1,19 @@
-## Current state — Runner-temp stability — 2026-10-13
+## Current state — Runner trust and scan gates — 2026-10-13
 
-Main now routes public pull requests and non-main manual dispatches to hosted
-runners, scopes release write permissions to the publisher, and keeps the
-allocation regression and current-source inventory documented. PR #358 still
-needs hosted validation on its exact source.
+The temporary local pool is enabled for `snapetech`-authored pull requests and
+trusted `main` validation. Pull requests from other contributors stay on
+GitHub-hosted runners, and all external contributors require workflow approval.
+These YAML rules are best-effort on personal-account repositories: a reviewed
+outside workflow can still request self-hosted after approval. Organization
+runner groups restricted to selected workflow refs remain the planned hard
+boundary.
 
-PR #357 validates runner-owned temporary storage in every Linux self-hosted
-job, exports TMPDIR, TMP, and TEMP job-wide, and updates the runtime matrix and
-packaging guard. Existing CI triggers remain tag, pull-request, and manual
-dispatch events; the runner-temp fix does not add branch-push builds. Public
-pull-request validation stays on GitHub-hosted runners. The standalone load
-harness runs on hosted Linux after the prior local SIGBUS.
+PR #357 already isolates runner-owned temporary storage in Linux self-hosted
+jobs and scopes release write permissions to the publisher. This follow-up
+removes blanket failure suppression from the test and scan workflow, pins its
+external actions, and makes high/critical dependency and image findings fail
+their scan jobs. The standalone load harness remains on hosted Linux after the
+prior local SIGBUS.
 
 The merged `68b36d3` validation run executed 15/15 tasks and failed two checks
 because `main` advanced during the run; the release-branch-sync check and the
@@ -21,12 +24,14 @@ workflow policy, runtime matrix, YAML, and diff checks pass on the PR branch.
 
 ### Next Steps
 
-- Verify GitHub schedules the hosted PR jobs and main manual run on the
-  expected runners.
-- Rerun exact-head CI and report failures, actual task counts, skips, and
-  exclusions separately.
-- Keep public pull-request jobs hosted and reassess runner capacity before
-  adding any self-hosted runner agents.
+- Verify non-`snapetech` pull requests select hosted runners and all external
+  contributors remain approval-gated.
+- Verify trusted pull requests and main pushes can use either local host where
+  their workflow labels match.
+- Rerun exact-head CI and report actual task counts, skips, exclusions, and
+  scanner findings separately.
+- Keep the future Free-organization migration plan current and check billing
+  remains $0 before any transfer.
 
 ## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 

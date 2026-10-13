@@ -4,6 +4,23 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1779. Make Security Scans Fail When Findings Are Detected (2026-10-13)
+
+**What went wrong:** CI benchmark and load jobs used blanket
+`continue-on-error`, dependency auditing ended with `|| true`, and Trivy used a
+mutable `master` ref with exit code zero. A green workflow could therefore hide
+failed tests or high-severity findings.
+
+**Why:** The workflow was written to preserve results from experimental jobs,
+but the same failure suppression covered required test and security steps. The
+summary steps still reported that scans had run, which made those results look
+more authoritative than they were.
+
+**Prevention:** Do not suppress failures for required tests or scans. Pin
+third-party actions to verified commit SHAs, use `set -euo pipefail` for
+pipelines, and set scanners to fail at the documented severity threshold. If a
+check is advisory, label it advisory and keep it out of required-gate claims.
+
 ### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
 **What went wrong:** Public pull requests and manual runs from refs outside
@@ -16,10 +33,13 @@ for both the triggering event and the selected ref. The same expression was
 copied into the normal CI, performance, load, dependency, and container
 workflows.
 
-**Prevention:** Route all `pull_request` events and workflow dispatches from
-refs outside `main` to GitHub-hosted runners. Keep release dispatches hosted,
-scope token write permissions to publishing jobs, and audit every workflow for
-self-hosted runner selection.
+**Prevention:** Route only `snapetech`-authored pull requests and trusted
+`main` runs to the local pool; other contributors' pull requests use
+GitHub-hosted runners and require approval before any workflow runs. A personal
+repository cannot enforce runner-group access by workflow ref, and workflow
+YAML can be changed by a pull request. Review workflow changes before approving
+an external run. Move to organization runner groups restricted to selected
+repositories and exact main-branch workflow refs for an enforced boundary.
 
 ### 0z1777. Dispose SQLite Test Owners Before File Cleanup (2026-10-12)
 
