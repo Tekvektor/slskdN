@@ -115,9 +115,7 @@ namespace slskd.Shares
                     cmd.Parameters.AddWithValue("prefix", parentDirectory);
                 }
 
-                var reader = cmd.ExecuteReader();
-                reader.Read();
-                return reader.GetInt32(0);
+                return Convert.ToInt32(cmd.ExecuteScalar());
             }
             finally
             {
@@ -148,9 +146,7 @@ namespace slskd.Shares
                     cmd.Parameters.AddWithValue("prefix", parentDirectory);
                 }
 
-                var reader = cmd.ExecuteReader();
-                reader.Read();
-                return reader.GetInt32(0);
+                return Convert.ToInt32(cmd.ExecuteScalar());
             }
             finally
             {
@@ -247,7 +243,7 @@ namespace slskd.Shares
             using var cmd = new SqliteCommand("SELECT originalFilename, size FROM files WHERE maskedFilename = @maskedFilename;", conn);
             cmd.Parameters.AddWithValue("maskedFilename", maskedFilename);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
 
             if (!reader.Read())
             {
@@ -270,7 +266,7 @@ namespace slskd.Shares
             using var conn = GetConnection();
             using var cmd = new SqliteCommand("SELECT timestamp, options, COALESCE(end, -1), suspect FROM scans ORDER BY timestamp DESC LIMIT 1", conn);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
 
             if (!reader.Read())
             {
@@ -499,7 +495,7 @@ namespace slskd.Shares
             using var conn = GetConnection();
             using var cmd = new SqliteCommand($"SELECT timestamp, options, COALESCE(end, -1), suspect FROM scans WHERE timestamp >= {startedAtOrAfter}", conn);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
             var scans = new List<Scan>();
 
             while (reader.Read())
@@ -530,7 +526,7 @@ namespace slskd.Shares
             using var cmd = new SqliteCommand("DELETE FROM directories WHERE timestamp < @timestamp; SELECT changes()", conn);
             cmd.Parameters.AddWithValue("timestamp", olderThanTimestamp);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
             reader.Read();
 
             return reader.GetInt64(0);
@@ -548,7 +544,7 @@ namespace slskd.Shares
             using var cmd = new SqliteCommand("DELETE FROM files WHERE timestamp < @timestamp; SELECT changes()", conn);
             cmd.Parameters.AddWithValue("timestamp", olderThanTimestamp);
 
-            var reader = cmd.ExecuteReader();
+            using var reader = cmd.ExecuteReader();
             reader.Read();
 
             return reader.GetInt64(0);
@@ -720,7 +716,7 @@ namespace slskd.Shares
 
                 using var cmd = new SqliteCommand("SELECT name, sql from sqlite_master WHERE type = 'table';", conn);
 
-                var reader = cmd.ExecuteReader();
+                using var reader = cmd.ExecuteReader();
                 var validatedTables = 0;
 
                 while (reader.Read())
@@ -1000,9 +996,9 @@ namespace slskd.Shares
                     "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='filenames';",
                     KeepaliveConnection);
 
-                var reader = cmd.ExecuteReader();
+                var schemaPresent = Convert.ToInt32(cmd.ExecuteScalar()) == 1;
 
-                if (!reader.Read() || reader.GetInt32(0) != 1)
+                if (!schemaPresent)
                 {
                     var msg = "The internal share database has been corrupted or lost, and the application cannot continue to run. Please report this in a GitHub issue here: https://github.com/snapetech/slskdn/issues";
                     Log.Fatal(msg);

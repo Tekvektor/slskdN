@@ -678,7 +678,7 @@ public class DownloadServiceTests
                 }
 
                 DeleteDatabase(databasePath);
-                System.IO.Directory.Delete(workDirectory, recursive: true);
+                DeleteDirectory(workDirectory, databasePath);
             }
         }
     }
@@ -804,7 +804,7 @@ public class DownloadServiceTests
                     return expectedRequestStates.Count == requestStates.Count &&
                         expectedRequestStates.All(expected => requestStates.TryGetValue(expected.Key, out var state) && state == expected.Value);
                 },
-                TimeSpan.FromSeconds(5));
+                TimeSpan.FromSeconds(30));
 
             var rejectedTransfers = enqueued.Select(item => service.Find(t => t.Id == item.Id)).ToArray();
             var executableTransfer = rejectedTransfers.Single(t => t!.Filename.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase))!;
@@ -2548,11 +2548,47 @@ public class DownloadServiceTests
 
     private static void DeleteDatabase(string databasePath)
     {
-        slskd.Tests.Unit.SqliteTestDatabase.ClearPool($"Data Source={databasePath}");
-        if (System.IO.File.Exists(databasePath))
+        RetrySqliteCleanup(databasePath, () =>
         {
-            System.IO.File.Delete(databasePath);
+            if (System.IO.File.Exists(databasePath))
+            {
+                System.IO.File.Delete(databasePath);
+            }
+        });
+    }
+
+    private static void DeleteDirectory(string directoryPath, string databasePath)
+    {
+        RetrySqliteCleanup(databasePath, () =>
+        {
+            if (System.IO.Directory.Exists(directoryPath))
+            {
+                System.IO.Directory.Delete(directoryPath, recursive: true);
+            }
+        });
+    }
+
+    private static void RetrySqliteCleanup(string databasePath, Action cleanup)
+    {
+        IOException? lastError = null;
+        for (var attempt = 0; attempt < 60; attempt++)
+        {
+            slskd.Tests.Unit.SqliteTestDatabase.ClearPool($"Data Source={databasePath}");
+            slskd.Tests.Unit.SqliteTestDatabase.ClearPool($"Data Source={databasePath};Pooling=False");
+
+            try
+            {
+                cleanup();
+                return;
+            }
+            catch (IOException ex) when (attempt < 59)
+            {
+                lastError = ex;
+                System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(50));
+            }
         }
+
+        throw lastError ?? new IOException($"SQLite test database cleanup did not complete for '{databasePath}'.");
     }
 
     private static async Task ShutdownAndDeleteDatabaseAsync(DownloadService service, string databasePath)

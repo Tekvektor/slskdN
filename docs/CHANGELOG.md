@@ -33,6 +33,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 - Download workers that end before the remote enqueue acknowledgement no
   longer leave an enqueue task waiting and delaying service shutdown.
+- Share database scans and maintenance now release query readers before
+  disposing their file-backed SQLite connections.
 - Room names containing `/` now work across room history, user lists, messages,
   tickers, membership, and leave actions through query-addressed API routes.
   Application state also exposes deterministic status for watched users only.
