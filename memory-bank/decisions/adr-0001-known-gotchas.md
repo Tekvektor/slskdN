@@ -126,6 +126,18 @@ while token values are external text that should be made safe as components.
 validate literal path templates against decoded traversal as well as raw `..`
 components. Keep the final root-containment check as the independent boundary.
 
+### 0z1831. Prune Terminal Requests Only After Their Transfers (2026-10-13)
+
+**What went wrong:** Transfer retention could permanently delete a removed
+download row while leaving its terminal DownloadRequest record behind.
+
+**Why:** The request and transfer have separate persistence lifecycles; pruning
+the transfer table alone does not clean the owning request.
+
+**Prevention:** After removing expired transfer rows, delete only terminal
+download requests with no remaining download rows. Preserve active requests and
+requests that still have any transfer history.
+
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
 **What went wrong:** A Windows test could not delete its temporary share
