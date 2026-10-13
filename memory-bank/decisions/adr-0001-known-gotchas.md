@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1807. Budget E2E Timeouts For Sequential Capability Lifetimes (2026-10-13)
+
+**What went wrong:** A browser test waited for a two-minute stream ticket to
+expire, then required more than two minutes of playback after reselection, but
+its three-minute test deadline could not cover both waits plus setup.
+
+**Why:** The timeout was chosen without adding the sequential wall-clock waits
+in the full user journey.
+
+**Prevention:** Sum explicit expiry and playback waits, then leave margin for
+startup and browser setup. Run the full journey headlessly after changing its
+timeout budget.
+
 ### 0z1806. Keep Moq Expression Closings Formatter-Safe (2026-10-13)
 
 **What went wrong:** A new Moq setup added whitespace between the
