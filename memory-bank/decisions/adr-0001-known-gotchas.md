@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1822. Drain Timed-Out Test Operations Before Cleanup (2026-10-13)
+
+**What went wrong:** A Windows share-scan test cancelled a scan after its
+timeout but started deleting the database before the scan task had stopped.
+The resulting file-lock error hid the original timeout.
+
+**Why:** Cancelling an operation only requests that it stop. Its task may still
+own database connections or other resources until it observes cancellation and
+finishes.
+
+**Prevention:** After requesting cancellation on timeout, await the operation
+task and handle its expected cancellation before disposing fixtures or deleting
+their files. Keep test timeouts long enough for the workload on hosted runners.
+
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
 **What went wrong:** A Windows test could not delete its temporary share
