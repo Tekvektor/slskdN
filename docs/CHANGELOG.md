@@ -22,6 +22,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+## [2026101321-slskdn.351] — 2026-10-13
+
 ### Added
 
 - The Dashboard is now the default home and summarizes successful transfers
