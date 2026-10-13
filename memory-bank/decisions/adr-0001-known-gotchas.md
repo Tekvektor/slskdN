@@ -22,6 +22,21 @@ immutable release, use an explicit manual recovery path on a SHA-pinned workflow
 ref, select the existing tag, and skip rebuilds and publishers that already
 succeeded.
 
+### 0z1788. Create The Web Content Directory For API-Only Startup (2026-10-13)
+
+**What went wrong:** The loopback API load harness built the app without
+publishing web assets, then startup validation rejected the default
+`Web.ContentPath` because `wwwroot` did not exist beside the application
+assembly.
+
+**Why:** `--app-dir` selects writable application data; it does not change
+`AppContext.BaseDirectory`, which is where the relative web content path is
+validated and served from.
+
+**Prevention:** API-only test instances still need an existing web content
+directory. Create an empty `wwwroot` beside the built assembly before startup,
+and keep the service loopback-only with DHT and Soulseek connections disabled.
+
 ### 0z1786. Do Not Trust Pull Request Authors For Persistent Runners (2026-10-13)
 
 **What went wrong:** CI routed pull requests authored by `snapetech` to a
