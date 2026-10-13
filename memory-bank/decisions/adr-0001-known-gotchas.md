@@ -34,6 +34,24 @@ file extension is on the explicit source-code allowlist. Recognize environment
 credential suffixes as well as extensionless credential names. Keep tests for
 both credential data and source files beneath token/authentication directories.
 
+### 0z1795. Refresh Abuse-Lens Counts After Validation Tooling Changes (2026-10-13)
+
+**What went wrong:** CI hardening scripts, tests, workflow policy, and release
+notes added 54 matches to the broad red-team candidate scan. The checked-in
+backlog still recorded 12,757 matches, so the release gate failed at 14 of 15
+tasks even though the new matches were expected review candidates.
+
+**Why:** The abuse-lens scanner includes tracked files under `scripts/` and
+`docs/` as well as application source and tests. Security and validation work
+often uses words such as `token`, `secret`, and `path`, which changes this
+discovery count without indicating a product defect.
+
+**Prevention:** After changing scanned source, tests, tooling, workflows, or
+documentation, run `scripts/run-council-active-bughunt.sh`, inspect and classify
+the count delta, refresh `docs/dev/bug-council-active-backlog.md`, and run
+`scripts/check-council-active-backlog.sh` before pushing. Do not weaken the
+scanner or treat candidate matches as confirmed defects.
+
 ### 0z1792. Pin Sandbox Mount Sources Before Applying Host Masks (2026-10-12)
 
 **What went wrong:** The launcher resolved bind sources by host path after
