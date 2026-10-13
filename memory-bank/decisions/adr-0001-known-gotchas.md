@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1835. Supply Optional Parameters To Reflection Invocations (2026-10-13)
+
+**What went wrong:** Tests invoking a private method through `MethodInfo.Invoke`
+omitted its optional search-metadata parameters and failed with
+`TargetParameterCountException`.
+
+**Why:** C# applies optional defaults at a compiled call site; reflection still
+requires an argument for every method parameter.
+
+**Prevention:** Pass all parameters to reflection-based invocations, including
+optional ones. Where relevant, assert that optional metadata reaches the
+downstream request.
+
 ### 0z1834. Accept Nullable Elements From Query String Collections (2026-10-13)
 
 **What went wrong:** Passing repeated query values to a shared filter parser
