@@ -48,8 +48,9 @@ policy was never exercised by ordinary branch changes.
 
 **Prevention:** Add branch pushes to the validation workflow, keep release and
 publish jobs guarded by tag refs, and route pull-request events to hosted
-runners. Pin resource-heavy .NET validation to the suitable local host and keep
-its temporary files on runner-owned storage.
+runners. Pin resource-heavy .NET validation to the suitable local runner and
+keep its temporary files on runner-owned storage. Keep the standalone load
+harness hosted after a local SIGBUS.
 
 ### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 

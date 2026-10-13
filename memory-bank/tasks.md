@@ -32,12 +32,15 @@
   and TEMP for every Linux self-hosted job in the existing PR.
 - [x] Preserve current-main policy routing public pull requests to hosted
   runners and keeping release publication tag-gated.
-- [ ] Add trusted branch pushes to the validation workflow; keep the full .NET
-  gate on the server runner and standalone load testing on hosted Linux.
-- [ ] Pass focused workflow and temp-contract checks, then rerun CI on the exact
-  branch head and classify the prior UI and SIGBUS failures.
+- [x] Add every trusted branch push to the validation workflow while keeping
+  release and publish jobs tag-gated.
+- [x] Route the full .NET branch gate to the stable local runner; keep the
+  standalone load harness on hosted Linux after the local SIGBUS.
+- [x] Pass focused workflow policy, runtime matrix, YAML, and diff checks.
+- [ ] Push the exact candidate and rerun CI to classify the prior UI and SIGBUS
+  failures using the actual execution counts and logs.
 
-Status: implementation and exact-head hosted verification are in progress.
+Status: implementation and focused checks are complete; exact-head CI is pending.
 
 ### Public pull-request runner isolation — 2026-10-12
 

@@ -1,8 +1,10 @@
 name: CI
 on:
   push:
-    # Only build on version tags, not on every push to main
+    # Run validation for trusted branch pushes; release jobs stay tag-gated.
     # build-main-* tags are handled by build-on-tag.yml
+    branches:
+      - "**"
     tags:
       - "[0-9]*.[0-9]*.[0-9]*"
       - "[0-9]*.[0-9]*.[0-9]*-slskdn.*"
@@ -29,10 +31,10 @@ permissions:
 jobs:
   build:
     name: Build and Test
-    # Public pull requests and manual dispatches outside main always use hosted
-    # runners. Main dispatches may opt into hosted; trusted tag pushes and main
-    # dispatches otherwise follow repository runner policy.
-    runs-on: ${{ (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (github.ref != 'refs/heads/main' || inputs.runner == 'github-hosted'))) && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
+    # Public pull requests and manual dispatches outside main use hosted runners.
+    # Trusted branch pushes use the stable local runner; tags and main dispatches
+    # otherwise follow repository runner policy.
+    runs-on: ${{ (github.event_name == 'push' && github.ref_type == 'branch') && fromJSON('["self-hosted","Linux","X64","slskdn-server"]') || ((github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (github.ref != 'refs/heads/main' || inputs.runner == 'github-hosted'))) && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest') }}
     timeout-minutes: 120
     outputs:
       version: ${{ steps.version.outputs.version }}

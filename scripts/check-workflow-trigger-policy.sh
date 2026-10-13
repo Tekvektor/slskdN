@@ -62,6 +62,52 @@ if ! rg -Fq "github.event_name == 'pull_request' || (github.event_name == 'workf
   failed=1
 fi
 
+if ! python3 - "$ci_workflow" <<'PYTHON'
+import re
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text()
+push = re.search(r"(?ms)^  push:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", text)
+build = re.search(r"(?ms)^  build:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", text)
+if not push or not re.search(r'(?m)^    branches:\n      - "\*\*"$', push.group(1)):
+    raise SystemExit("CI must trigger on every branch push")
+if not push or not re.search(r"(?m)^    tags:\n", push.group(1)):
+    raise SystemExit("CI must preserve its release tag triggers")
+if not build:
+    raise SystemExit("CI build job is missing")
+if "github.event_name == 'push' && github.ref_type == 'branch'" not in build.group(1):
+    raise SystemExit("CI branch pushes must use the local runner")
+if '["self-hosted","Linux","X64","slskdn-server"]' not in build.group(1):
+    raise SystemExit("CI branch pushes must select the stable local runner")
+PYTHON
+then
+  printf '.github/workflows/ci.yml must validate branch pushes locally and preserve tag triggers\n' >&2
+  failed=1
+fi
+
+if ! awk '
+  $0 == "  load-testing:" { in_job = 1; next }
+  in_job && /^  [A-Za-z0-9_-]+:$/ { exit }
+  in_job && $0 == "    runs-on: ubuntu-latest" { found = 1 }
+  END { exit !found }
+' "$repo_root/.github/workflows/ci-enhancements.yml"; then
+  printf '.github/workflows/ci-enhancements.yml load-testing must use an isolated hosted runner\n' >&2
+  failed=1
+fi
+
+for release_job in publish docker release; do
+  if ! awk -v job="$release_job" '
+    $0 == "  " job ":" { in_job = 1; next }
+    in_job && /^  [A-Za-z0-9_-]+:$/ { exit }
+    in_job && index($0, "if: startsWith(github.ref, '\''refs/tags/'\'')") > 0 { found = 1 }
+    END { exit !found }
+  ' "$ci_workflow"; then
+    printf '.github/workflows/ci.yml job %s must stay tag-gated\n' "$release_job" >&2
+    failed=1
+  fi
+done
+
 if [ "$failed" -ne 0 ]; then
   exit 1
 fi

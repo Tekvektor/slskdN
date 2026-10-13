@@ -11,19 +11,22 @@ tag-gated.
 The previous local PR run was not green: 13 of 14 validation tasks passed,
 with the Web unit-test task failing, and a separate load-test job exited with
 SIGBUS. The failing Web task reported failures in Contacts, Integrations, and
-Admin Policies. The load-test runner's shared /tmp was full. The workflows will
-route pull-request validation to hosted runners, keep the full .NET branch gate
-on the server runner, and run the standalone load test on GitHub-hosted Linux.
-The next exact-head checks will determine whether runner routing clears these
-failures.
+Admin Policies. The load-test runner's shared /tmp was full. This candidate now
+runs validation on every trusted branch push, targets the stable server runner
+for the full .NET gate, routes pull-request validation to hosted runners, and
+keeps the standalone load harness on hosted Linux. Release and publish jobs
+remain tag-gated.
+
+Focused workflow policy, runtime matrix, YAML, and diff checks pass. The exact
+head still needs hosted PR validation and a trusted branch run before the
+earlier UI and SIGBUS failures can be classified as resolved.
 
 ### Next Steps
 
-- Add all-branch push filtering to the validation workflow and pin the local
-  .NET gate to the server runner.
-- Keep public pull requests hosted and keep release/publish jobs tag-gated.
-- Rerun workflow contract checks and the current PR CI; report every failure
-  and actual execution count.
+- Push the current workflow changes and confirm GitHub schedules hosted PR jobs
+  and the trusted branch job on the expected runner.
+- Rerun exact-head CI and report failures, actual task counts, skips, and
+  exclusions separately.
 
 ## Prior state — Public PR runner isolation and CI capacity review — 2026-10-12
 

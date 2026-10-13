@@ -1,3 +1,19 @@
+# Update 2026-10-13 — Add trusted branch validation and isolate load tests
+
+The CI workflow now runs on all branch pushes. Its complete .NET branch gate
+uses a dedicated server-role runner label; pull requests remain on
+GitHub-hosted runners, and publish, Docker, and release jobs remain guarded by
+tag refs. The standalone load harness now uses hosted Linux after its previous
+local SIGBUS. The workflow policy regression checks branch triggers, runner
+selection, hosted load testing, and tag-only release jobs. The runner label was
+added to the existing server runner after verifying the repository target.
+
+Focused checks pass: scripts/check-workflow-trigger-policy.sh,
+scripts/check-dotnet-runtime-matrix.sh, scripts/check-workflow-yaml-syntax.sh,
+and git diff --check.
+Exact-head hosted PR and trusted branch CI are pending; the earlier Web unit
+test failures and SIGBUS are not counted as resolved yet.
+
 # Update 2026-10-12 21:47 UTC — Persist runner temp for self-hosted CI
 
 The earlier runner-temp workaround covered only `actions/setup-dotnet`; later
