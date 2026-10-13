@@ -105,7 +105,6 @@ expect_literal bin/watch 'pnpm --filter @slskdn/web start'
 reject_literal bin/build 'npm ci --legacy-peer-deps'
 reject_literal packaging/aur/PKGBUILD 'npm ci --legacy-peer-deps'
 expect_literal packaging/aur/PKGBUILD "'nodejs' 'pnpm'"
-PNPM_SETUP_ACTION='pnpm/setup@v3'
 for workflow in \
     .github/workflows/build-on-tag.yml \
     .github/workflows/ci-enhancements.yml \
@@ -115,7 +114,7 @@ for workflow in \
     .github/workflows/release-linux.yml \
     .github/workflows/release-ppa.yml \
     .github/workflows/windows-smoke.yml; do
-    expect_literal "$workflow" "$PNPM_SETUP_ACTION"
+    expect_line "$workflow" 'uses: pnpm/setup@[0-9a-f]{40}[[:space:]]+# v3'
     expect_literal "$workflow" 'install: false'
 done
 for workflow in \

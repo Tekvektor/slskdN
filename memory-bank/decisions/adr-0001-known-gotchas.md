@@ -50,6 +50,18 @@ whole body after edits and also requires a concise user-impact description.
 body between 30 and 400 characters while retaining the affected audience and
 the practical impact.
 
+### 0z1790. Check Pinned Actions Without Requiring Mutable Version Tags (2026-10-13)
+
+**What went wrong:** Packaging metadata validation required the literal
+`pnpm/setup@v3`, so it rejected the release workflow after the action was
+converted to an immutable commit pin.
+
+**Why:** The validator checked the old version-tag spelling instead of the
+action identity and the repository's SHA-pin requirement.
+
+**Prevention:** Match the action name, a full 40-character commit SHA, and its
+version comment. Do not require mutable tag syntax in workflow contracts.
+
 ### 0z1786. Do Not Trust Pull Request Authors For Persistent Runners (2026-10-13)
 
 **What went wrong:** CI routed pull requests authored by `snapetech` to a
