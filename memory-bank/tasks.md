@@ -44,7 +44,7 @@
 - [x] Warm expired-entry cleanup on the same `DescriptorRetriever` instance
   used by the allocation assertion; keep the `<4 KiB` threshold unchanged.
 - [x] Refresh active-bughunt counts against current `main`; callback/event is
-  217, remote/user diagnostics 434, red-team 12,718, and mutable ownership 836.
+  217, remote/user diagnostics 434, red-team 12,732, and mutable ownership 836.
   The one candidate-only red-team line is expected CI-permission changelog text.
 - [ ] Run the focused allocation test in hosted CI on the exact branch head;
   retain the result before merging PR #358.

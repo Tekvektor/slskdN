@@ -2,19 +2,21 @@
 
 Public pull-request workflows in the SLSKDN CI, enhancement, and Windows smoke
 files now select GitHub-hosted runners. Manual dispatches from refs other than
-`main` also use hosted runners. The main CI token defaults to read-only; release
-publishing gets its required write scopes in the release job. Focused workflow
-syntax, trigger-policy, identity, diff, and release-note checks pass.
+`main` also use hosted runners; trusted `main` dispatches can opt into hosted
+or follow configured runner policy. The main CI token defaults to read-only;
+release publishing gets its required write scopes in the release job. Focused
+workflow syntax, trigger-policy, identity, diff, and release-note checks pass.
 
 The previously failing allocation assertion now warms expired-entry cleanup on
 the measured `DescriptorRetriever` instance, with its `<4 KiB` cap unchanged.
 The local engine planned one unit-test task but executed zero because `pnpm` and
 the .NET CLI home were unavailable. A direct filtered run also executed zero:
 the scratch package cache lacks the pinned .NET 10.0.12 reference pack. The
-fresh candidate scan reports 217 callback/event, 434 remote-text, 12,718
-red-team, and 836 mutable-ownership matches; relative to current `main`, its
-only new red-team line is expected CI-permission changelog text. PR #358 still
-needs hosted validation on this exact source before merge.
+fresh candidate scan reports 217 callback/event, 434 remote-text, 12,732
+red-team, and 836 mutable-ownership matches. After accounting for updated
+ledger descriptions, its only branch-added red-team match is expected
+CI-permission changelog text. PR #358 still needs hosted validation on this
+exact source before merge.
 
 Cross-repository runner pooling is still pending. All repositories remain under
 the existing personal account while its hosted-runner concurrency tier is
