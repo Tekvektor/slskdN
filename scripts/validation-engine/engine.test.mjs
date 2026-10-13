@@ -14,6 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { after, test } from 'node:test';
+import { validation } from './config.mjs';
 import {
   captureCandidate,
   createPlan,
@@ -378,7 +379,7 @@ test('child environments hide sensitive values unless a task explicitly needs th
   }
 });
 
-test('Playwright tasks use the job-scoped browser cache selected by the workflow', () => {
+test('Playwright tasks use the job cache and keep standard runs offline', () => {
   const runRoot = makeRoot({ 'package.json': '{}\n' });
   const runnerTemp = path.join(os.tmpdir(), 'slskdn-validation-runner-temp');
   const task = {
@@ -406,6 +407,15 @@ test('Playwright tasks use the job-scoped browser cache selected by the workflow
   assert.equal(env.HOME, path.join(environmentRoot, 'home'));
   assert.equal(env.XDG_CACHE_HOME, path.join(environmentRoot, 'xdg-cache'));
   assert.notEqual(env.PLAYWRIGHT_BROWSERS_PATH, '/operator/cache/untrusted-browsers');
+  for (const id of ['browser-e2e', 'web-browser-e2e']) {
+    const definition = validation.tasks.find((candidate) => candidate.id === id);
+    assert.equal(definition?.env?.SLSKDN_TEST_NO_CONNECT, 'true');
+    const taskEnvironment = isolatedTaskEnvironment(definition, runRoot, {
+      RUNNER_TEMP: runnerTemp,
+      SLSKDN_TEST_NO_CONNECT: 'false',
+    });
+    assert.equal(taskEnvironment.SLSKDN_TEST_NO_CONNECT, 'true');
+  }
   assert.match(
     workflow,
     /PLAYWRIGHT_BROWSERS_PATH:\s*\$\{\{\s*runner\.temp\s*\}\}\/slskdn-playwright-browsers/,

@@ -111,6 +111,9 @@ reach child commands.
 Playwright tasks keep those private home and XDG directories and use the
 job-scoped `slskdn-playwright-browsers` cache under the runner temporary root.
 The E2E workflow installs Chromium into that same cache before the engine runs.
+The registered browser tasks set `SLSKDN_TEST_NO_CONNECT=true` explicitly, so
+the isolated suite does not attempt public Soulseek connections. Use the
+separate loopback journey command when exercising peer protocol behavior.
 For local browser validation, set `PLAYWRIGHT_BROWSERS_PATH` to the equivalent
 temporary-root path before installing browsers; see `tests/e2e/README.md`.
 
