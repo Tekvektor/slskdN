@@ -113,6 +113,19 @@ carry it through every intermediate copy.
 and enqueue construction. Add a controller test that captures the final
 enqueue request and checks every optional field.
 
+### 0z1830. Sanitize Encoded Traversal In Destination Token Values (2026-10-13)
+
+**What went wrong:** A peer name or search query containing a URL-encoded dot
+sequence could survive filename sanitization, then be rejected by the final
+path guard after decoding.
+
+**Why:** The path guard deliberately checks URL-decoded paths for traversal,
+while token values are external text that should be made safe as components.
+
+**Prevention:** Sanitize percent-encoded values at the token boundary, and
+validate literal path templates against decoded traversal as well as raw `..`
+components. Keep the final root-containment check as the independent boundary.
+
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
 **What went wrong:** A Windows test could not delete its temporary share
