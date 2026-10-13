@@ -31637,6 +31637,20 @@ crossed the network.
 histograms, and leaderboards. Keep regression data with a partially transferred
 errored record and a completed record so reporting semantics remain explicit.
 
+### 0z1801. Reuse JSON Serializer Metadata For Large Collections (2026-10-13)
+
+**What went wrong:** Deserialization created a new `JsonSerializerOptions`
+instance for each row, so a large share listing repeatedly allocated converter
+and type-metadata caches.
+
+**Why:** `System.Text.Json` keeps metadata caches on each options instance. A
+high-volume query can therefore grow memory with the number of rows even when
+the payload uses the same few types.
+
+**Prevention:** Keep the configured options instance static and read-only after
+first use. Add a regression that exercises repeated deserialization and
+confirms the shared instance is reused.
+
 ### 4. Copyright Headers - Wrong Company Attribution
 
 **The Rule**: New slskdN files use `company="slskdN Team"`, existing upstream files keep `company="slskd Team"`.
