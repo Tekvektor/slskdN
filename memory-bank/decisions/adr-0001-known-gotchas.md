@@ -31594,6 +31594,21 @@ then use `Path.GetRelativePath` on the canonical paths and reject parent
 traversal before checking whether the directory exists. Keep tests for direct
 and nested traversal as well as the root directory itself.
 
+### 0z1798. Test Configuration Bindings Against CLR Option Names (2026-10-13)
+
+**What went wrong:** A configuration-binding regression test initially used a
+property name from the YAML alias (`transfers`) as though it were a CLR member
+on `Options`; the model exposes that section as `Global`.
+
+**Why:** YAML aliases and the custom CLI/environment providers' reflection paths
+are separate naming layers, so matching the serialized key does not establish
+the in-memory property name.
+
+**Prevention:** Check the option model and provider path construction before
+writing binding assertions. Bind through the actual CLR property (`Global` for
+the aliased `transfers` section) and keep tests for both YAML and attributed
+CLI/environment input paths.
+
 ### 4. Copyright Headers - Wrong Company Attribution
 
 **The Rule**: New slskdN files use `company="slskdN Team"`, existing upstream files keep `company="slskd Team"`.
