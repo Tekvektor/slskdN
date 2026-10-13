@@ -775,8 +775,28 @@ public class DownloadServiceTests
             Assert.Equal(2, enqueued.Count);
             Assert.Empty(failed);
 
+            var expectedRequestStates = enqueued.ToDictionary(
+                item => item.RequestId!.Value,
+                item => item.Filename.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) || verifyMagicBytes
+                    ? DownloadRequestState.Failed
+                    : DownloadRequestState.Completed);
+
             await WaitUntilAsync(
-                () => enqueued.All(item => service.Find(t => t.Id == item.Id)?.State.HasFlag(TransferStates.Completed) == true),
+                () =>
+                {
+                    if (!enqueued.All(item => service.Find(t => t.Id == item.Id)?.State.HasFlag(TransferStates.Completed) == true))
+                    {
+                        return false;
+                    }
+
+                    using var requestContext = new TransfersDbContext(databaseOptions);
+                    var requestStates = requestContext.DownloadRequests
+                        .Where(request => expectedRequestStates.Keys.Contains(request.Id))
+                        .ToDictionary(request => request.Id, request => request.State);
+
+                    return expectedRequestStates.Count == requestStates.Count &&
+                        expectedRequestStates.All(expected => requestStates.TryGetValue(expected.Key, out var state) && state == expected.Value);
+                },
                 TimeSpan.FromSeconds(5));
 
             var rejectedTransfers = enqueued.Select(item => service.Find(t => t.Id == item.Id)).ToArray();
@@ -807,8 +827,8 @@ public class DownloadServiceTests
             Assert.Equal(verifyMagicBytes, System.IO.File.Exists(System.IO.Path.Combine(downloadsDirectory, ".quarantine", "mismatched.flac")));
 
             await using var requestContext = new TransfersDbContext(databaseOptions);
-            var requestIds = enqueued.Select(item => item.RequestId).ToArray();
-            var requests = await requestContext.DownloadRequests.Where(r => requestIds.Contains(r.Id)).ToListAsync();
+            var requestIds = expectedRequestStates.Keys.ToArray();
+            var requests = await requestContext.DownloadRequests.Where(request => requestIds.Contains(request.Id)).ToListAsync();
             Assert.Equal(2, requests.Count);
             Assert.Equal(DownloadRequestState.Failed, requests.Single(r => r.Id == executableTransfer.RequestId).State);
             Assert.Equal(
