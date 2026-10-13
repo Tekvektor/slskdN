@@ -41756,3 +41756,18 @@ are indexed, hide common host configuration and data roots plus the canonical
 checkout parent, and stage new candidate files before local validation. Keep
 contract coverage for nested configuration, credential names, checkout aliases,
 and host-root visibility.
+
+### 0z1784. Keep Search Deletion Safe During In-flight Completion (2026-10-13)
+
+**What went wrong:** A search can be deleted while its asynchronous lifecycle
+callback still holds a detached entity. A later state update then tries to
+persist a row that no longer exists and can fault the completion path.
+
+**Why:** Individual search deletion removed the database row without first
+coordinating with the active search, while the callback continued to persist
+state changes independently.
+
+**Prevention:** Coordinate deletion with active cancellation, make persistence
+detect a row removed during completion, and avoid broadcasting a stale update
+after deletion. Cover the delete-versus-finalize ordering with a deterministic
+regression test.
