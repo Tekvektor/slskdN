@@ -41289,7 +41289,7 @@ environment.
 job-scoped `PLAYWRIGHT_BROWSERS_PATH`. Keep the task's home and other caches
 isolated, and assert the browser cache binding in the engine tests.
 
-### 0z1770. Run Every Local Test Through The Trusted Launcher (2026-10-12)
+### 0z1776. Run Every Local Test Through The Trusted Launcher (2026-10-12)
 
 **What went wrong:** A focused contract test with mocked API responses was run
 directly from the local checkout. Although the fixture did not contact GitHub,
@@ -41303,3 +41303,17 @@ network access.
 trusted bubblewrap launcher, including tests that use mocks. Use hosted CI when
 the launcher cannot supply the declared toolchain, and never infer an exception
 from a test's fixture design.
+
+### 0z1777. Map New Options Through Every Packaging Surface (2026-10-13)
+
+**What went wrong:** The server MTU configuration and example were added, but
+the Unraid template lacked the `SLSKD_SLSK_CONNECTION_MTU` environment mapping,
+so hosted packaging metadata validation failed.
+
+**Why:** The option was validated through application config and Docker build
+paths, but the separate Unraid template has its own config-to-environment
+mapping contract.
+
+**Prevention:** When adding configuration, search every packaging example and
+environment mapping, including the Unraid template, and run packaging metadata
+validation before preparing release notes or tagging.
