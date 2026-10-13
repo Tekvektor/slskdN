@@ -22,7 +22,11 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
-_Add release notes here while developing; move only shipped bullets into a dated version section when a release is cut._
+### Security
+
+- Manual workflow runs on refs outside `main` use GitHub-hosted runners. The
+  main CI workflow now uses read-only token permissions by default and grants
+  release write access only to its release job.
 
 - Manual CI runs can select a GitHub-hosted runner while tag builds retain the
   configured runner policy.
