@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1836. Route Filtered Metrics Through The Filter-Aware Overload (2026-10-13)
+
+**What went wrong:** A metrics request with an include filter and no exclude
+filter could dispatch to the legacy virtual overload, allowing an override to
+return unfiltered values.
+
+**Why:** API compatibility kept the original one-argument virtual method while
+a separate overload was added for both include and exclude filters.
+
+**Prevention:** Preserve the existing overload only when callers supply no
+filters. Route any filtered request through the include-and-exclude overload,
+and test include-only requests against a service that overrides the legacy
+method.
+
 ### 0z1835. Supply Optional Parameters To Reflection Invocations (2026-10-13)
 
 **What went wrong:** Tests invoking a private method through `MethodInfo.Invoke`
