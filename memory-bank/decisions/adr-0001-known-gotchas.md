@@ -58,6 +58,21 @@ living document for collisions.
 **Prevention:** Search the complete gotcha log before assigning an identifier.
 Correct a duplicate in the same change and keep each entry's identifier unique.
 
+### 0z1826. Apply Configured Download Directory Modes After Creation (2026-10-13)
+
+**What went wrong:** Download directory creation passed the configured Unix
+mode to `Directory.CreateDirectory`, but the resulting mode could be narrower
+when the process umask masked permission bits.
+
+**Why:** The create-mode overload still respects the process umask. Setting the
+mode only at creation does not guarantee the configured mode on the new
+directory.
+
+**Prevention:** After creating a download destination directory, apply the
+configured mode explicitly to directories created for that download. Do not
+change permissions on pre-existing parent directories, and skip Unix mode
+operations on Windows. Cover both restrictive umasks and nested paths.
+
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
 **What went wrong:** A Windows test could not delete its temporary share
