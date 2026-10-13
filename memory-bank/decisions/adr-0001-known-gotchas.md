@@ -18,6 +18,31 @@ precisions.
 precision before querying the first page. Use that exact value for every page
 and cover the precision boundary in controller tests.
 
+### 0z1840. Update App Shell Tests When The Default Page Changes (2026-10-13)
+
+**What went wrong:** App tests that relied on the root route rendering Searches
+failed after the root route moved to Dashboard. Some tests also loaded the real
+Dashboard API dependencies despite mocking the rest of the shell.
+
+**Why:** The tests coupled shell behavior to the previous default page and its
+module mock list.
+
+**Prevention:** When changing the default route, update assertions that exercise
+the root or unknown-route fallback and mock the new page when testing only the
+app shell. Keep dedicated route tests for the actual page destination.
+
+### 0z1841. Update Exact Tooltip Assertions With Action Scope (2026-10-13)
+
+**What went wrong:** A transfer action tooltip was expanded to explain that
+bulk actions affect loaded rows, but its exact-text test still asserted the
+previous wording.
+
+**Why:** The test treated copy as fixed while the action's scope explanation
+changed with paged browsing.
+
+**Prevention:** Update tooltip assertions alongside scope changes and verify
+the same explanation appears on both halves of a split control.
+
 ### 0z1838. Match Mock Arguments To The Service Interface (2026-10-13)
 
 **What went wrong:** A search-list controller test placed the source filter in
