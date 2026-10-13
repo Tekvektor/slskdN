@@ -129,6 +129,20 @@ domain types named `File`.
 **Prevention:** Use `System.IO.File` explicitly in files that import another
 `File` type, and compile the owning project after adding filesystem code.
 
+### 0z1816. Read All SOCKS5 Greeting Methods In Test Servers (2026-10-13)
+
+**What went wrong:** The SOCKS mock read a fixed three-byte greeting. Clients
+that offered multiple authentication methods sent additional method bytes;
+the mock then mistook the leftover byte for the next request and closed before
+the connect response was sent.
+
+**Why:** The greeting contains a method-count field, so its total length varies
+with the client's authentication options.
+
+**Prevention:** Read the two-byte greeting header, then exactly the advertised
+number of authentication methods. Select only a method the client offered and
+keep mock negotiation aligned with the protocol frame boundaries.
+
 ### 0z1806. Keep Moq Expression Closings Formatter-Safe (2026-10-13)
 
 **What went wrong:** A new Moq setup added whitespace between the
