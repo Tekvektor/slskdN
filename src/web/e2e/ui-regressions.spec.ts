@@ -2104,6 +2104,7 @@ test.describe('UI regression coverage', () => {
           name: true,
           peer: true,
           progress: false,
+          requested: false,
           remaining: false,
           samplerate: false,
           size: true,
