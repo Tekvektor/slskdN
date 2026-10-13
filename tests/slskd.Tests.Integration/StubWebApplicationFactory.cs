@@ -75,6 +75,23 @@ public class StubWebApplicationFactory : WebApplicationFactory<ProgramStub>
         var testTempRoot = Path.Combine(Path.GetTempPath(), "slskdn-test");
         var testDownloadsRoot = Path.Combine(testTempRoot, "downloads");
         var testIncompleteRoot = Path.Combine(testTempRoot, "incomplete");
+        var testOptions = new OptionsModel
+        {
+            RemoteFileManagement = true,
+            WarmCache = new global::slskd.WarmCacheOptions
+            {
+                Enabled = true,
+            },
+            VirtualSoulfind = new VirtualSoulfindOptions
+            {
+                Bridge = new BridgeOptions { Enabled = true, Port = 2242 },
+            },
+            Directories = new OptionsModel.DirectoriesOptions
+            {
+                Downloads = testDownloadsRoot,
+                Incomplete = testIncompleteRoot,
+            },
+        };
         System.IO.Directory.CreateDirectory(testContentRoot);
         System.IO.Directory.CreateDirectory(testDownloadsRoot);
         System.IO.Directory.CreateDirectory(testIncompleteRoot);
@@ -157,6 +174,7 @@ public class StubWebApplicationFactory : WebApplicationFactory<ProgramStub>
                             options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
                         })
                         .AddApplicationPart(typeof(CapabilitiesController).Assembly)
+                        .AddApplicationPart(typeof(global::slskd.Files.API.FilesController).Assembly)
                         .AddApplicationPart(typeof(DownloadsCompatibilityController).Assembly)
                         .AddApplicationPart(typeof(LibraryHealthController).Assembly)
                         .AddApplicationPart(typeof(global::slskd.API.Compatibility.LibraryCompatibilityController).Assembly)
@@ -194,22 +212,15 @@ public class StubWebApplicationFactory : WebApplicationFactory<ProgramStub>
                     services.AddSingleton<global::slskd.Users.Notes.IUserNoteService>(_ => Mock.Of<global::slskd.Users.Notes.IUserNoteService>(service =>
                         service.GetAllNotesAsync(It.IsAny<CancellationToken>()) ==
                             Task.FromResult<IEnumerable<global::slskd.Users.Notes.UserNote>>(Array.Empty<global::slskd.Users.Notes.UserNote>())));
-                    services.AddSingleton<IOptionsMonitor<OptionsModel>>(_ => new StaticOptionsMonitor<OptionsModel>(new OptionsModel
-                    {
-                        WarmCache = new global::slskd.WarmCacheOptions
+
+                    services.AddSingleton<IOptionsMonitor<OptionsModel>>(_ => new StaticOptionsMonitor<OptionsModel>(testOptions))
+                        .AddSingleton<IOptionsSnapshot<OptionsModel>>(_ =>
                         {
-                            Enabled = true
-                        },
-                        VirtualSoulfind = new VirtualSoulfindOptions
-                        {
-                            Bridge = new BridgeOptions { Enabled = true, Port = 2242 }
-                        },
-                        Directories = new OptionsModel.DirectoriesOptions
-                        {
-                            Downloads = testDownloadsRoot,
-                            Incomplete = testIncompleteRoot
-                        }
-                    }))
+                            var snapshot = new Mock<IOptionsSnapshot<OptionsModel>>();
+                            snapshot.SetupGet(x => x.Value).Returns(testOptions);
+                            return snapshot.Object;
+                        })
+                        .AddSingleton<global::slskd.Files.FileService>()
                         .AddSingleton<IDiscographyJobService>(discographyService)
                         .AddSingleton<ILabelCrateJobService>(labelCrateService)
                         .AddSingleton<IMusicBrainzClient>(_ => Mock.Of<IMusicBrainzClient>(client =>
@@ -244,12 +255,6 @@ public class StubWebApplicationFactory : WebApplicationFactory<ProgramStub>
                                 User = new slskd.UserState { Username = "test-user" },
                             });
                             return monitor.Object;
-                        })
-                        .AddSingleton<IOptionsSnapshot<OptionsModel>>(_ =>
-                        {
-                            var snapshot = new Mock<IOptionsSnapshot<OptionsModel>>();
-                            snapshot.SetupGet(x => x.Value).Returns(new OptionsModel());
-                            return snapshot.Object;
                         });
 
                     // VirtualSoulfind / Moderation / MediaCore for ModerationIntegrationTests
