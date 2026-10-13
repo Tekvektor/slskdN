@@ -41847,3 +41847,17 @@ filesystem paths may contain additional `]` characters.
 **Prevention:** Locate the alias delimiter once at the grammar boundary and
 pass the remaining path through unchanged. Keep regression coverage for
 bracketed paths, aliases, excluded shares, and unaliased paths.
+
+### 0z1804. Stream Large Browse Caches From Ordered Share Rows (2026-10-13)
+
+**What went wrong:** Building a peer browse cache materialized every shared
+directory and file, then copied the full directory collection into a response
+object before writing the cache.
+
+**Why:** The cache path reused collection-oriented APIs designed for ordinary
+browsing, so a large library required several full-size object graphs at once.
+
+**Prevention:** Stream ordered SQLite rows into one directory group at a time,
+merge sorted repository results without retaining the full tree, and serialize
+the counted protocol response directly to the temporary cache file. Keep
+wire-compatibility, lazy-enumeration, and cancellation/failure cleanup tests.
