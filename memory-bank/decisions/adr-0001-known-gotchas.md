@@ -42546,3 +42546,16 @@ product roles cannot be added to the metadata.
 
 **Prevention:** Use only the supported audience values. Describe API and other
 client impacts in the fragment body, then run the release-note preview.
+
+### 0z1812. Declare Offline Mode In Trusted Browser Tasks (2026-10-13)
+
+**What went wrong:** Browser E2E tasks do not inherit arbitrary shell variables
+under the trusted validation runner, so they lost the workflow's
+`SLSKDN_TEST_NO_CONNECT` setting and could try the public Soulseek service.
+
+**Why:** The runner creates a narrow task environment; undeclared variables are
+intentionally removed before candidate code starts.
+
+**Prevention:** Set offline mode as explicit task configuration for standard
+browser suites. Keep loopback peer journeys as separately selected tests with
+their own documented network boundary.
