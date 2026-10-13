@@ -99,6 +99,20 @@ not resolve a collision when the protocol namespace is imported explicitly.
 **Prevention:** Use `System.IO.File` for filesystem operations in files that
 also import `Soulseek`, or define a clear type alias for the intended API.
 
+### 0z1829. Preserve Optional Metadata Across API Normalization (2026-10-13)
+
+**What went wrong:** The download API accepted new optional destination-token
+metadata, but its normalization step copied only the older request fields and
+discarded the batch label before enqueue.
+
+**Why:** API handlers create normalized request objects instead of forwarding
+the input DTO, so adding a field to the DTO and final enqueue mapping does not
+carry it through every intermediate copy.
+
+**Prevention:** Trace new request properties across validation, normalization,
+and enqueue construction. Add a controller test that captures the final
+enqueue request and checks every optional field.
+
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
 **What went wrong:** A Windows test could not delete its temporary share
