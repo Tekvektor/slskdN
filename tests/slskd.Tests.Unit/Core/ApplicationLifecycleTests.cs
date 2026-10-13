@@ -87,9 +87,10 @@ public class ApplicationLifecycleTests
     {
         var applicationState = new ManagedState<State>();
         var trackedUsers = Array.Empty<User>();
+        var watchedUsernames = Array.Empty<string>();
         var userService = new Mock<IUserService>();
         userService.SetupGet(service => service.Users).Returns(() => trackedUsers);
-        userService.SetupGet(service => service.WatchedUsernames).Returns(() => trackedUsers.Select(user => user.Username).ToArray());
+        userService.SetupGet(service => service.WatchedUsernames).Returns(() => watchedUsernames);
 
         Application? application = null;
         try
@@ -111,10 +112,54 @@ public class ApplicationLifecycleTests
                 .Returns(Task.CompletedTask);
 
             trackedUsers = [new User { Username = "peer", Status = new Status { Presence = UserPresence.Online } }];
+            watchedUsernames = ["peer"];
             soulseekClient.Raise(
                 client => client.UserStatusChanged += null,
                 null,
                 new UserStatus("peer", UserPresence.Online, isPrivileged: false));
+
+            var user = Assert.Single(applicationState.CurrentValue.Users);
+            Assert.Equal("peer", user.Username);
+            Assert.Equal(UserPresence.Online, user.Status.Presence);
+        }
+        finally
+        {
+            application?.Dispose();
+        }
+    }
+
+    [Fact]
+    public void WatchedUsersChanged_UpdatesSharedStateAfterRegistration()
+    {
+        var applicationState = new ManagedState<State>();
+        var trackedUsers = Array.Empty<User>();
+        var watchedUsernames = Array.Empty<string>();
+        var userService = new Mock<IUserService>();
+        userService.SetupGet(service => service.Users).Returns(() => trackedUsers);
+        userService.SetupGet(service => service.WatchedUsernames).Returns(() => watchedUsernames);
+
+        Application? application = null;
+        try
+        {
+            application = CreateApplication(
+                new OptionsAtStartup(),
+                new TestOptionsMonitor<Options>(new Options()),
+                applicationState,
+                new ManagedState<ShareState>(),
+                new ManagedState<RelayState>(),
+                out var hub,
+                out _,
+                out _,
+                userServiceMock: userService);
+            hub.Setup(client => client.SendCoreAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<object?[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            trackedUsers = [new User { Username = "peer", Status = new Status { Presence = UserPresence.Online } }];
+            watchedUsernames = ["peer"];
+            userService.Raise(service => service.WatchedUsersChanged += null, null, EventArgs.Empty);
 
             var user = Assert.Single(applicationState.CurrentValue.Users);
             Assert.Equal("peer", user.Username);

@@ -31,8 +31,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 ### Fixed
 
 - Room names containing `/` now work across room history, user lists, messages,
-  tickers, membership, and leave actions. Application state reports watched-user
-  status deterministically.
+  tickers, membership, and leave actions. Application state publishes current
+  presence for watched users after registration and status changes.
 - Interrupted share scans remain marked as suspect, long remote path components
   map safely to local names, and transfer totals count bytes actually transferred.
 - Download retry and retention settings now bind from CLI and environment

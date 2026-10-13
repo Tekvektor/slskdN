@@ -222,6 +222,7 @@ namespace slskd
 
             RoomService = roomService;
             Users = userService;
+            Users.WatchedUsersChanged += Users_WatchedUsersChanged;
             Messaging = messagingService;
             ApplicationHub = applicationHub;
 
@@ -2516,6 +2517,11 @@ namespace slskd
             UpdateTrackedUsersState();
         }
 
+        private void Users_WatchedUsersChanged(object? sender, EventArgs args)
+        {
+            UpdateTrackedUsersState();
+        }
+
         private void UpdateTrackedUsersState()
         {
             var watchedUsernames = new HashSet<string>(Users.WatchedUsernames, StringComparer.OrdinalIgnoreCase);
@@ -3383,6 +3389,7 @@ namespace slskd
             Client.TransferProgressUpdated -= Client_TransferProgressUpdated;
             Client.BrowseProgressUpdated -= Client_BrowseProgressUpdated;
             Client.UserStatusChanged -= Client_UserStatusChanged;
+            Users.WatchedUsersChanged -= Users_WatchedUsersChanged;
             Client.PrivateMessageReceived -= Client_PrivateMessageReceived;
 
             if (_privateRoomMembershipAddedHandler != null)
