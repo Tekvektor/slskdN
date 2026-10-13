@@ -42508,3 +42508,17 @@ database contexts so they close before cleanup runs, disable pooling for
 temporary file-backed database tests or clear pools after closing connections,
 and assert the complete set of asynchronous results instead of relying on
 scheduling order. Keep the Windows test job enabled.
+
+### 0z1809. Quantize Transfer History Watermarks Before Querying (2026-10-13)
+
+**What went wrong:** The first completed-history page filtered rows using a
+full-precision UTC timestamp, then returned that timestamp as Unix milliseconds.
+The next page reconstructed the smaller, millisecond-precision value and could
+skip a row near the page boundary when applying its offset.
+
+**Why:** The response cursor lost sub-millisecond precision that had already
+affected the first page's query.
+
+**Prevention:** Convert the initial history watermark to Unix milliseconds and
+back before filtering any rows. Query, respond, and continue with the same
+precision, and cover the boundary so offset pages cannot lose a transfer.
