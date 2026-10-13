@@ -19086,3 +19086,15 @@ loopback radio-renewal soak passes. Release build and repository formatting
 lint pass. The trusted local backend unit task did not reach test execution
 because restore/build stalled before launching a test host; no backend result
 is claimed from that attempt.
+
+## Update 2026-10-13 21:29 UTC — Unraid environment coverage
+
+Packaging metadata validation found documented download destination,
+permissions, retry, and retention environment settings missing from the
+Unraid template. Recorded gotcha `0z1847`, exposed every documented optional
+`SLSKD_*` setting in the advanced template fields, and updated the Unraid guide,
+support post, Unreleased changelog, validation inputs, and release-note
+fragment. The full packaging metadata validator passes; XML parsing and a
+documentation-to-template coverage scan also pass. Exact-head release
+validation remains pending because the currently running hosted job was
+dispatched before this follow-up.

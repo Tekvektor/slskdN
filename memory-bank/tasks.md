@@ -7412,3 +7412,15 @@ resource completion.
 - [ ] Complete the backend unit suite and exact-head hosted release gate. The
   local trusted backend task stalled during restore/build before starting a
   test host, so that task did not produce a result.
+
+## Unraid configuration coverage and release follow-up — 2026-10-13
+
+- [x] Expose each documented optional `SLSKD_*` setting in the Unraid advanced
+  template fields with blank defaults.
+- [x] Update the Unraid guide and support post, add the Unreleased changelog
+  bullet, and add a validated release-note fragment.
+- [x] Pass packaging metadata validation, Unraid XML parsing, and the direct
+  environment-variable coverage scan.
+- [ ] Pass the backend test suite and exact-head hosted release gate on `main`.
+- [ ] Prepare the `.351` versioned notes on validated `main`, create the
+  authorized stable tag, and verify the published assets.

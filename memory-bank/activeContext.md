@@ -19367,3 +19367,26 @@ DHT/VPN behavior was not exercised in the network-isolated runner.
 - Commit the browser-cache implementation, release fragment, and documentation.
 - Complete the backend unit suite and exact-head hosted release gate before
   publication.
+
+## Current state — Unraid configuration coverage and release follow-up — 2026-10-13
+
+The packaging validator exposed missing advanced Unraid fields for documented
+download destination, retry, and retention environment options. The template
+now exposes all documented `SLSKD_*` settings with blank values, and its README
+and support text explain that these fields retain image and YAML defaults. A
+release-note fragment and Unreleased changelog bullet document the operator
+impact. The shared omission pattern is recorded in gotcha `0z1847`.
+
+Packaging metadata validation passes, the Unraid XML parses, and a direct
+coverage scan finds no documented environment settings missing from the
+template. Hosted CI run `38470254893` was dispatched on commit
+`f2b9256d48eca1eaddac3cdd85b9fa4f8bca7f2e`; subsequent release, gotcha, and
+Unraid-template changes still require validation on the final default-branch
+commit. The stable versioned changelog section and tag remain pending.
+
+### Next Steps
+
+- Commit and push the complete Unraid template and release-note follow-up.
+- Complete the backend test suite and exact-head hosted release gate on `main`.
+- Prepare versioned `.351` notes after the validated changes reach `main`, then
+  cut the explicitly requested stable release and verify published artifacts.
