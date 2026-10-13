@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1846. Preserve Trusted Playwright Cache Mounts (2026-10-13)
+
+**What went wrong:** The trusted launcher mounted the preinstalled Playwright
+browser cache read-only and exported its guest path, but the validation engine
+replaced that path with a private temporary-directory path. Browser tests could
+not see the mounted binaries.
+
+**Why:** The task environment always derived the browser path from
+`RUNNER_TEMP`, `TMPDIR`, or the OS default, without recognizing the launcher's
+explicit guest mount.
+
+**Prevention:** Preserve a Playwright cache path only when it matches the
+trusted launcher's `/mnt/run-data/dependencies/<index>` mount form. Continue
+ignoring arbitrary operator paths, and test both the accepted guest path and a
+rejected host path.
+
 ### 0z1839. Keep Paged Snapshot Watermarks At API Precision (2026-10-13)
 
 **What went wrong:** The first transfer page filtered with a timestamp that had
