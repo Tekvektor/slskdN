@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1848. Scan Every Project For Transitive Package Advisories (2026-10-13)
+
+**What went wrong:** Scanning only the application project reported no
+vulnerable packages, while the unit-test and performance-test project graphs
+resolved an affected transitive SignalR package.
+
+**Why:** A package audit is scoped to the project graph passed to the command.
+Test and tooling projects can resolve dependency paths that a product-only
+scan does not examine.
+
+**Prevention:** Enumerate the first-party projects under `src`, `tests`, and
+`tools` when checking NuGet advisories. After a dependency update, scan each
+restored project graph and confirm the affected package is no longer resolved.
+
 ### 0z1847. Include New Environment Options In Every Maintained Installer Template (2026-10-13)
 
 **What went wrong:** Several options documented as environment variables were
