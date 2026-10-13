@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1834. Accept Nullable Elements From Query String Collections (2026-10-13)
+
+**What went wrong:** Passing repeated query values to a shared filter parser
+compiled with nullable-reference warnings because `StringValues.ToArray()`
+returns `string?[]`.
+
+**Why:** Query collections allow nullable elements at their API boundary even
+when each accepted value is validated before use.
+
+**Prevention:** Type parser inputs as `string?[]?`, reject empty or whitespace
+elements explicitly, and only construct regular expressions after the null and
+blank checks have narrowed each element.
+
 ### 0z1833. Restore UTC Kind For Every Persisted Transfer Timestamp (2026-10-13)
 
 **What went wrong:** SQLite materialized `RequestedAt` and `EnqueuedAt` with
