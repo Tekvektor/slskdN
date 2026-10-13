@@ -35,10 +35,10 @@ For dev or build tags, use the same logical version string embedded in the tag.
   them. The upstream-access notifier runs only on its scheduled default-branch
   workflow.
 
-- Third-party workflow actions are pinned to verified commit SHAs. Dependency
-  scans fail on high or critical vulnerabilities, while the container scan
-  blocks high or critical findings with available fixes. Required test failures
-  are no longer hidden as successful runs.
+- GitHub requires third-party workflow actions to use full immutable commit
+  SHAs. Dependency scans fail on high or critical vulnerabilities, while the
+  container scan blocks high or critical findings with available fixes.
+  Required test failures are no longer hidden as successful runs.
 
 - Manual CI runs can select a GitHub-hosted runner while tag builds retain the
   configured runner policy.
