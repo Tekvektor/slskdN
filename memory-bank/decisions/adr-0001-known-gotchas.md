@@ -31624,6 +31624,19 @@ Unicode text-element boundaries, reserve room for a deterministic digest, and
 retain a short file extension where possible. Test both directory and filename
 components by creating the mapped path on disk.
 
+### 0z1800. Aggregate Actual Transfer Progress, Not Advertised Size (2026-10-13)
+
+**What went wrong:** Transfer summaries added each record's requested file size,
+so a failed or cancelled transfer was reported as though the full file had
+crossed the network.
+
+**Why:** The transfer row stores both the expected file `Size` and the observed
+`BytesTransferred`; they are equal only after a successful full transfer.
+
+**Prevention:** Use `BytesTransferred` for aggregate byte totals in summaries,
+histograms, and leaderboards. Keep regression data with a partially transferred
+errored record and a completed record so reporting semantics remain explicit.
+
 ### 4. Copyright Headers - Wrong Company Attribution
 
 **The Rule**: New slskdN files use `company="slskdN Team"`, existing upstream files keep `company="slskd Team"`.
