@@ -582,8 +582,7 @@ public class DownloadServiceTests
         }
         finally
         {
-            service.Dispose();
-            DeleteDatabase(databasePath);
+            await ShutdownAndDeleteDatabaseAsync(service, databasePath);
         }
     }
 
@@ -666,13 +665,21 @@ public class DownloadServiceTests
         }
         finally
         {
-            service.Dispose();
-            await using (var context = new TransfersDbContext(databaseOptions))
+            try
             {
-                await context.Database.CloseConnectionAsync();
+                await service.ShutdownAsync();
             }
+            finally
+            {
+                service.Dispose();
+                await using (var context = new TransfersDbContext(databaseOptions))
+                {
+                    await context.Database.CloseConnectionAsync();
+                }
 
-            System.IO.Directory.Delete(workDirectory, recursive: true);
+                DeleteDatabase(databasePath);
+                System.IO.Directory.Delete(workDirectory, recursive: true);
+            }
         }
     }
 
@@ -1702,8 +1709,7 @@ public class DownloadServiceTests
         finally
         {
             blockingFactory.ReleaseFirstCreate();
-            service.Dispose();
-            DeleteDatabase(databasePath);
+            await ShutdownAndDeleteDatabaseAsync(service, databasePath);
         }
     }
 
@@ -1756,8 +1762,7 @@ public class DownloadServiceTests
         finally
         {
             blockingFactory.ReleaseFirstCreate();
-            service.Dispose();
-            DeleteDatabase(databasePath);
+            await ShutdownAndDeleteDatabaseAsync(service, databasePath);
         }
     }
 
@@ -1846,8 +1851,7 @@ public class DownloadServiceTests
         }
         finally
         {
-            service.Dispose();
-            DeleteDatabase(databasePath);
+            await ShutdownAndDeleteDatabaseAsync(service, databasePath);
         }
     }
 
@@ -1932,12 +1936,7 @@ public class DownloadServiceTests
         }
         finally
         {
-            service.Dispose();
-
-            if (System.IO.File.Exists(databasePath))
-            {
-                DeleteDatabase(databasePath);
-            }
+            await ShutdownAndDeleteDatabaseAsync(service, databasePath);
         }
     }
 
@@ -2544,6 +2543,19 @@ public class DownloadServiceTests
         if (System.IO.File.Exists(databasePath))
         {
             System.IO.File.Delete(databasePath);
+        }
+    }
+
+    private static async Task ShutdownAndDeleteDatabaseAsync(DownloadService service, string databasePath)
+    {
+        try
+        {
+            await service.ShutdownAsync();
+        }
+        finally
+        {
+            service.Dispose();
+            DeleteDatabase(databasePath);
         }
     }
 

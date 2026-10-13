@@ -98,7 +98,7 @@ public class SecurityIntegrationTests
     public void PathGuard_AllowsValidPaths()
     {
         // Arrange
-        var testRoot = "/home/user/downloads";
+        var testRoot = Path.Combine(Path.GetTempPath(), "slskdn-security-integration-downloads");
         var validPath = "music/album/track.flac";
 
         // Act
