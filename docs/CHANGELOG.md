@@ -22,6 +22,26 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Added
+
+- The System files view can calculate directory sizes and remove selected
+  completed or incomplete items in one reviewed batch. API responses report
+  each item’s result, and path checks reject unsafe deletion targets.
+
+### Fixed
+
+- Room names containing `/` now work across room history, user lists, messages,
+  tickers, membership, and leave actions. Application state reports watched-user
+  status deterministically.
+- Interrupted share scans remain marked as suspect, long remote path components
+  map safely to local names, and transfer totals count bytes actually transferred.
+- Download retry and retention settings now bind from CLI and environment
+  inputs. Relative Web content paths reject traversal and symlink escapes.
+
+### Changed
+
+- Documented the Gluetun control-route requirements for routed deployments.
+
 ### Security
 
 - Manual workflow runs on refs outside `main` use GitHub-hosted runners. The

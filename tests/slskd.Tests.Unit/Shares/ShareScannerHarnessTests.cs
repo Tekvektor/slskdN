@@ -27,6 +27,53 @@ public class ShareScannerHarnessTests
     }
 
     [Fact]
+    public void SqliteRepository_StreamsOrderedShareRowsAndReleasesReadersWhenEnumerationStops()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"share-enumeration-{Guid.NewGuid():N}.db");
+
+        try
+        {
+            using var repository = new SqliteShareRepository($"Data Source={databasePath};Pooling=False");
+            repository.Create(discardExisting: true);
+            repository.InsertDirectory("music\\Album", 1);
+            repository.InsertDirectory("music\\Empty", 1);
+            repository.InsertFile(
+                "music\\Album\\track.mp3",
+                "/tmp/track.mp3",
+                DateTime.UtcNow,
+                new Soulseek.File(1, "music\\Album\\track.mp3", 42, "mp3"),
+                1);
+
+            using (var directories = repository.EnumerateDirectories("music\\").GetEnumerator())
+            {
+                Assert.True(directories.MoveNext());
+                Assert.Equal("music\\Album", directories.Current);
+            }
+
+            using (var files = repository.EnumerateFiles("music\\", includeFullPath: true).GetEnumerator())
+            {
+                Assert.True(files.MoveNext());
+                Assert.Equal("music\\Album\\track.mp3", files.Current.Filename);
+            }
+
+            Assert.Equal(repository.ListDirectories("music\\"), repository.EnumerateDirectories("music\\"));
+            Assert.Equal(
+                repository.ListFiles("music\\", includeFullPath: true).Select(file => file.Filename),
+                repository.EnumerateFiles("music\\", includeFullPath: true).Select(file => file.Filename));
+        }
+        finally
+        {
+            foreach (var filename in new[] { databasePath, $"{databasePath}-wal", $"{databasePath}-shm" })
+            {
+                if (File.Exists(filename))
+                {
+                    File.Delete(filename);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public async Task ScanAsync_WithLargeSyntheticTree_CompletesAndIndexesAllFilesWithoutHashing()
     {
         var shareRoot = Path.Combine(Path.GetTempPath(), $"share-scan-harness-{Guid.NewGuid():N}");
@@ -117,6 +164,63 @@ public class ShareScannerHarnessTests
             if (File.Exists(backupCopyPath))
             {
                 File.Delete(backupCopyPath);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ScanAsync_WhenCancelled_MarksThePartialScanAsSuspect()
+    {
+        var shareRoot = Path.Combine(Path.GetTempPath(), $"share-scan-cancel-{Guid.NewGuid():N}");
+        var databasePath = Path.Combine(Path.GetTempPath(), $"share-scan-cancel-{Guid.NewGuid():N}.db");
+
+        try
+        {
+            Directory.CreateDirectory(shareRoot);
+            await File.WriteAllTextAsync(Path.Combine(shareRoot, "track.mp3"), "audio").ConfigureAwait(false);
+
+            var scanner = new ShareScanner(
+                workerCount: 1,
+                fileService: CreateNoHashFileService(),
+                moderationProvider: new slskd.Common.Moderation.NoopModerationProvider());
+
+            using var repository = new SqliteShareRepository($"Data Source={databasePath}");
+            repository.Create(discardExisting: true);
+
+            var cancelRequested = 0;
+            var observedCancelledState = false;
+            using var registration = scanner.StateMonitor.OnChange(change =>
+            {
+                if (change.Current.Filling && Interlocked.Exchange(ref cancelRequested, 1) == 0)
+                {
+                    scanner.TryCancelScan();
+                }
+
+                observedCancelledState |= change.Current.Cancelled;
+            });
+
+            await scanner.ScanAsync(
+                new[] { new Share(shareRoot) },
+                new slskd.Options.SharesOptions(),
+                repository).ConfigureAwait(false);
+
+            var latestScan = repository.FindLatestScan();
+
+            Assert.NotNull(latestScan);
+            Assert.True(latestScan!.EndedAt.HasValue);
+            Assert.True(latestScan.Suspect);
+            Assert.True(observedCancelledState);
+        }
+        finally
+        {
+            if (Directory.Exists(shareRoot))
+            {
+                Directory.Delete(shareRoot, recursive: true);
+            }
+
+            if (File.Exists(databasePath))
+            {
+                File.Delete(databasePath);
             }
         }
     }

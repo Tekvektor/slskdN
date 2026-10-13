@@ -5,6 +5,7 @@ namespace slskd.Tests.Unit;
 
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using slskd.Shares;
 using Xunit;
 
 public class SoulseekOptionsValidationTests
@@ -300,5 +301,34 @@ public class SoulseekOptionsValidationTests
         var results = options.Validate(new ValidationContext(options)).ToList();
 
         Assert.Empty(results);
+    }
+
+    [Theory]
+    [InlineData("[music]/tmp/music]archive", "music", "/tmp/music]archive", false)]
+    [InlineData("-[music]/tmp/music]archive", "music", "/tmp/music]archive", true)]
+    [InlineData("![music]/tmp/music]archive", "music", "/tmp/music]archive", true)]
+    public void Share_UsesFirstClosingBracketAsAliasDelimiter(
+        string raw,
+        string expectedAlias,
+        string expectedPath,
+        bool expectedExcluded)
+    {
+        var share = new Share(raw);
+
+        Assert.Equal(raw, share.Raw);
+        Assert.Equal(expectedAlias, share.Alias);
+        Assert.Equal(expectedPath, share.LocalPath);
+        Assert.Equal(expectedAlias, share.RemotePath);
+        Assert.Equal(expectedExcluded, share.IsExcluded);
+    }
+
+    [Fact]
+    public void Share_DerivesUnaliasedDirectoryNameIncludingClosingBracket()
+    {
+        var share = new Share("/tmp/music]archive");
+
+        Assert.Equal("music]archive", share.Alias);
+        Assert.Equal("/tmp/music]archive", share.LocalPath);
+        Assert.Equal("music]archive", share.RemotePath);
     }
 }

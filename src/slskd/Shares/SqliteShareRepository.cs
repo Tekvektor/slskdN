@@ -299,6 +299,15 @@ namespace slskd.Shares
             cmd.ExecuteNonQuery();
         }
 
+        /// <inheritdoc/>
+        public void FlagScanAsSuspect(long timestamp)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqliteCommand("UPDATE scans SET suspect = 1 WHERE timestamp = @timestamp", conn);
+            cmd.Parameters.AddWithValue("timestamp", timestamp);
+            cmd.ExecuteNonQuery();
+        }
+
         /// <summary>
         ///     Inserts a directory.
         /// </summary>
@@ -379,38 +388,25 @@ namespace slskd.Shares
         /// </summary>
         /// <param name="parentDirectory">The optional directory prefix used for listing subdirectories.</param>
         /// <returns>The list of directories.</returns>
-        public IEnumerable<string> ListDirectories(string? parentDirectory = null)
+        public IEnumerable<string> ListDirectories(string? parentDirectory = null) => EnumerateDirectories(parentDirectory).ToList();
+
+        /// <inheritdoc />
+        public IEnumerable<string> EnumerateDirectories(string? parentDirectory = null)
         {
-            var results = new List<string>();
-
             using var conn = GetConnection();
+            using var cmd = string.IsNullOrEmpty(parentDirectory)
+                ? new SqliteCommand("SELECT name FROM directories ORDER BY name ASC;", conn)
+                : new SqliteCommand("SELECT name from directories WHERE name LIKE @prefix || '%' ORDER BY name ASC;", conn);
 
-            SqliteCommand? cmd = null;
-
-            try
+            if (!string.IsNullOrEmpty(parentDirectory))
             {
-                if (string.IsNullOrEmpty(parentDirectory))
-                {
-                    cmd = new SqliteCommand("SELECT name FROM directories ORDER BY name ASC;", conn);
-                }
-                else
-                {
-                    cmd = new SqliteCommand("SELECT name from directories WHERE name LIKE @prefix || '%' ORDER BY name ASC;", conn);
-                    cmd.Parameters.AddWithValue("prefix", parentDirectory);
-                }
-
-                var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    results.Add(reader.GetString(0));
-                }
-
-                return results;
+                cmd.Parameters.AddWithValue("prefix", parentDirectory);
             }
-            finally
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                cmd?.Dispose();
+                yield return reader.GetString(0);
             }
         }
 
@@ -420,54 +416,41 @@ namespace slskd.Shares
         /// <param name="parentDirectory">The optional parent directory.</param>
         /// <param name="includeFullPath">A value indicating whether the fully qualified path should be returned.</param>
         /// <returns>The list of files.</returns>
-        public IEnumerable<Soulseek.File> ListFiles(string? parentDirectory = null, bool includeFullPath = false)
+        public IEnumerable<Soulseek.File> ListFiles(string? parentDirectory = null, bool includeFullPath = false) => EnumerateFiles(parentDirectory, includeFullPath).ToList();
+
+        /// <inheritdoc />
+        public IEnumerable<Soulseek.File> EnumerateFiles(string? parentDirectory = null, bool includeFullPath = false)
         {
-            var results = new List<Soulseek.File>();
-
-            SqliteCommand? cmd = null;
             using var conn = GetConnection();
+            using var cmd = string.IsNullOrEmpty(parentDirectory)
+                ? new SqliteCommand(
+                    "SELECT maskedFilename, code, size, extension, attributeJson FROM files " +
+                    "WHERE isBlocked = 0 AND isQuarantined = 0 " +
+                    "ORDER BY maskedFilename ASC;",
+                    conn)
+                : new SqliteCommand(
+                    "SELECT maskedFilename, code, size, extension, attributeJson FROM files " +
+                    "WHERE maskedFilename LIKE @match AND isBlocked = 0 AND isQuarantined = 0 " +
+                    "ORDER BY maskedFilename ASC;",
+                    conn);
 
-            try
+            if (!string.IsNullOrEmpty(parentDirectory))
             {
-                // T-MCP02: Exclude blocked and quarantined files from shares
-                if (string.IsNullOrEmpty(parentDirectory))
-                {
-                    cmd = new SqliteCommand("SELECT maskedFilename, code, size, extension, attributeJson FROM files " +
-                        "WHERE isBlocked = 0 AND isQuarantined = 0 " +
-                        "ORDER BY maskedFilename ASC;", conn);
-                }
-                else
-                {
-                    cmd = new SqliteCommand("SELECT maskedFilename, code, size, extension, attributeJson FROM files " +
-                        "WHERE maskedFilename LIKE @match AND isBlocked = 0 AND isQuarantined = 0 " +
-                        "ORDER BY maskedFilename ASC;", conn);
-                    cmd.Parameters.AddWithValue("match", parentDirectory + '%');
-                }
-
-                var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    var filename = reader.GetString(0);
-                    var code = reader.GetInt32(1);
-                    var size = reader.GetInt64(2);
-                    var extension = reader.GetString(3);
-                    var attributeJson = reader.GetString(4);
-
-                    var attributeList = attributeJson.FromJson<List<FileAttribute>>();
-
-                    filename = includeFullPath ? filename : filename.GetNormalizedFileName();
-
-                    var file = new Soulseek.File(code, filename, size, extension, attributeList);
-
-                    results.Add(file);
-                }
-
-                return results;
+                cmd.Parameters.AddWithValue("match", parentDirectory + '%');
             }
-            finally
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                cmd?.Dispose();
+                var filename = reader.GetString(0);
+                var code = reader.GetInt32(1);
+                var size = reader.GetInt64(2);
+                var extension = reader.GetString(3);
+                var attributeJson = reader.GetString(4);
+                var attributeList = attributeJson.FromJson<List<FileAttribute>>();
+
+                filename = includeFullPath ? filename : filename.GetNormalizedFileName();
+                yield return new Soulseek.File(code, filename, size, extension, attributeList);
             }
         }
 

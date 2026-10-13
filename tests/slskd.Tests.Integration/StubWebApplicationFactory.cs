@@ -233,7 +233,24 @@ public class StubWebApplicationFactory : WebApplicationFactory<ProgramStub>
                         .AddSingleton<global::slskd.VirtualSoulfind.ShadowIndex.IShadowIndexQuery, StubShadowIndexQueryForFactory>()
                         // ISoulseekClient for CompatibilityController (GET /api/info) — Soulbeet
                         .AddSingleton<ISoulseekClient>(_ => Mock.Of<ISoulseekClient>(x =>
-                            x.State == SoulseekClientStates.LoggedIn && x.Username == "test-user"));
+                            x.State == SoulseekClientStates.LoggedIn && x.Username == "test-user"))
+                        .AddSingleton<slskd.Messaging.IRoomTracker, slskd.Messaging.RoomTracker>()
+                        .AddSingleton<slskd.Messaging.IRoomService>(_ => Mock.Of<slskd.Messaging.IRoomService>())
+                        .AddSingleton<slskd.IStateMonitor<slskd.State>>(_ =>
+                        {
+                            var monitor = new Mock<slskd.IStateMonitor<slskd.State>>();
+                            monitor.SetupGet(x => x.CurrentValue).Returns(new slskd.State
+                            {
+                                User = new slskd.UserState { Username = "test-user" },
+                            });
+                            return monitor.Object;
+                        })
+                        .AddSingleton<IOptionsSnapshot<OptionsModel>>(_ =>
+                        {
+                            var snapshot = new Mock<IOptionsSnapshot<OptionsModel>>();
+                            snapshot.SetupGet(x => x.Value).Returns(new OptionsModel());
+                            return snapshot.Object;
+                        });
 
                     // VirtualSoulfind / Moderation / MediaCore for ModerationIntegrationTests
                     services.AddSingleton<IIntentQueue, InMemoryIntentQueue>();

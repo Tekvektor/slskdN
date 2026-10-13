@@ -4,6 +4,8 @@
 namespace slskd.Tests.Integration.Api;
 
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using slskd.Messaging;
 using slskd.Tests.Integration;
 using Xunit;
 
@@ -62,6 +64,31 @@ public class VersionedApiRoutesIntegrationTests : IClassFixture<StubWebApplicati
         using var client = _factory.CreateClient();
 
         var response = await client.GetAsync("/api/v0/users/notes");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SlashNamedRoomMessages_AreResolvedFromTheQueryString()
+    {
+        using var client = _factory.CreateClient();
+        var tracker = _factory.Services.GetRequiredService<IRoomTracker>();
+        var roomName = "/mu/";
+        tracker.TryAdd(roomName, new Room { Name = roomName });
+
+        var response = await client.GetAsync("/api/v0/rooms/by-name/messages?roomName=%2Fmu%2F");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task OrdinaryRoomMessages_KeepTheirExistingRoute()
+    {
+        using var client = _factory.CreateClient();
+        var tracker = _factory.Services.GetRequiredService<IRoomTracker>();
+        tracker.TryAdd("ambient", new Room { Name = "ambient" });
+
+        var response = await client.GetAsync("/api/v0/rooms/joined/ambient/messages");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
