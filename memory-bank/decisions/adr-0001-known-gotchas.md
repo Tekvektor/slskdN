@@ -31580,6 +31580,20 @@ suspect before finalizing it. Keep a regression that cancels an in-progress scan
 and verifies the persisted record is ended and suspect; startup must reject it
 and rebuild the cache.
 
+### 0z1797. Keep Relative Web Content Paths Inside The App Directory (2026-10-13)
+
+**What went wrong:** Web content configuration rejected rooted paths but accepted
+relative paths containing `..`, allowing the resolved content directory to
+escape the application directory.
+
+**Why:** Checking whether an input is relative does not prove that its
+canonicalized destination remains beneath the intended root.
+
+**Prevention:** Resolve the configured path against the application directory,
+then use `Path.GetRelativePath` on the canonical paths and reject parent
+traversal before checking whether the directory exists. Keep tests for direct
+and nested traversal as well as the root directory itself.
+
 ### 4. Copyright Headers - Wrong Company Attribution
 
 **The Rule**: New slskdN files use `company="slskdN Team"`, existing upstream files keep `company="slskd Team"`.
