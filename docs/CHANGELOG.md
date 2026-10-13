@@ -28,6 +28,17 @@ For dev or build tags, use the same logical version string embedded in the tag.
   main CI workflow now uses read-only token permissions by default and grants
   release write access only to its release job.
 
+- Pull requests from contributors other than `snapetech` are routed to
+  GitHub-hosted runners; `snapetech` pull requests and trusted `main`
+  validation may use the configured local pool. External contributors still
+  require workflow approval, and workflow edits must be reviewed before
+  approval. The repository Actions token now defaults to read-only, with
+  write scopes declared by workflows that publish.
+
+- Third-party workflow actions are pinned to verified commit SHAs. Dependency
+  and container scans now fail when they find high or critical vulnerabilities,
+  and required test failures are no longer hidden as successful runs.
+
 - Manual CI runs can select a GitHub-hosted runner while tag builds retain the
   configured runner policy.
 - The README includes a Ko-fi link for users who want to support maintenance.
