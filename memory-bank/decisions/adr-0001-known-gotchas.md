@@ -4,6 +4,18 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1832. Backdate Transfer Rows After SaveChanges In Retention Tests (2026-10-13)
+
+**What went wrong:** A retention test set `Transfer.UpdatedAt` to an old value
+before saving, but the database row was current when pruning ran.
+
+**Why:** `TransfersDbContext.SaveChanges` refreshes `UpdatedAt` for every
+added or modified transfer, including test fixtures.
+
+**Prevention:** Persist the transfer fixture first, then set `UpdatedAt` to the
+test timestamp with a targeted SQL update. Do not rely on the entity's initial
+value for retention-age tests.
+
 ### 0z1823. Bound Windows Test-Database Delete Retries (2026-10-13)
 
 **What went wrong:** Windows CI still reported a share-scan database in use
