@@ -42535,3 +42535,14 @@ one concise area that represents the primary change.
 **Prevention:** Use one lowercase 2–32 character slug in `area`. Put additional
 feature areas in the fragment body, and run release-note preview before
 committing the fragment.
+
+### 0z1811. Use Only Supported Release-Note Audiences (2026-10-13)
+
+**What went wrong:** A new release fragment named API clients as an audience,
+but the release-note schema accepts only users, operators, or both.
+
+**Why:** Audience values come from a fixed schema vocabulary; descriptive
+product roles cannot be added to the metadata.
+
+**Prevention:** Use only the supported audience values. Describe API and other
+client impacts in the fragment body, then run the release-note preview.
