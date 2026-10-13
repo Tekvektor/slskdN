@@ -45,6 +45,78 @@ sync.
 to the transfer state. Keep the final assertions against a fresh database
 query so asynchronous persistence is not mistaken for a product failure.
 
+### 0z1810. Model Native Paths And Executables In Cross-Platform Tests (2026-10-13)
+
+**What went wrong:** Windows smoke tests inherited Unix-rooted paths, compared
+case-sensitive executable suffixes, and searched only for the Unix apphost
+name. Some option validators also correctly rejected fixture paths that did
+not exist on the host.
+
+**Why:** The tests asserted Unix representation details instead of the
+filesystem and executable behavior of the current platform.
+
+**Prevention:** Build absolute fixture paths from `Path.GetTempPath()` and
+`Path.Combine`, create directories that validation requires to exist, compare
+resolved executable names using the platform's path semantics, and search for
+the `.exe` apphost on Windows. Assert normalized paths rather than literal
+separator or drive forms.
+
+### 0z1811. Make Subprocess Test Output Explicit On Every Platform (2026-10-13)
+
+**What went wrong:** A process-draining test used the current process host as
+its fake media tool. On Windows that resolved to `cmd.exe`, whose output did
+not match the test's expected stderr failure.
+
+**Why:** A platform executable was assumed to emulate the same stdout, stderr,
+and exit behavior as the Unix process used by the test.
+
+**Prevention:** Launch a test-owned executable or platform script that writes
+known diagnostics to stderr, emits no PCM to stdout, and exits with the
+intended status. Keep the fake process behavior explicit and clean up its
+temporary files in `finally`.
+
+### 0z1812. Consume The Complete SOCKS5 Request In Test Servers (2026-10-13)
+
+**What went wrong:** The SOCKS test server read a fixed ten-byte connect
+request even when the client used a domain-name address. It then closed the
+socket with request bytes unread, which caused Windows to reset the connection
+before the test response was consumed.
+
+**Why:** The mock assumed the IPv4 request length instead of following the
+address-type and address-length fields in the SOCKS5 frame.
+
+**Prevention:** Read the request header, consume the address payload according
+to its address type, and then consume the port before responding or closing
+the test connection.
+
+### 0z1813. Replace An Open Browse Cache File Atomically On Windows (2026-10-13)
+
+**What went wrong:** Replacing a browse cache with `File.Move(...,
+overwrite: true)` failed on Windows while an existing reader held the target
+open with delete sharing enabled.
+
+**Why:** The overwrite move path does not have the same open-handle replacement
+behavior on Windows as unlink-and-rename on POSIX.
+
+**Prevention:** When the same-volume destination already exists, use
+`File.Replace` so active readers retain the old file while new readers see the
+replacement. Use `File.Move` only for a destination that does not yet exist;
+do not implement replacement as delete followed by move because that loses
+atomic visibility.
+
+### 0z1814. Classify Socket Failures By Their Error Code (2026-10-13)
+
+**What went wrong:** Expected reset and timeout socket failures were rejected
+on Windows because the classifier recognized English exception text that
+differs across operating systems.
+
+**Why:** Socket error messages are platform-specific and may be localized,
+while the socket error code is stable.
+
+**Prevention:** Match expected socket conditions using `SocketException`'s
+`SocketErrorCode`. Keep message checks only for non-socket wrappers that do
+not expose a structured network error.
+
 ### 0z1806. Keep Moq Expression Closings Formatter-Safe (2026-10-13)
 
 **What went wrong:** A new Moq setup added whitespace between the
