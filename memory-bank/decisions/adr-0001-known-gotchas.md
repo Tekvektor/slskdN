@@ -41771,3 +41771,16 @@ state changes independently.
 detect a row removed during completion, and avoid broadcasting a stale update
 after deletion. Cover the delete-versus-finalize ordering with a deterministic
 regression test.
+
+### 0z1785. Record Both Sync And Async Database Commands In Tests (2026-10-13)
+
+**What went wrong:** A lifecycle test stopped counting set-based deletes after
+the implementation moved the guarded database operation to a synchronous EF
+command.
+
+**Why:** The test interceptor recorded only asynchronous non-query commands,
+so the assertion silently missed the new execution path.
+
+**Prevention:** When changing EF execution mode, make SQL command interceptors
+observe both synchronous and asynchronous calls before relying on command-count
+assertions.
