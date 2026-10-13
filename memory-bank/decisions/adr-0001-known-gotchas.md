@@ -4,6 +4,23 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1819. Match Fixture Copy Paths To Solution Build Configuration (2026-10-13)
+
+**What went wrong:** A unit-test build copied a helper executable from the
+Release output directory even though the solution built that referenced helper
+project under Debug. A stale Release output hid the mismatch locally, while a
+clean Windows runner failed the post-build check.
+
+**Why:** The helper project is referenced by a solution project but is not
+itself listed in the solution. Solution builds can therefore select a
+different configuration for that project reference than a direct project
+build.
+
+**Prevention:** Keep referenced fixture projects aligned with the consuming
+project's configuration, and test the copy target after cleaning both Debug
+and Release outputs. Do not let an old output directory stand in for a
+reproducible build dependency.
+
 ### 0z1818. Import Temporary Probe Cleanup Helpers (2026-10-13)
 
 **What went wrong:** Runtime-probe cleanup called `rmSync` without importing
