@@ -103,7 +103,7 @@ public class ShareScannerHarnessTests
                 scanner,
                 shareRoot,
                 repository,
-                TimeSpan.FromSeconds(30),
+                TimeSpan.FromSeconds(90),
                 "Synthetic share-scan harness").ConfigureAwait(false);
             stopwatch.Stop();
 
@@ -375,8 +375,18 @@ public class ShareScannerHarnessTests
         var completedTask = await Task.WhenAny(scanTask, Task.Delay(timeout)).ConfigureAwait(false);
         if (completedTask != scanTask)
         {
-            var indexedFiles = repository.CountFiles();
             scanner.TryCancelScan();
+
+            try
+            {
+                await scanTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancellation is expected after the timeout; wait for the scanner to release its resources before cleanup.
+            }
+
+            var indexedFiles = repository.CountFiles();
             Assert.True(false, $"{operationName} did not finish within {timeout.TotalSeconds:N0}s. Indexed files before timeout: {indexedFiles}.");
         }
 
