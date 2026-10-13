@@ -19037,3 +19037,23 @@ The full .NET suite passes 6,145 tests; the full Web suite passes 1,295 tests.
 build/startup, version-change cache check, release-note preview, identity scan,
 route inventory, and GitHub target verification pass. Push and hosted stable
 release verification remain.
+
+## Update 2026-10-13 — Stable `.350` publisher and exact-head validation follow-up
+
+The stable `.350` tag and 13 release assets are published; all six platform
+archives and checksums verify. Recovery publication succeeded for the AUR
+source and binary packages, COPR, container registries, and Nix metadata/smoke.
+The exact Jammy source package is `Published`, and its build log completed, but
+Launchpad's build API still reports `Uploading build`. The exact binary is absent
+from the published-binary API and the current Jammy amd64 package index. The
+release wait job timed out after repeated Launchpad API SSL timeouts; no source
+resubmission was made.
+
+Hosted `workflow_dispatch` run `38365844172` validated branch head
+`62f2f95f67bb11e8fc62571d5e137b3b74af5a38`: the release gate passed all 15
+selected tasks and 7,344 active cases with zero failures or blockers, three
+browser E2E tasks were excluded by the checked-in plan, and the Nix package
+smoke passed. The previous run's branch-sync failure came from `main` advancing
+after checkout. The local remediation baseline also passes after refreshing the
+candidate inventory to 12,811 matches; these are review candidates, not
+confirmed defects.

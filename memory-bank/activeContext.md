@@ -1,4 +1,29 @@
-## Current state — Runner trust and scan gates — 2026-10-13
+## Current state — Stable `.350` publication follow-through — 2026-10-13 08:51 UTC
+
+Stable release `2026101222-slskdn.350` is published with 13 assets; all six
+platform archives and checksums verify. Publisher recovery succeeded for AUR
+source and binary packages, COPR, container registries, and Nix metadata/smoke.
+
+Hosted `workflow_dispatch` run `38365844172` passed on branch head
+`62f2f95f67bb11e8fc62571d5e137b3b74af5a38`: 15/15 selected release-gate tasks,
+7,344 active cases, zero failures or blockers, three browser E2E exclusions,
+and successful Nix package smoke. The prior branch-sync failure was caused by
+`main` advancing after checkout. The refreshed local remediation baseline
+passes with 12,811 review candidates.
+
+The exact `.350` Jammy source is `Published` and its build log completed, but
+Launchpad's build API still says `Uploading build`; the exact binary is absent
+from all 331 published-binary records and the current Jammy amd64 apt index.
+The release waiter timed out after repeated API SSL timeouts. Do not resubmit
+the accepted source while publication is unresolved.
+
+### Next Steps
+
+- Recheck Launchpad's exact binary publication state and apt index read-only.
+- Keep PR-specific runner routing and main manual-dispatch validation as a
+  separate follow-up.
+
+## Prior state — Runner trust and scan gates — 2026-10-13
 
 The temporary local pool is enabled for `snapetech`-authored pull requests and
 trusted `main` validation. Pull requests from other contributors stay on
