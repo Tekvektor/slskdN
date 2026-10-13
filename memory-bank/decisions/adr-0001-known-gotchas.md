@@ -45,6 +45,18 @@ and the test data was created inside the precision interval being truncated.
 before the request watermark. For cursor-boundary tests, set timestamps to
 specific values on both sides of the serialized millisecond boundary.
 
+### 0z1851. Match ILogger Scope Nullability Constraints (2026-10-13)
+
+**What went wrong:** Updating the .NET logging abstractions package exposed a
+nullability warning on a benchmark `ILogger.BeginScope<TState>` implementation.
+
+**Why:** Its generic constraint no longer matched the interface contract after
+the package annotations were updated.
+
+**Prevention:** Keep custom logger implementations aligned with the current
+`ILogger.BeginScope<TState>` signature, including its `notnull` constraint,
+and compile the benchmark project after logging package updates.
+
 ### 0z1847. Include New Environment Options In Every Maintained Installer Template (2026-10-13)
 
 **What went wrong:** Several options documented as environment variables were
