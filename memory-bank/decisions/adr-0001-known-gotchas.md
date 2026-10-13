@@ -42141,20 +42141,23 @@ request. After merge, move the exact shipped bullets into the dated version
 section on the default branch and run the exact-head release gate before
 tagging.
 
-### 0z1808. Clear SQLite Pools Before Deleting File-Backed Test Databases (2026-10-13)
+### 0z1808. Drain SQLite Test Services Before Deleting File-Backed Databases (2026-10-13)
 
 **What went wrong:** Windows tests failed while deleting temporary SQLite
-databases because repository/service connections or pooled connections were
-still open during cleanup. A concurrent remediation test also assumed that
-background download callbacks would arrive in recording order.
+databases because repository/service connections, pooled connections, or
+background service work were still active during cleanup. A concurrent
+remediation test also assumed that background download callbacks would arrive
+in recording order.
 
 **Why:** A `using` declaration inside a `try` block may remain alive while its
-associated `finally` block runs, disposed Microsoft.Data.Sqlite connections
-can remain open in the default pool, and parallel tasks do not guarantee
-callback order. Linux permits unlinking an open file, so these mistakes can
-stay hidden outside Windows.
+associated `finally` block runs, disposing a service does not necessarily wait
+for its asynchronous workers, disposed Microsoft.Data.Sqlite connections can
+remain open in the default pool, and parallel tasks do not guarantee callback
+order. Linux permits unlinking an open file, so these mistakes can stay hidden
+outside Windows.
 
-**Prevention:** Dispose repositories and services before cleanup runs, disable
-pooling for temporary file-backed database tests or clear pools after closing
-connections, and assert the complete set of asynchronous results instead of
-relying on scheduling order. Keep the Windows test job enabled.
+**Prevention:** Await service shutdown to drain workers, explicitly scope
+database contexts so they close before cleanup runs, disable pooling for
+temporary file-backed database tests or clear pools after closing connections,
+and assert the complete set of asynchronous results instead of relying on
+scheduling order. Keep the Windows test job enabled.
