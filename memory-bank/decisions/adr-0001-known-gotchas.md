@@ -4,6 +4,23 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1786. Do Not Trust Pull Request Authors For Persistent Runners (2026-10-13)
+
+**What went wrong:** CI routed pull requests authored by `snapetech` to a
+persistent self-hosted runner. A pull-request workflow runs from the PR merge
+commit, so application and test code supplied by that PR executes on the local
+host. Checking the author name does not establish that the PR contents are
+safe, and a PR can also change the workflow guard itself.
+
+**Why:** The policy treated the PR author's identity as proof that the PR
+contents and workflow were trusted.
+
+**Prevention:** Route every `pull_request` job to a GitHub-hosted runner. Limit
+persistent runners to trusted pushes and manual runs on `main`. A workflow
+check inside the PR cannot enforce its own integrity; use repository or
+organization runner restrictions and protect workflow changes for any stronger
+boundary.
+
 ### 0z1785. Keep API Load Tests Authenticated and Offline (2026-10-13)
 
 **What went wrong:** The load-test runner started the application with default
@@ -67,7 +84,7 @@ syntax.
 **Prevention:** Quote variables inside bash parameter-removal patterns, for
 example `${path#"$root"/}`, and run ShellCheck on changed shell scripts.
 
-### 0z1781. Keep Workflow Policy Checks Aligned With Runner Rules (2026-10-13)
+### 0z1781. Keep Workflow Policy Checks Aligned With Runner Rules (2026-10-13; superseded by 0z1786)
 
 **What went wrong:** A repository check required every pull request to use a
 hosted runner even after trusted same-repository authors were explicitly
@@ -76,9 +93,10 @@ allowed to use the local pool.
 **Why:** The runner policy changed without updating the static workflow
 contract, so valid workflow expressions failed validation.
 
-**Prevention:** Update the policy contract and its test together whenever
-trusted events or authors change runner eligibility. Exercise both trusted and
-untrusted cases so the guard reflects the actual security boundary.
+**Historical prevention (superseded):** The earlier recommendation to allow
+same-repository authors to select a persistent runner was incomplete. Keep
+policy checks aligned with the corrected rule in 0z1786: all pull requests use
+hosted runners, regardless of author.
 
 ### 0z1780. Keep GitHub Actions Step Environment Outside Script Blocks (2026-10-13)
 
