@@ -42656,3 +42656,11 @@ visibility keys inherit the current defaults for newly introduced columns.
 **Prevention:** When a test asserts an exact transfer-column set, specify an
 explicit visibility value for every column key, including `false` for hidden
 columns. This keeps the fixture stable when product defaults evolve.
+
+### 0z1814. Start Release-Note Bodies With A Capitalized Sentence (2026-10-13)
+
+**What went wrong:** A release-note fragment body began with a lowercase word and failed the release-note validator.
+
+**Why:** The fragment was reviewed for metadata and content but the capitalization rule was only exercised later by the full release-note validation gate.
+
+**Prevention:** Start each release-note body with a capitalized sentence, then run the validator before committing the fragment.
