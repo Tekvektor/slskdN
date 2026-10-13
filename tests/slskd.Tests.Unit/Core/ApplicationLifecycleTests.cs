@@ -200,7 +200,7 @@ public class ApplicationLifecycleTests
         userService.Setup(service => service.GetOrFetchGroupAsync("peer", false)).ReturnsAsync(Application.DefaultGroup);
         var uploadService = new Mock<slskd.Transfers.Uploads.IUploadService>();
         uploadService.Setup(service => service.Summarize(
-                It.IsAny<System.Linq.Expressions.Expression<Func<slskd.Transfers.Transfer, bool>>>() ))
+                It.IsAny<System.Linq.Expressions.Expression<Func<slskd.Transfers.Transfer, bool>>>()))
             .Returns((1, 100L));
 
         Application? application = null;

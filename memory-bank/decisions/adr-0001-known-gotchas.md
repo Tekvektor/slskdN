@@ -4,6 +4,18 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1806. Keep Moq Expression Closings Formatter-Safe (2026-10-13)
+
+**What went wrong:** A new Moq setup added whitespace between the
+`It.IsAny<...>()` expression and its enclosing call. `./bin/lint` failed with a
+`WHITESPACE` formatting error even though the test compiled and passed.
+
+**Why:** The focused test run does not enforce the solution's formatter rules,
+so a syntactically valid expression can still fail the repository lint gate.
+
+**Prevention:** Run `./bin/lint` after adding or editing complex Moq expressions,
+and keep nested call-closing parentheses adjacent as the formatter requires.
+
 ### 0z1796. Pass The Sender When Raising `EventHandler<T>` In Moq (2026-10-13)
 
 **What went wrong:** A unit test raised an `EventHandler<T>` mock event with only
