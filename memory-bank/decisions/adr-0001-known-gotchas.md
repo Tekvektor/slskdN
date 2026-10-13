@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1833. Restore UTC Kind For Every Persisted Transfer Timestamp (2026-10-13)
+
+**What went wrong:** SQLite materialized `RequestedAt` and `EnqueuedAt` with
+`DateTimeKind.Unspecified`, while other transfer timestamps were restored as
+UTC.
+
+**Why:** SQLite does not persist `DateTime.Kind`, and the EF value converters
+covered only part of the transfer timestamp properties.
+
+**Prevention:** Add UTC-kind materialization converters for every persisted
+transfer `DateTime` and nullable `DateTime` property. Include round-trip tests
+that cover both a required timestamp and nullable timestamps when populated.
+
 ### 0z1832. Backdate Transfer Rows After SaveChanges In Retention Tests (2026-10-13)
 
 **What went wrong:** A retention test set `Transfer.UpdatedAt` to an old value
