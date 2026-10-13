@@ -667,7 +667,7 @@ public class DownloadServiceTests
         {
             try
             {
-                await service.ShutdownAsync();
+                await service.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(5));
             }
             finally
             {
@@ -766,7 +766,7 @@ public class DownloadServiceTests
                 return completed;
             });
 
-        using var service = CreateDownloadService(databaseOptions, soulseekClient, configuredOptions);
+        var service = CreateDownloadService(databaseOptions, soulseekClient, configuredOptions);
 
         try
         {
@@ -833,26 +833,36 @@ public class DownloadServiceTests
             Assert.False(System.IO.File.Exists(System.IO.Path.Combine(downloadsDirectory, "Music", "track.mp3")));
             Assert.Equal(verifyMagicBytes, System.IO.File.Exists(System.IO.Path.Combine(downloadsDirectory, ".quarantine", "mismatched.flac")));
 
-            await using var requestContext = new TransfersDbContext(databaseOptions);
-            var requestIds = expectedRequestStates.Keys.ToArray();
-            var requests = await requestContext.DownloadRequests.Where(request => requestIds.Contains(request.Id)).ToListAsync();
-            Assert.Equal(2, requests.Count);
-            Assert.Equal(DownloadRequestState.Failed, requests.Single(r => r.Id == executableTransfer.RequestId).State);
-            Assert.Equal(
-                verifyMagicBytes ? DownloadRequestState.Failed : DownloadRequestState.Completed,
-                requests.Single(r => r.Id == mismatchedTransfer.RequestId).State);
+            await using (var requestContext = new TransfersDbContext(databaseOptions))
+            {
+                var requestIds = expectedRequestStates.Keys.ToArray();
+                var requests = await requestContext.DownloadRequests.Where(request => requestIds.Contains(request.Id)).ToListAsync();
+                Assert.Equal(2, requests.Count);
+                Assert.Equal(DownloadRequestState.Failed, requests.Single(r => r.Id == executableTransfer.RequestId).State);
+                Assert.Equal(
+                    verifyMagicBytes ? DownloadRequestState.Failed : DownloadRequestState.Completed,
+                    requests.Single(r => r.Id == mismatchedTransfer.RequestId).State);
+            }
             Assert.False(service.TryCancel(executableTransfer.Id));
             Assert.False(service.TryCancel(mismatchedTransfer.Id));
         }
         finally
         {
-            service.Dispose();
-            await using (var context = new TransfersDbContext(databaseOptions))
+            try
             {
-                await context.Database.CloseConnectionAsync();
+                await service.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(5));
             }
+            finally
+            {
+                service.Dispose();
+                await using (var context = new TransfersDbContext(databaseOptions))
+                {
+                    await context.Database.CloseConnectionAsync();
+                }
 
-            System.IO.Directory.Delete(workDirectory, recursive: true);
+                DeleteDatabase(databasePath);
+                System.IO.Directory.Delete(workDirectory, recursive: true);
+            }
         }
     }
 
@@ -1139,7 +1149,7 @@ public class DownloadServiceTests
     {
         var databasePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
         var options = new DbContextOptionsBuilder<TransfersDbContext>()
-            .UseSqlite($"Data Source={databasePath}")
+            .UseSqlite($"Data Source={databasePath};Pooling=False")
             .Options;
 
         await using (var context = new TransfersDbContext(options))
@@ -1184,8 +1194,7 @@ public class DownloadServiceTests
         }
         finally
         {
-            service.Dispose();
-            DeleteDatabase(databasePath);
+            await ShutdownAndDeleteDatabaseAsync(service, databasePath);
         }
     }
 
@@ -2550,7 +2559,7 @@ public class DownloadServiceTests
     {
         try
         {
-            await service.ShutdownAsync();
+            await service.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(5));
         }
         finally
         {
