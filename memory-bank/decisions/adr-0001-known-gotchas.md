@@ -19,6 +19,21 @@ omitted sender for this overload.
 observable handler effect so a malformed event invocation cannot look like a
 product failure.
 
+### 0z1797. Publish Watched-User State After The Watch Is Committed (2026-10-13)
+
+**What went wrong:** Application state was refreshed on status events, but the
+initial status response arrives before `UserService` adds the user to its watched
+set. The application filters that event out, leaving newly watched users absent
+from the shared state until another status update.
+
+**Why:** The test seeded the watched-user list before raising a status event, so
+it did not exercise the real ordering between fetching user data and committing
+the watch registration.
+
+**Prevention:** Publish a service event when a watch registration succeeds and
+when the watch cache resets. Test the complete watch lifecycle with the status
+response occurring before the watched-set update.
+
 ### 0z1793. Bound Validation Output And Reap Task Descendants (2026-10-12)
 
 **What went wrong:** Validation output could accumulate in an unbounded pump
