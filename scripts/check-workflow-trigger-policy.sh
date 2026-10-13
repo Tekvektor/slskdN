@@ -71,6 +71,13 @@ if ! rg -Fq "github.event_name == 'workflow_dispatch' && (github.ref != 'refs/he
   failed=1
 fi
 
+upstream_access_workflow="$repo_root/.github/workflows/check-upstream-access.yml"
+if rg -q '^\s*workflow_dispatch:' "$upstream_access_workflow" ||
+  ! rg -Fq "if: github.event_name == 'schedule'" "$upstream_access_workflow"; then
+  printf '.github/workflows/check-upstream-access.yml write workflow must not run from a manually selected ref\n' >&2
+  failed=1
+fi
+
 if ! python3 - "$ci_workflow" <<'PYTHON'
 import re
 import sys

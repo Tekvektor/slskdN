@@ -30,8 +30,10 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 - All pull request validation uses GitHub-hosted runners regardless of author.
   Persistent local runners are reserved for trusted `main` validation. The
-  repository Actions token defaults to read-only, with write scopes declared
-  by workflows that publish.
+  repository Actions token defaults to read-only, workflow tokens cannot
+  approve pull requests, and write scopes are limited to workflows that need
+  them. The upstream-access notifier runs only on its scheduled default-branch
+  workflow.
 
 - Third-party workflow actions are pinned to verified commit SHAs. Dependency
   scans fail on high or critical vulnerabilities, while the container scan
