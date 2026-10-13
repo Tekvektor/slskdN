@@ -112,6 +112,27 @@ The search-result download action retains the originating search ID and query
 with the queued request. Both values are available to completed-destination
 templates.
 
+#### Metrics
+
+- `GET /api/v0/telemetry/prometheus` - Get Prometheus metrics as text or JSON
+- `GET /api/v0/telemetry/metrics` - Get Prometheus metrics as text or JSON
+- `GET /api/v0/telemetry/prometheus/kpis` - Get the selected metrics as JSON
+- `GET /api/v0/telemetry/metrics/kpi` - Get the selected metrics as JSON
+
+The two metrics endpoints accept repeatable `include` and `exclude` query
+parameters. Each value is a regular expression matched against a metric-family
+name; multiple includes are combined with OR, and any matching exclude removes
+that family. For example, `?include=^slskd_&exclude=secret` keeps application
+metrics except names containing `secret`. Text and JSON responses use the same
+filter rules. With no filter parameters, the existing complete output is
+preserved.
+
+Each parameter accepts at most 8 patterns, each no longer than 128 characters.
+Patterns have a 100 ms match timeout. Empty or invalid patterns, excessive
+counts or lengths, and filters that exceed the timeout return `400 Bad Request`.
+The scrape endpoint configured by `metrics.url` accepts the same query
+parameters and continues to use its configured Basic authentication.
+
 ### Transfer APIs
 
 #### Downloads

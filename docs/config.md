@@ -1680,6 +1680,14 @@ Metrics are disabled by default, and enabling them will make them available at `
 
 If the application will be exposed to the internet, it's a good idea to leave this disabled or to set credentials other than the defaults.  Elements of the system configuration, like operating system, architecture, and drive configuration are included and can this can make it easier for an attacker to exploit a vulnerability in your system.
 
+The configured scrape path and the authenticated metrics API routes accept
+repeatable `include` and `exclude` query parameters for filtering metric-family
+names. Multiple includes match any listed pattern; an exclude match removes
+the family. Each parameter accepts up to 8 regular expressions of up to 128
+characters, with a 100 ms match timeout. No filter parameters preserve the
+existing complete output. These are per-request HTTP filters; CLI and
+environment options continue to control endpoint enablement and authentication.
+
 `slskd_enqueue_queue_limit_snapshot_rejections` counts requests rejected from a recent per-user queue snapshot. It helps distinguish repeated queue-limit denials from requests that needed a fresh transfer-history query; it carries no peer labels.
 
 

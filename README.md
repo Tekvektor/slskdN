@@ -56,7 +56,7 @@ for configuration and first-login steps.
 - [Player and listening parties](docs/listening-party.md) — configure local
   playback and optional shared listening.
 - [System settings](docs/system-surfaces.md) — manage policies, integrations,
-  diagnostics, and local experience preferences.
+  metrics, diagnostics, and local experience preferences.
 
 ## Feature maturity
 

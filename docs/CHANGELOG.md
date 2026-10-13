@@ -73,6 +73,9 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Changed
 
+- Metrics scrape and API endpoints accept bounded, repeatable include and
+  exclude patterns for metric-family names. Unfiltered output keeps its current
+  behavior.
 - Download retries accept the canonical `partial` key and matching CLI and
   environment options. The previous `incomplete` key remains a working alias.
 - Transfer tables now open with the newest requests first and show request time;
