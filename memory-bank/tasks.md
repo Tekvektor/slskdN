@@ -7424,3 +7424,11 @@ resource completion.
 - [ ] Pass the backend test suite and exact-head hosted release gate on `main`.
 - [ ] Prepare the `.351` versioned notes on validated `main`, create the
   authorized stable tag, and verify the published assets.
+
+## Main release candidate — 2026-10-13
+
+- [x] Fast-forward the 154-commit candidate to the verified fork's `main`.
+- [x] Prepare dated `.351` changelog notes after the candidate reached `main`.
+- [ ] Pass the hosted CI release gate for the final exact `main` commit.
+- [ ] Create the authorized stable tag only after the gate passes; verify
+  published assets and downstream publication status.

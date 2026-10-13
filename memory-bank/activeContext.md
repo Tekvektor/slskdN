@@ -19390,3 +19390,26 @@ commit. The stable versioned changelog section and tag remain pending.
 - Complete the backend test suite and exact-head hosted release gate on `main`.
 - Prepare versioned `.351` notes after the validated changes reach `main`, then
   cut the explicitly requested stable release and verify published artifacts.
+
+## Current state — Main release candidate — 2026-10-13
+
+The 154-commit candidate was fast-forwarded to the fork's `main` at
+`043111a66abd92913f3f8cf539486d5ec1a424db`; the feature branch remains pushed
+and tracks its corresponding remote branch. The exact dated `.351` changelog
+section is now prepared for this candidate. Local Release build, formatting
+lint, the recorded 6,180-test backend suite, 89 passing headless browser tests,
+the 15-minute loopback player-renewal soak, validation-engine tests, and
+packaging metadata checks are green. Live public-network DHT/VPN behavior was
+not exercised because the isolated runner has no live profile or credentials.
+
+Two feature-branch manual CI runs were superseded while the fork's workflow
+queue was backed up. Neither is release evidence. The next step is to dispatch
+the hosted CI release gate against the final `main` commit after the versioned
+changelog/memory update, then tag only if the exact-head gate passes.
+
+### Next Steps
+
+- Commit and push the `.351` versioned changelog plus final progress records.
+- Run `ci.yml` manually on `main` with the GitHub-hosted runner and verify the
+  run against the exact commit.
+- Run the guarded stable-tag helper, watch publication, and verify all assets.

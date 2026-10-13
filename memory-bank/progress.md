@@ -19098,3 +19098,11 @@ fragment. The full packaging metadata validator passes; XML parsing and a
 documentation-to-template coverage scan also pass. Exact-head release
 validation remains pending because the currently running hosted job was
 dispatched before this follow-up.
+
+## Update 2026-10-13 21:38 UTC — Main release candidate
+
+Pushed the complete 154-commit candidate to the verified fork's `main` with a
+normal fast-forward. The Unreleased notes are now under the dated
+`2026101321-slskdn.351` section. The earlier branch workflow runs were
+superseded while queued and were cancelled; no result from those runs is
+counted. The exact-`main` hosted gate and stable tag remain pending.
