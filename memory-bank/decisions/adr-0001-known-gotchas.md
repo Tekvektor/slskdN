@@ -18,6 +18,19 @@ scan does not examine.
 `tools` when checking NuGet advisories. After a dependency update, scan each
 restored project graph and confirm the affected package is no longer resolved.
 
+### 0z1849. Update Every Test Double When Paged Service Contracts Change (2026-10-13)
+
+**What went wrong:** Search and download service interfaces gained continuation
+parameters, but test doubles in the regression and integration projects kept
+their old method signatures and prevented the full solution from compiling.
+
+**Why:** The implementation and focused tests were updated without auditing
+every class that implements the service interfaces across the solution.
+
+**Prevention:** After changing a service contract, search all implementations
+and test doubles in `src/` and `tests/`, then build and test the full solution
+instead of relying only on focused test projects.
+
 ### 0z1847. Include New Environment Options In Every Maintained Installer Template (2026-10-13)
 
 **What went wrong:** Several options documented as environment variables were
