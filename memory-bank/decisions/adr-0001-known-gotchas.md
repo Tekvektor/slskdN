@@ -41823,3 +41823,15 @@ and its fire-and-forget task swallowed later faults.
 **Prevention:** Retry transient accept failures with capped backoff and emit a
 diagnostic for each retry; preserve shutdown as a terminal condition and test
 that a later connection is still accepted.
+
+### 0z1789. Bound Incomplete-Directory Cleanup To Its Configured Root (2026-10-13)
+
+**What went wrong:** Moving a completed download removed its immediate empty
+source directory but left empty peer and nested-folder directories behind.
+
+**Why:** Cleanup checked only the source file's parent and did not walk the
+directory tree back toward the configured incomplete-download root.
+
+**Prevention:** After a successful move, prune empty ancestors one at a time,
+stop at the configured incomplete root, and verify containment before deleting.
+Treat a non-empty directory or a filesystem race as a normal stop condition.
