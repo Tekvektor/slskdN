@@ -41798,3 +41798,16 @@ request.
 **Prevention:** Reuse a very short-lived queue snapshot only for queue-limit
 decisions, invalidate it when uploads change, suppress per-request logs for
 cached denials, and expose an aggregate metric without peer labels.
+
+### 0z1787. Include Required Transfer Offsets In Event Fixtures (2026-10-13)
+
+**What went wrong:** A lifecycle regression fixture did not compile because the
+transfer constructor requires a start offset even when the test transfer has
+not started.
+
+**Why:** The fixture supplied only the fields relevant to the assertion and
+missed a required constructor argument in the vendored transfer contract.
+
+**Prevention:** When constructing transfer event arguments, include the
+required offset explicitly and use the shared constructor patterns already
+present in lifecycle tests.
