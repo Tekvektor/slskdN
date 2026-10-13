@@ -33,6 +33,20 @@ finishes.
 task and handle its expected cancellation before disposing fixtures or deleting
 their files. Keep test timeouts long enough for the workload on hosted runners.
 
+### 0z1823. Keep Message Text Selection Independent From Composer Focus (2026-10-13)
+
+**What went wrong:** Clicking anywhere inside a room card focused the message
+composer. That moved keyboard focus while a user was selecting or copying a
+message.
+
+**Why:** A card-wide click handler treated all content clicks as an intent to
+type, including clicks on selectable conversation text.
+
+**Prevention:** Let the input receive focus through its own native interaction.
+Use explicit controls when an action needs to focus it; do not attach composer
+focus to the containing card. Cover both text interaction and focus behavior in
+the room UI.
+
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
 **What went wrong:** A Windows test could not delete its temporary share
