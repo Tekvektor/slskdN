@@ -31,6 +31,20 @@ such as `Sync`.
 labels to the containing row or section, and assert the tooltip text separately
 after hovering. Do not treat popup content as the button's name.
 
+### 0z1809. Wait For Durable Request State After Transfer Completion (2026-10-13)
+
+**What went wrong:** A download test waited for the in-memory transfer to become
+Completed, then immediately asserted that its separate durable request record
+had also reached a terminal state.
+
+**Why:** Transfer completion is published before post-download processing
+persists the associated request result, so the two states can be briefly out of
+sync.
+
+**Prevention:** Poll for the durable request state the test needs in addition
+to the transfer state. Keep the final assertions against a fresh database
+query so asynchronous persistence is not mistaken for a product failure.
+
 ### 0z1806. Keep Moq Expression Closings Formatter-Safe (2026-10-13)
 
 **What went wrong:** A new Moq setup added whitespace between the
