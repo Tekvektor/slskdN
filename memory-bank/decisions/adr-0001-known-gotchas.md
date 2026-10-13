@@ -41288,3 +41288,18 @@ environment.
 **Prevention:** Bind browser installation and execution to the same
 job-scoped `PLAYWRIGHT_BROWSERS_PATH`. Keep the task's home and other caches
 isolated, and assert the browser cache binding in the engine tests.
+
+### 0z1770. Run Every Local Test Through The Trusted Launcher (2026-10-12)
+
+**What went wrong:** A focused contract test with mocked API responses was run
+directly from the local checkout. Although the fixture did not contact GitHub,
+the command still executed a local test outside the required trusted sandbox.
+
+**Why:** The test looked like a harmless isolated script, so the sandbox rule
+was incorrectly treated as applying only to tests with live credentials or
+network access.
+
+**Prevention:** Treat every local test command as requiring the documented
+trusted bubblewrap launcher, including tests that use mocks. Use hosted CI when
+the launcher cannot supply the declared toolchain, and never infer an exception
+from a test's fixture design.
