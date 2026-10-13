@@ -42522,3 +42522,16 @@ affected the first page's query.
 **Prevention:** Convert the initial history watermark to Unix milliseconds and
 back before filtering any rows. Query, respond, and continue with the same
 precision, and cover the boundary so offset pages cannot lose a transfer.
+
+### 0z1810. Keep Multi-Area Release Notes On One Valid Slug (2026-10-13)
+
+**What went wrong:** A user-facing release fragment listed several feature
+areas separated by commas, but the release-note schema accepts one lowercase
+slug.
+
+**Why:** The fragment described the broad scope in metadata instead of choosing
+one concise area that represents the primary change.
+
+**Prevention:** Use one lowercase 2–32 character slug in `area`. Put additional
+feature areas in the fragment body, and run release-note preview before
+committing the fragment.
