@@ -4,54 +4,6 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
-### 0z1779. Keep .NET SDK Bootstrap Temporary Files On Runner Storage (2026-10-12)
-
-**What went wrong:** actions/setup-dotnet could not install the pinned SDK or
-runtime on a persistent Linux runner when the shared /tmp was nearly full.
-
-**Why:** The setup step inherited the operating system's shared temporary
-directory even though the job had runner-owned temporary storage.
-
-**Prevention:** Set TMPDIR from runner.temp on every actions/setup-dotnet step
-that can run on a persistent Linux runner. Keep the SDK pin and add a workflow
-regression for this contract.
-
-### 0z1780. Export Runner Temporary Storage For The Whole Self-Hosted Job (2026-10-12)
-
-**What went wrong:** A .NET build still used shared /tmp after setup-dotnet
-was given runner storage because later build, test, and compiler steps inherited
-the original job environment.
-
-**Why:** A step-level environment applies only to that step.
-
-**Prevention:** In the first step of every Linux self-hosted job, validate
-RUNNER_TEMP and export TMPDIR, TMP, and TEMP through GITHUB_ENV. Test both
-runner storage and command-file permissions.
-
-### 0z1781. Keep Packaging Guards Aligned With Job-Wide Runner Temp (2026-10-12)
-
-**What went wrong:** A packaging metadata guard checked an old step-scoped
-temporary-directory literal after workflows switched to job-wide validation.
-
-**Why:** The packaging guard duplicated a workflow contract and stayed stale.
-
-**Prevention:** Reuse the shared workflow-matrix check for every runner-temp
-consumer and update dependent guards in the same change.
-
-### 0z1782. Add Trusted Branch Validation Without Changing Release Triggers (2026-10-13)
-
-**What went wrong:** The CI workflow ran on tags and pull requests but did not
-validate trusted same-repository branch pushes on the local runner pool.
-
-**Why:** The push event filter was limited to version tags, so the local runner
-policy was never exercised by ordinary branch changes.
-
-**Prevention:** Add branch pushes to the validation workflow, keep release and
-publish jobs guarded by tag refs, and route pull-request events to hosted
-runners. Pin resource-heavy .NET validation to the suitable local runner and
-keep its temporary files on runner-owned storage. Keep the standalone load
-harness hosted after a local SIGBUS.
-
 ### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
 **What went wrong:** Public pull requests and manual runs from refs outside
@@ -41365,3 +41317,62 @@ mapping contract.
 **Prevention:** When adding configuration, search every packaging example and
 environment mapping, including the Unraid template, and run packaging metadata
 validation before preparing release notes or tagging.
+
+### 0z1779. Keep .NET SDK Bootstrap Temporary Files On Runner Storage (2026-10-12)
+
+**What went wrong:** `actions/setup-dotnet` could not install the pinned SDK or
+runtime on the persistent Linux runner. The runner's default `/tmp` was nearly
+full even though its job-scoped runner temp directory had ample space.
+
+**Why:** The setup step inherited the operating system's shared temporary
+directory. The later validation step already used `runner.temp`, but that did
+not help the earlier SDK bootstrap.
+
+**Prevention:** In each eligible Linux self-hosted job, validate
+`RUNNER_TEMP` and export `TMPDIR` through `GITHUB_ENV` in the first step so SDK
+setup and later build/test steps use runner storage. Step-scoped `TMPDIR` covers
+only the setup action; see `0z1780` for the job-wide workflow contract.
+
+### 0z1780. Export Runner Temporary Storage For The Whole Self-Hosted Job (2026-10-12)
+
+**What went wrong:** A .NET build on the persistent Linux runner still failed
+after the `setup-dotnet` action was pointed at runner storage. The build ran in
+a later step without `TMPDIR` and fell back to the full shared `/tmp`.
+
+**Why:** A step-level `env` applies only to that action step; it does not change
+the environment for later build, test, or compiler processes.
+
+**Prevention:** In the first step of every Linux self-hosted job, verify
+`RUNNER_TEMP` exists and is writable, then export `TMPDIR` through
+`GITHUB_ENV`. Keep a workflow regression that checks every eligible job starts
+with this fail-closed setup.
+
+### 0z1781. Keep Packaging Guards Aligned With Job-Wide Runner Temp (2026-10-12)
+
+**What went wrong:** The workflow switched from step-scoped `TMPDIR` values to
+first-step validation and job-wide export through `GITHUB_ENV`, but packaging
+metadata validation still required the old literal. The hosted release gate
+therefore failed even though the new runner-temp setup was present.
+
+**Why:** The static packaging guard duplicated a workflow contract instead of
+using the shared check that validates every Linux self-hosted job and its
+first-step ordering.
+
+**Prevention:** When the workflow temp contract changes, update every dependent
+guard in the same change. Reuse the shared workflow-matrix check rather than
+asserting a stale step-scoped environment literal.
+
+### 0z1782. Add Trusted Branch Validation Without Changing Release Triggers (2026-10-13)
+
+**What went wrong:** The CI workflow ran on tags and pull requests but did not
+validate trusted same-repository branch pushes on the local runner pool.
+
+**Why:** The push event filter was limited to version tags, so the local runner
+policy was never exercised by ordinary branch changes. A resource-heavy load
+harness also failed with SIGBUS on a persistent local runner.
+
+**Prevention:** Add branch pushes to the validation workflow, keep release and
+publish jobs guarded by tag refs, and route pull-request events to hosted
+runners. Pin resource-heavy .NET validation to the suitable local runner and
+keep its temporary files on runner-owned storage. Keep the standalone load
+harness hosted after a local SIGBUS.

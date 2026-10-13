@@ -1,65 +1,33 @@
 ## Current state — Trusted branch CI and runner-temp stability — 2026-10-13
 
-SLSKDN runner-temp work is continuing on PR #357. The candidate validates
-runner-owned temporary storage in the first step of every Linux self-hosted job,
-exports TMPDIR, TMP, and TEMP job-wide, and updates the runtime matrix and
-packaging guard. Current main already routes public pull requests to
-GitHub-hosted runners and keeps non-main manual dispatches hosted. This
-follow-up adds trusted branch-push validation while leaving release publishing
-tag-gated.
+Main now routes public pull requests and non-main manual dispatches to hosted
+runners, scopes release write permissions to the publisher, and keeps the
+allocation regression and current-source inventory documented. PR #358 still
+needs hosted validation on its exact source.
 
-The previous local PR run was not green: 13 of 14 validation tasks passed,
-with the Web unit-test task failing, and a separate load-test job exited with
-SIGBUS. The failing Web task reported failures in Contacts, Integrations, and
-Admin Policies. The load-test runner's shared /tmp was full. This candidate now
-runs validation on every trusted branch push, targets the stable server runner
-for the full .NET gate, routes pull-request validation to hosted runners, and
-keeps the standalone load harness on hosted Linux. Release and publish jobs
-remain tag-gated.
+PR #357 validates runner-owned temporary storage in every Linux self-hosted
+job, exports TMPDIR, TMP, and TEMP job-wide, and updates the runtime matrix and
+packaging guard. It now runs CI on every trusted branch push, targets the
+stable server-role runner for the complete .NET gate, and keeps public
+pull-request validation on GitHub-hosted runners. Publish, Docker, and release
+jobs remain tag-gated. The standalone load harness runs on hosted Linux after
+the prior local SIGBUS.
 
-Focused workflow policy, runtime matrix, YAML, and diff checks pass. The exact
-head still needs hosted PR validation and a trusted branch run before the
-earlier UI and SIGBUS failures can be classified as resolved.
+The previous local PR run executed 13 of 14 validation tasks. The Web
+unit-test task failed in Contacts, Integrations, and Admin Policies, and a
+separate load-test job exited with SIGBUS while shared temporary storage was
+full. Focused workflow policy, runtime matrix, YAML, and diff checks now pass.
+Exact-head hosted PR and trusted branch CI are pending, so those earlier
+failures are not counted as resolved yet.
 
 ### Next Steps
 
-- Push the current workflow changes and confirm GitHub schedules hosted PR jobs
-  and the trusted branch job on the expected runner.
+- Verify GitHub schedules the hosted PR jobs and trusted branch job on the
+  expected runner.
 - Rerun exact-head CI and report failures, actual task counts, skips, and
   exclusions separately.
-
-## Prior state — Public PR runner isolation and CI capacity review — 2026-10-12
-
-Public pull-request workflows in the SLSKDN CI, enhancement, and Windows smoke
-files now select GitHub-hosted runners. Manual dispatches from refs other than
-`main` also use hosted runners; trusted `main` dispatches can opt into hosted
-or follow configured runner policy. The main CI token defaults to read-only;
-release publishing gets its required write scopes in the release job. Focused
-workflow syntax, trigger-policy, identity, diff, and release-note checks pass.
-
-The previously failing allocation assertion now warms expired-entry cleanup on
-the measured `DescriptorRetriever` instance, with its `<4 KiB` cap unchanged.
-The local engine planned one unit-test task but executed zero because `pnpm` and
-the .NET CLI home were unavailable. A direct filtered run also executed zero:
-the scratch package cache lacks the pinned .NET 10.0.12 reference pack. The
-fresh candidate scan reports 217 callback/event, 434 remote-text, 12,732
-red-team, and 836 mutable-ownership matches. After accounting for updated
-ledger descriptions, its only branch-added red-team match is expected
-CI-permission changelog text. PR #358 still needs hosted validation on this
-exact source before merge.
-
-Cross-repository runner pooling is still pending. All repositories remain under
-the existing personal account while its hosted-runner concurrency tier is
-unknown. The local CI hosts are under heavy load and already have active SLSKDN
-and TorrentNG jobs, so no runner agents or additional local test load were
-added. Standard hosted runner minutes remain free for the public repositories.
-
-### Next Steps
-
-- Keep public pull-request workloads on hosted runners.
-- Reassess local host capacity before adding project-specific runner agents.
-- Confirm the account concurrency plan and organization destination before any
-repository transfer or shared organization runner setup.
+- Keep public pull-request jobs hosted and reassess runner capacity before
+  adding any self-hosted runner agents.
 
 ## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 

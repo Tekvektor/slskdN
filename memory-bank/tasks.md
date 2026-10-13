@@ -29,16 +29,15 @@
 ### SLSKDN trusted branch CI and runner-temp reliability — 2026-10-13
 
 - [x] Validate runner-owned temporary storage and export TMPDIR, TMP,
-  and TEMP for every Linux self-hosted job in the existing PR.
-- [x] Preserve current-main policy routing public pull requests to hosted
-  runners and keeping release publication tag-gated.
-- [x] Add every trusted branch push to the validation workflow while keeping
-  release and publish jobs tag-gated.
-- [x] Route the full .NET branch gate to the stable local runner; keep the
-  standalone load harness on hosted Linux after the local SIGBUS.
+  and TEMP for every Linux self-hosted job.
+- [x] Preserve hosted routing for public pull requests and non-main manual runs.
+- [x] Add every trusted branch push while keeping publish, Docker, and release
+  jobs tag-gated.
+- [x] Route the complete .NET branch gate to the stable server-role runner and
+  the standalone load harness to hosted Linux after the local SIGBUS.
 - [x] Pass focused workflow policy, runtime matrix, YAML, and diff checks.
-- [ ] Push the exact candidate and rerun CI to classify the prior UI and SIGBUS
-  failures using the actual execution counts and logs.
+- [ ] Verify exact-head hosted PR and trusted branch CI; classify the previous
+  Web unit-test and SIGBUS failures from run logs.
 
 Status: implementation and focused checks are complete; exact-head CI is pending.
 
