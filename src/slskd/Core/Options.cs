@@ -1355,11 +1355,20 @@ namespace slskd
                 public class DownloadRetryOptions
                 {
                     /// <summary>
-                    ///     Gets a value indicating how partial files are handled before a retry.
+                    ///     Gets the canonical retry strategy for partial files, when supplied.
+                    /// </summary>
+                    [Argument(default, "download-retry-partial")]
+                    [EnvironmentVariable("DOWNLOAD_RETRY_PARTIAL")]
+                    [Description("how to handle partial files when retrying a direct Soulseek download: resume or overwrite")]
+                    [Enum(typeof(slskd.Transfers.RetryIncompleteStrategy))]
+                    public string? Partial { get; init; }
+
+                    /// <summary>
+                    ///     Gets the legacy retry strategy key for partial files.
                     /// </summary>
                     [Argument(default, "download-retry-incomplete")]
                     [EnvironmentVariable("DOWNLOAD_RETRY_INCOMPLETE")]
-                    [Description("how to handle partial files when retrying a direct Soulseek download: overwrite or resume")]
+                    [Description("legacy alias for download-retry-partial")]
                     [Enum(typeof(slskd.Transfers.RetryIncompleteStrategy))]
                     public string Incomplete { get; init; } = slskd.Transfers.RetryIncompleteStrategy.Resume.ToString().ToLowerInvariant();
 

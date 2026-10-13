@@ -66,6 +66,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Changed
 
+- Download retries accept the canonical `partial` key and matching CLI and
+  environment options. The previous `incomplete` key remains a working alias.
 - Transfer tables now open with the newest requests first and show request time;
   a sort choice already saved for a direction remains in effect.
 - CI validates and uses runner-owned temporary storage for .NET work while

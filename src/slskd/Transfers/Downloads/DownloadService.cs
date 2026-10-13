@@ -1674,7 +1674,7 @@ namespace slskd.Transfers.Downloads
 
                 var retryOptions = OptionsMonitor.CurrentValue.Global.Download.Retry;
                 var maxRetryDelay = Math.Max(30_000, retryOptions.MaxDelay);
-                var incompleteStrategy = retryOptions.Incomplete.ToEnum<RetryIncompleteStrategy>();
+                var incompleteStrategy = (retryOptions.Partial ?? retryOptions.Incomplete).ToEnum<RetryIncompleteStrategy>();
                 var incompleteFilename = GetIncompleteRetryFilename(transfer);
 
                 Log.Debug("Invoking Soulseek DownloadAsync() for {Filename} from {Username}",

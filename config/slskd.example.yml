@@ -87,7 +87,8 @@
 #    completed_layout: remote_folder # default; preserves source folder/file names. Other values: uploader_folder (<uploader>/<remote folder>/<files>), batch_id, or flat
 #    completed_path_template: '' # optional override; e.g. '{uploader}/{remote_folder}'. Tokens: {uploader}, {remote_folder}, {remote_parent}, {remote_filename}, {batch_id}, {request_name}, {date}, {date:yyyy-MM}
 #    retry:
-#      incomplete: resume # resume or overwrite
+#      partial: resume # resume or overwrite; canonical retry strategy key
+#      # incomplete: resume # legacy alias; partial takes precedence when both are set
 #      attempts: 1
 #      delay: 5000
 #      max_delay: 60000

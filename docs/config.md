@@ -372,7 +372,8 @@ A change to slot limits requires an application restart to take effect, while sp
 | `--download-speed-limit` | `SLSKD_DOWNLOAD_SPEED_LIMIT` | The total download speed limit, in kibibytes     |
 | `--download-completed-layout` | `SLSKD_DOWNLOAD_COMPLETED_LAYOUT` | Completed download folder layout. Default: `remote_folder` to preserve source folder/file names. Other values: `uploader_folder`, `batch_id`, or `flat` |
 | `--download-completed-path-template` | `SLSKD_DOWNLOAD_COMPLETED_PATH_TEMPLATE` | Optional path template that overrides `--download-completed-layout`. Tokens: `{uploader}`, `{remote_folder}`, `{remote_parent}`, `{remote_filename}`, `{batch_id}`, `{request_name}`, `{date}` / `{date:yyyy-MM}`. Example: `{uploader}/{remote_folder}` |
-| `--download-retry-incomplete` | `SLSKD_DOWNLOAD_RETRY_INCOMPLETE` | How to handle partial files between direct download attempts: `resume` or `overwrite` |
+| `--download-retry-partial` | `SLSKD_DOWNLOAD_RETRY_PARTIAL` | How to handle partial files between direct download attempts: `resume` or `overwrite` |
+| `--download-retry-incomplete` | `SLSKD_DOWNLOAD_RETRY_INCOMPLETE` | Legacy alias for the retry strategy; `partial` takes precedence when both are set |
 | `--download-retry-attempts` | `SLSKD_DOWNLOAD_RETRY_ATTEMPTS` | Maximum direct download attempts (1–20) |
 | `--download-retry-delay` | `SLSKD_DOWNLOAD_RETRY_DELAY` | Initial delay between direct download attempts, in milliseconds |
 | `--download-retry-max-delay` | `SLSKD_DOWNLOAD_RETRY_MAX_DELAY` | Maximum delay between direct download attempts, in milliseconds |
@@ -390,7 +391,8 @@ transfers:
     # When set, completed_path_template overrides completed_layout.
     # completed_path_template: '{uploader}/{remote_folder}'
     retry:
-      incomplete: resume # resume or overwrite
+      partial: resume # resume or overwrite
+      # incomplete: resume # legacy alias; partial takes precedence when both are set
       attempts: 1
       delay: 5000 # milliseconds
       max_delay: 60000 # milliseconds

@@ -84,6 +84,7 @@ public sealed class EnvironmentVariableConfigurationSourceTests
         }
 
         Set("DOWNLOAD_RETRY_INCOMPLETE", "overwrite");
+        Set("DOWNLOAD_RETRY_PARTIAL", "resume");
         Set("DOWNLOAD_RETRY_ATTEMPTS", "3");
         Set("DOWNLOAD_RETRY_DELAY", "1250");
         Set("DOWNLOAD_RETRY_MAX_DELAY", "8000");
@@ -110,6 +111,8 @@ public sealed class EnvironmentVariableConfigurationSourceTests
             configuration.GetSection("slskd").Bind(options);
 
             Assert.Equal("overwrite", options.Global.Download.Retry.Incomplete);
+            Assert.Equal("resume", options.Global.Download.Retry.Partial);
+            Assert.Equal("resume", options.Global.Download.Retry.Partial ?? options.Global.Download.Retry.Incomplete);
             Assert.Equal(3, options.Global.Download.Retry.Attempts);
             Assert.Equal(1250, options.Global.Download.Retry.Delay);
             Assert.Equal(8000, options.Global.Download.Retry.MaxDelay);
@@ -142,12 +145,14 @@ public sealed class EnvironmentVariableConfigurationSourceTests
         var configuration = new ConfigurationBuilder()
             .AddCommandLine(
                 typeof(slskd.Options),
-                commandLine: "slskdn --download-retry-attempts 4 --download-retry-incomplete overwrite --retention-search 120 --retention-events-max-count 9000 --retention-transfers-upload-succeeded 60 --retention-transfers-download-errored 180 --retention-files-complete 240 --retention-logs 30")
+                commandLine: "slskdn --download-retry-attempts 4 --download-retry-partial resume --download-retry-incomplete overwrite --retention-search 120 --retention-events-max-count 9000 --retention-transfers-upload-succeeded 60 --retention-transfers-download-errored 180 --retention-files-complete 240 --retention-logs 30")
             .Build();
         var options = new slskd.Options();
         configuration.GetSection("slskd").Bind(options);
 
         Assert.Equal("overwrite", options.Global.Download.Retry.Incomplete);
+        Assert.Equal("resume", options.Global.Download.Retry.Partial);
+        Assert.Equal("resume", options.Global.Download.Retry.Partial ?? options.Global.Download.Retry.Incomplete);
         Assert.Equal(4, options.Global.Download.Retry.Attempts);
         Assert.Equal(120, options.Retention.Search);
         Assert.Equal(9000, options.Retention.EventsMaxCount);
