@@ -1202,6 +1202,7 @@ namespace slskd.Transfers.Downloads
             try
             {
                 using var context = ContextFactory.CreateDbContext();
+                using var transaction = context.Database.BeginTransaction();
                 var cutoffDateTime = DateTime.UtcNow.AddMinutes(-age);
                 var pruned = context.Transfers
                     .Where(t => t.Direction == TransferDirection.Download)
@@ -1210,9 +1211,24 @@ namespace slskd.Transfers.Downloads
                     .Where(t => t.UpdatedAt < cutoffDateTime)
                     .ExecuteDelete();
 
+                var prunedRequests = context.DownloadRequests
+                    .Where(request => request.State != DownloadRequestState.Active)
+                    .Where(request => (request.CompletedAt ?? request.CreatedAt) < cutoffDateTime)
+                    .Where(request => !context.Transfers.Any(transfer =>
+                        transfer.Direction == TransferDirection.Download &&
+                        transfer.RequestId == request.Id))
+                    .ExecuteDelete();
+
+                transaction.Commit();
+
                 if (pruned > 0)
                 {
                     Log.Debug("Permanently deleted {Count} removed downloads older than {Age} minutes", pruned, age);
+                }
+
+                if (prunedRequests > 0)
+                {
+                    Log.Debug("Permanently deleted {Count} expired terminal download requests with no remaining transfers", prunedRequests);
                 }
 
                 return pruned;

@@ -288,7 +288,7 @@
 #  events: 30 # event age limit, in days
 #  events_max_count: 10000 # retain at most this many recent events (0 = no count limit)
 #  transfers:
-#    removed: 10080 # permanently remove hidden completed transfer rows after 7 days (null = keep indefinitely)
+#    removed: 10080 # remove hidden completed rows and unreferenced terminal download requests after 7 days (null = keep indefinitely)
 #    upload:
 #      succeeded: 1440 # 1 day, in minutes
 #      errored: 30

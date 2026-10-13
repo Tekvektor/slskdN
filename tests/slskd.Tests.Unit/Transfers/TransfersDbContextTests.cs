@@ -19,6 +19,57 @@ using SlskdTransfer = slskd.Transfers.Transfer;
 public sealed class TransfersDbContextTests
 {
     [Fact]
+    public async Task Persisted_Transfer_Timestamps_RoundTrip_AsUtc_AndSerializeWithUtcSuffix()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<TransfersDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        var id = Guid.NewGuid();
+        var requestedAt = new DateTime(2026, 10, 13, 18, 15, 0, DateTimeKind.Utc);
+        var enqueuedAt = requestedAt.AddSeconds(1);
+        var startedAt = requestedAt.AddSeconds(2);
+        var endedAt = requestedAt.AddSeconds(3);
+        var nextAttemptAt = requestedAt.AddSeconds(4);
+
+        await using (var writeContext = new TransfersDbContext(options))
+        {
+            await writeContext.Database.EnsureCreatedAsync();
+            writeContext.Transfers.Add(new SlskdTransfer
+            {
+                Id = id,
+                Direction = TransferDirection.Download,
+                Filename = "Music/song.flac",
+                RequestedAt = requestedAt,
+                EnqueuedAt = enqueuedAt,
+                StartedAt = startedAt,
+                EndedAt = endedAt,
+                NextAttemptAt = nextAttemptAt,
+                Username = "listener",
+            });
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using var readContext = new TransfersDbContext(options);
+        var persisted = await readContext.Transfers.AsNoTracking().SingleAsync(transfer => transfer.Id == id);
+
+        Assert.Equal(DateTimeKind.Utc, persisted.RequestedAt.Kind);
+        Assert.Equal(DateTimeKind.Utc, persisted.EnqueuedAt!.Value.Kind);
+        Assert.Equal(DateTimeKind.Utc, persisted.StartedAt!.Value.Kind);
+        Assert.Equal(DateTimeKind.Utc, persisted.EndedAt!.Value.Kind);
+        Assert.Equal(DateTimeKind.Utc, persisted.NextAttemptAt!.Value.Kind);
+        Assert.Equal(DateTimeKind.Utc, persisted.UpdatedAt.Kind);
+
+        Assert.EndsWith("Z\"", JsonSerializer.Serialize(persisted.RequestedAt), StringComparison.Ordinal);
+        Assert.EndsWith("Z\"", JsonSerializer.Serialize(persisted.EnqueuedAt), StringComparison.Ordinal);
+        Assert.EndsWith("Z\"", JsonSerializer.Serialize(persisted.StartedAt), StringComparison.Ordinal);
+        Assert.EndsWith("Z\"", JsonSerializer.Serialize(persisted.EndedAt), StringComparison.Ordinal);
+        Assert.EndsWith("Z\"", JsonSerializer.Serialize(persisted.NextAttemptAt), StringComparison.Ordinal);
+        Assert.EndsWith("Z\"", JsonSerializer.Serialize(persisted.UpdatedAt), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SaveChanges_Stamps_Transfer_Updates_For_Sync_And_Async_Writes()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");

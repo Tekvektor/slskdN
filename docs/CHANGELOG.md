@@ -48,6 +48,9 @@ For dev or build tags, use the same logical version string embedded in the tag.
   map safely to local names, and transfer totals use bytes actually transferred.
   Download retry and retention settings now bind from CLI and environment
   inputs; relative Web content paths reject traversal and symlink escapes.
+- Transfer retention removes expired terminal download requests after their last
+  download attempt is pruned, and persisted transfer timestamps are returned as
+  UTC values.
 - Application state now includes a peer as soon as watch registration
   completes, then refreshes presence on status changes. The shared state lists
   watched peers only.

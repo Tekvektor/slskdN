@@ -79,6 +79,16 @@ namespace slskd.Transfers
         {
             modelBuilder
                 .Entity<Transfer>()
+                .Property(e => e.RequestedAt)
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+            modelBuilder
+                .Entity<Transfer>()
+                .Property(e => e.EnqueuedAt)
+                .HasConversion(v => v, v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : null);
+
+            modelBuilder
+                .Entity<Transfer>()
                 .Property(e => e.StartedAt)
                 .HasConversion(v => v, v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : null);
 

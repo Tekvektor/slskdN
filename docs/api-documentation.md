@@ -143,6 +143,23 @@ root and keeps its existing precedence over the global subdirectory template.
 See [Transfer Operations](transfer-operations.md) for supported destination
 tokens, collision policy, filesystem-safety rules, and CLI/YAML configuration.
 
+Transfer timestamp fields are serialized as UTC ISO 8601 values with a `Z`
+suffix. Convert them to local time only for display; retain the UTC value for
+sorting and comparisons.
+
+#### Download requests
+
+- `GET /api/v0/downloads/requests?state=active|completed|failed|cancelled` - List request-level records, optionally filtered by state
+- `GET /api/v0/downloads/requests/{id}` - Get a request and its transfer attempts
+- `PATCH /api/v0/downloads/requests/{id}/name` - Rename its display label with `{"name":"New label"}`
+- `POST /api/v0/downloads/requests/{id}/cancel` - Cancel the current attempt and mark the request cancelled
+
+These endpoints operate on the stable user-facing request. The existing
+`/api/v0/transfers/downloads` endpoints expose individual transfer attempts.
+Terminal requests are removed by `retention.transfers.removed` only after their
+download attempts have expired and been deleted. See [Transfer Operations](transfer-operations.md)
+for retention behavior and timestamp details.
+
 #### Uploads
 - `GET /api/v0/transfers/uploads` - List uploads
 - `GET /api/v0/transfers/uploads/{username}/{id}` - Get upload details

@@ -114,6 +114,90 @@ public class DownloadServiceTests
     }
 
     [Fact]
+    public async Task PruneRemoved_DeletesOnlyExpiredTerminalRequestsWithoutRemainingDownloads()
+    {
+        var databasePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
+        var options = new DbContextOptionsBuilder<TransfersDbContext>()
+            .UseSqlite($"Data Source={databasePath}")
+            .Options;
+        var now = DateTime.UtcNow;
+        var expiredRequestId = Guid.NewGuid();
+        var activeRequestId = Guid.NewGuid();
+        var recentRequestId = Guid.NewGuid();
+        var visibleRequestId = Guid.NewGuid();
+        var recentTransferRequestId = Guid.NewGuid();
+
+        DownloadRequest CreateRequest(Guid id, DownloadRequestState state, DateTime createdAt, DateTime? completedAt)
+            => new()
+            {
+                Id = id,
+                Name = id.ToString("N"),
+                OriginalFilename = $"{id:N}.flac",
+                State = state,
+                CreatedAt = createdAt,
+                CompletedAt = completedAt,
+            };
+
+        slskd.Transfers.Transfer CreateTransfer(Guid requestId, bool removed, DateTime endedAt)
+            => new()
+            {
+                Id = Guid.NewGuid(),
+                RequestId = requestId,
+                Username = "alice",
+                Direction = TransferDirection.Download,
+                Filename = $"{Guid.NewGuid():N}.flac",
+                RequestedAt = now.AddHours(-1),
+                EndedAt = endedAt,
+                UpdatedAt = endedAt,
+                State = TransferStates.Completed | TransferStates.Succeeded,
+                Removed = removed,
+            };
+
+        try
+        {
+            await using (var context = new TransfersDbContext(options))
+            {
+                await context.Database.EnsureCreatedAsync();
+                context.DownloadRequests.AddRange(
+                    CreateRequest(expiredRequestId, DownloadRequestState.Completed, now.AddHours(-1), now.AddMinutes(-30)),
+                    CreateRequest(activeRequestId, DownloadRequestState.Active, now.AddHours(-1), null),
+                    CreateRequest(recentRequestId, DownloadRequestState.Failed, now.AddMinutes(-1), now.AddMinutes(-1)),
+                    CreateRequest(visibleRequestId, DownloadRequestState.Completed, now.AddHours(-1), now.AddMinutes(-30)),
+                    CreateRequest(recentTransferRequestId, DownloadRequestState.Cancelled, now.AddHours(-1), now.AddMinutes(-30)));
+                context.Transfers.AddRange(
+                    CreateTransfer(expiredRequestId, true, now.AddMinutes(-30)),
+                    CreateTransfer(expiredRequestId, true, now.AddMinutes(-30)),
+                    CreateTransfer(visibleRequestId, false, now.AddMinutes(-30)),
+                    CreateTransfer(recentTransferRequestId, true, now));
+                await context.SaveChangesAsync();
+                await context.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE Transfers SET UpdatedAt = {now.AddMinutes(-30)} WHERE RequestId = {expiredRequestId}");
+            }
+
+            using var service = CreateDownloadService(options, new Mock<ISoulseekClient>());
+            Assert.Equal(2, service.PruneRemoved(5));
+
+            await using var verificationContext = new TransfersDbContext(options);
+            var remainingRequestIds = await verificationContext.DownloadRequests
+                .Select(request => request.Id)
+                .ToListAsync();
+            Assert.DoesNotContain(expiredRequestId, remainingRequestIds);
+            Assert.Contains(activeRequestId, remainingRequestIds);
+            Assert.Contains(recentRequestId, remainingRequestIds);
+            Assert.Contains(visibleRequestId, remainingRequestIds);
+            Assert.Contains(recentTransferRequestId, remainingRequestIds);
+
+            var remainingTransfers = await verificationContext.Transfers.ToListAsync();
+            Assert.Equal(2, remainingTransfers.Count);
+            Assert.All(remainingTransfers, transfer => Assert.NotEqual(expiredRequestId, transfer.RequestId));
+        }
+        finally
+        {
+            DeleteDatabase(databasePath);
+        }
+    }
+
+    [Fact]
     public async Task EnqueueAsync_GlobalDownloadExclusionEscapesPeerFieldsInLogsWithoutChangingRequestValues()
     {
         var databasePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"{Guid.NewGuid():N}.db");

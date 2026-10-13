@@ -47,7 +47,8 @@ for configuration and first-login steps.
   review optional discovery tools.
 - [Browse and download](docs/advanced-features.md) — select files and folders,
   choose a destination, and follow transfer progress. [Transfer Operations](docs/transfer-operations.md)
-  explains path templates, file-name collisions, and permissions.
+  explains path templates, file-name collisions, permissions, request history
+  retention, and API timestamp format.
 - [Wishlist and Lidarr](docs/lidarr-integration.md) — configure background
   acquisition workflows and their safeguards.
 - [Messages, rooms, and pods](docs/pods-and-rooms.md) — review the distinct

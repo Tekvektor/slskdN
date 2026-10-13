@@ -1232,7 +1232,7 @@ By default, most things created by the application are retained indefinitely; th
 
 Completed searches can be configured to be removed from the UI and 'hard' deleted from the database.  It's a good idea to set this to something relatively short, as old searches have diminishing value as they age and the records contain a lot of data.
 
-Transfers can be configured to be removed from the UI after they are complete by specifying retention periods for uploads and downloads separately, and by transfer state; succeeded, errored, and cancelled.
+Transfers can be configured to be removed from the UI after they are complete by specifying retention periods for uploads and downloads separately, and by transfer state; succeeded, errored, and cancelled. Soft-removed transfer rows are permanently deleted after `retention.transfers.removed`. Once all attempts for a terminal download request have been removed, its request record is also deleted when its completion time (or creation time if it has no completion time) exceeds this retention period. Active requests and requests with any remaining download attempt are retained.
 
 Files (on disk) can be configured to be deleted after the age of their last access time exceeds the configured time.  Completed and incomplete files can be configured separately.
 
@@ -1270,7 +1270,7 @@ retention:
 | `--retention-search` | `SLSKD_RETENTION_SEARCH` | Age limit for completed searches, in minutes; unset or `null` keeps them regardless of age |
 | `--retention-events` | `SLSKD_RETENTION_EVENTS` | Age limit for event records, in days |
 | `--retention-events-max-count` | `SLSKD_RETENTION_EVENTS_MAX_COUNT` | Maximum retained event records; `0` disables the count limit |
-| `--retention-transfers-removed` | `SLSKD_RETENTION_TRANSFERS_REMOVED` | Age limit for soft-removed completed transfers, in minutes; `null` keeps them indefinitely |
+| `--retention-transfers-removed` | `SLSKD_RETENTION_TRANSFERS_REMOVED` | Age limit for soft-removed completed transfers and unreferenced terminal download requests, in minutes; `null` keeps their history indefinitely |
 | `--retention-transfers-upload-succeeded` | `SLSKD_RETENTION_TRANSFERS_UPLOAD_SUCCEEDED` | Age limit for successful uploads, in minutes |
 | `--retention-transfers-upload-errored` | `SLSKD_RETENTION_TRANSFERS_UPLOAD_ERRORED` | Age limit for errored uploads, in minutes |
 | `--retention-transfers-upload-cancelled` | `SLSKD_RETENTION_TRANSFERS_UPLOAD_CANCELLED` | Age limit for cancelled uploads, in minutes |

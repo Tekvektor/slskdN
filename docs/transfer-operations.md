@@ -91,6 +91,26 @@ creates. The requested mode is applied after creation to avoid losing bits to
 the process umask. Existing directories are left unchanged. Windows ignores
 Unix mode settings.
 
+## Download request history
+
+The `retention.transfers.removed` setting controls permanent removal of
+soft-removed completed download attempts. After those rows are removed, a
+terminal download request is also removed once its completion time is older
+than the configured age. If it has no completion time, its creation time is
+used. Active requests and terminal requests with any remaining download
+attempt stay available. If removed-transfer retention is unset, request history
+is retained.
+
+An API client that looks up a request should treat a `404` as the record no
+longer being available; retention can remove it after its attempt history has
+expired.
+
+## API timestamp format
+
+Transfer timestamps persisted in the database are returned as UTC ISO 8601
+values with a `Z` suffix. Clients can compare them as UTC instants and convert
+them for display in the user's local time zone.
+
 ## CLI and environment variables
 
 The download destination settings have matching YAML, CLI, and environment
