@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1837. Pass One Collection To List.AddRange (2026-10-13)
+
+**What went wrong:** A transfer-page test fixture passed multiple collections to
+`List<T>.AddRange`, which accepts one collection and stopped the test project
+from compiling.
+
+**Why:** The fixture grouped several independent sequences into one call rather
+than concatenating them or making separate calls.
+
+**Prevention:** Check collection method signatures when assembling fixtures;
+use `Concat` for combined sequences or call `AddRange` once per collection.
+Build the affected test project before running broader suites.
+
 ### 0z1836. Route Filtered Metrics Through The Filter-Aware Overload (2026-10-13)
 
 **What went wrong:** A metrics request with an include filter and no exclude
