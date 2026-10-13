@@ -82,6 +82,19 @@ its database-level lowercase operation.
 configured EF provider translates for the stored value. Exercise source-filtered
 list queries against SQLite, not only mocked service calls.
 
+### 0z1845. Continue From The Search Snapshot Already On Screen (2026-10-13)
+
+**What went wrong:** The Web UI loaded a capped live search snapshot, then
+requested a smaller REST page from the beginning. Its first “load more” request
+could therefore return rows that were already visible.
+
+**Why:** The initial snapshot and the REST continuation maintained separate
+page boundaries.
+
+**Prevention:** Derive the first continuation from the last row in the initial
+snapshot shown to the user. Keep fallback REST paging separate and test a live
+insert between initial load and continuation.
+
 ### 0z1838. Match Mock Arguments To The Service Interface (2026-10-13)
 
 **What went wrong:** A search-list controller test placed the source filter in
