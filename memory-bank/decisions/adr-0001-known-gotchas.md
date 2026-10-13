@@ -69,6 +69,19 @@ implementations must still declare the complete updated signature.
 an interface method changes. Update fake signatures as well as production
 implementations, then compile the affected test project before running tests.
 
+### 0z1844. Keep Search Source Predicates Provider-Translatable (2026-10-13)
+
+**What went wrong:** The search source filter called `ToLowerInvariant()` inside
+an EF predicate. SQLite could not translate that method, so a source-filtered
+list query failed at runtime.
+
+**Why:** A .NET string method was assumed to have the same query translation as
+its database-level lowercase operation.
+
+**Prevention:** Normalize the input outside the query and use a method the
+configured EF provider translates for the stored value. Exercise source-filtered
+list queries against SQLite, not only mocked service calls.
+
 ### 0z1838. Match Mock Arguments To The Service Interface (2026-10-13)
 
 **What went wrong:** A search-list controller test placed the source filter in
