@@ -41375,3 +41375,20 @@ though this repository intentionally keeps builds off ordinary branch pushes.
 Run pull-request checks on hosted runners and use an explicitly dispatched
 main-branch validation when a trusted self-hosted run is needed. Keep the
 resource-heavy load harness hosted after a local SIGBUS.
+
+### 0z1783. Keep Local Validation Snapshots Inside The Trust Boundary (2026-10-13)
+
+**What went wrong:** The local runner copied untracked and ignored checkout
+files into its candidate snapshot and hid host paths based on a guessed
+workspace root. Nested local configuration could enter the snapshot, and
+candidate code could read the original checkout around its filtered copy.
+
+**Why:** The runner inferred trusted inputs from filename shape and common
+workspace layouts instead of taking an explicit snapshot and masking the
+canonical source location.
+
+**Prevention:** Copy only Git-index paths, omit credential names even when they
+are indexed, hide common host configuration and data roots plus the canonical
+checkout parent, and stage new candidate files before local validation. Keep
+contract coverage for nested configuration, credential names, checkout aliases,
+and host-root visibility.
