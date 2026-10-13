@@ -22,67 +22,49 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+## [2026101312-slskdn.351] — 2026-10-13
+
 ### Added
 
-- The System files view can calculate directory sizes and remove selected
-  completed or incomplete items in one reviewed batch. API responses report
-  each item’s result, and path checks reject unsafe deletion targets.
+- The System files view can calculate directory sizes on demand and remove
+  selected completed or incomplete items in one reviewed batch. Batch API
+  responses report per-item outcomes, and path checks reject roots, overlaps,
+  and unsafe targets before deletion.
 
 ### Fixed
 
 - Room names containing `/` now work across room history, user lists, messages,
-  tickers, membership, and leave actions. Application state publishes current
-  presence for watched users after registration and status changes.
+  tickers, membership, and leave actions through query-addressed API routes.
+  Application state also exposes deterministic status for watched users only.
 - Interrupted share scans remain marked as suspect, long remote path components
-  map safely to local names, and transfer totals count bytes actually transferred.
-- Download retry and retention settings now bind from CLI and environment
-  inputs. Relative Web content paths reject traversal and symlink escapes.
-
-### Changed
-
-- Documented the Gluetun control-route requirements for routed deployments.
+  map safely to local names, and transfer totals use bytes actually transferred.
+  Download retry and retention settings now bind from CLI and environment
+  inputs; relative Web content paths reject traversal and symlink escapes.
+- Application state now includes a peer as soon as watch registration
+  completes, then refreshes presence on status changes. The shared state lists
+  watched peers only.
 
 ### Security
 
-- Manual workflow runs on refs outside `main` use GitHub-hosted runners. The
-  main CI workflow now uses read-only token permissions by default and grants
-  release write access only to its release job.
-
-- The trusted validation sandbox pins mount sources before masking host paths.
-  Task logs stop at 16 MiB with a truncation marker, and workflow artifacts use
-  names unique to each run attempt.
-
 - Local validation snapshots filter extensionless credentials and non-source
   files beneath credential-named folders while preserving token-related source
-  code.
-
-- All pull request validation uses GitHub-hosted runners regardless of author.
-  Persistent local runners are reserved for trusted `main` validation. The
-  repository Actions token defaults to read-only, workflow tokens cannot
-  approve pull requests, and write scopes are limited to workflows that need
-  them. The upstream-access notifier runs only on its scheduled default-branch
-  workflow.
-
-- GitHub requires third-party workflow actions to use full immutable commit
-  SHAs. Dependency scans fail on high or critical vulnerabilities, while the
-  container scan blocks high or critical findings with available fixes.
-  Required test failures are no longer hidden as successful runs.
-- Maintainers can retry selected failed publishers for an existing stable
-  release using its published assets, without rebuilding or repeating
-  successful publishers and announcements.
-
-- Manual CI runs can select a GitHub-hosted runner while tag builds retain the
-  configured runner policy.
-- The README includes a Ko-fi link for users who want to support maintenance.
-- The Unraid template exposes the optional Soulseek server MTU setting.
-- System requirements explain storage growth and how to place application data,
-  downloads, and shared files on storage.
+  code. The trusted validation launcher pins sandbox mounts before masking host
+  paths and caps task logs at 16 MiB with a truncation marker.
+- CI actions use immutable commit pins. Dependency and container scans fail on
+  configured high-severity findings, and required test failures remain visible.
+  Maintainers can retry selected failed publishers for an existing stable
+  release using published assets, without rebuilding or repeating successful
+  channels.
+- Pull request validation uses GitHub-hosted runners for all contributors;
+  persistent local runners are reserved for trusted default-branch validation.
+  Workflow tokens default to read-only, and release write scopes are limited to
+  the publisher.
 
 ### Changed
 
-- CI validates and uses runner-owned temporary storage for .NET work, while
+- CI validates and uses runner-owned temporary storage for .NET work while
   keeping push builds tag-triggered and the heavy load harness on hosted Linux.
-  The API-only load harness binds to loopback and never connects to Soulseek.
+  The API-only load harness binds to loopback and stays offline.
 
 ## [2026101222-slskdn.350] — 2026-10-12
 
