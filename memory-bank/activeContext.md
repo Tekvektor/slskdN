@@ -1,25 +1,31 @@
-## Current state — Repair job-wide self-hosted runner temp routing — 2026-10-12 21:47 UTC
+## Current state — Job-wide self-hosted temporary storage follow-up — 2026-10-13
 
-Follow-up PR #357 exposed that `TMPDIR` was scoped only to setup-dotnet, while
-later build and scanner steps still used shared `/tmp`. The candidate now sets
-job-wide `TMPDIR`, `TMP`, and `TEMP` from a validated runner directory in the
-first step of every Linux self-hosted CI job. It replaces hardcoded scan output
-files, rejects runner temp paths resolving to root or `/tmp`, and guards every
-such workflow job against later `/tmp` or `/var/tmp` references.
+Main now routes public pull requests and non-main manual dispatches to hosted
+runners, scopes release write permissions to the publisher, and keeps the
+allocation regression and current-source inventory documented. PR #358 still
+needs hosted validation on its exact source.
 
-The focused workflow and shell checks, repository lint, and complete
-remediation baseline pass. The active backlog count is 12,726; the four new
-matches come from the regression guard. No hosted checks have run on this
-follow-up yet.
+PR #357 adds validated job-wide temporary storage to the eight Linux
+self-hosted jobs in `ci.yml` and `ci-enhancements.yml`. It exports `TMPDIR`,
+`TMP`, and `TEMP` through `GITHUB_ENV`, removes fixed `/tmp` scan outputs, and
+extends the runtime-matrix and packaging guards. The branch has been merged
+with current main in this worktree. Its focused checks passed before the merge;
+full CI and release-note contract results are still required for this exact
+merged source.
+
+Cross-repository runner pooling remains separate. No runner agents or added
+self-hosted capacity have been introduced; account concurrency and local host
+capacity still need review before expanding the pool.
 
 ### Next Steps
 
-- Commit and push the verified changes to PR #357.
-- Wait for the exact PR checks; repair any candidate-caused failures before
-  merging.
-- Verify the main-branch result and delete the merged topic branch.
+- Run and review the required CI and security checks for this exact merged head.
+- Confirm the release-note contract remains explicitly internal-only.
+- After merge, verify the main-branch result before preparing a test release.
+- Keep public pull-request jobs hosted and reassess runner capacity before
+  adding any self-hosted runner agents.
 
-## Prior state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
+## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 
 Issue #352 is fixed and closed. Active transfer lookups use matching SQLite
 partial indexes, completed transfer retention is bounded, and event/search
@@ -19266,3 +19272,25 @@ Focused validation-engine and sandbox tests pass. The full local gate is not
 verified because this host's package managers, SDKs, and caches are installed
 under the operator home, which the launcher deliberately hides. No release tag
 was created.
+
+## Current state — Stable `.350` release validation — 2026-10-12
+
+Upload queue cancellation and capacity forecasts are consistent by transfer
+ID. System Logs exposes retained daily files, retention is bounded at two days,
+and the optional server MTU cap remains disabled by default. Docker version
+changes reuse the web and system-package layers; public pull requests use
+GitHub-hosted runners. Codec matching is allocation-free across supported SDKs,
+and full-instance tests reserve distinct ports.
+
+The full .NET suite passes 6,145 tests, the Web suite passes 1,295 tests, and
+`./bin/lint` passes. The Release build has zero warnings and errors. The
+retained-log Playwright regression passes against that build. The no-`.git`
+Docker build, container version smoke, and version-change cache check pass.
+Release-note preview, local identity scan, route inventory, and GitHub target
+verification pass.
+
+### Next Steps
+
+Fetch and verify current `origin/main`, push the validated tree to
+`snapetech/slskdN/main`, create the authorized stable `.350` tag, verify hosted
+release publishers and artifacts, then remove task-scoped scratch data.

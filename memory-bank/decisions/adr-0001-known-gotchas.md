@@ -4,6 +4,143 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
+
+**What went wrong:** Public pull requests and manual runs from refs outside
+`main` could select persistent self-hosted runners through a repository
+preference variable. Contributor-controlled code could then run on a
+long-lived host with access to its local environment and Docker service.
+
+**Why:** Runner selection checked the preference variable but did not account
+for both the triggering event and the selected ref. The same expression was
+copied into the normal CI, performance, load, dependency, and container
+workflows.
+
+**Prevention:** Route all `pull_request` events and workflow dispatches from
+refs outside `main` to GitHub-hosted runners. Keep release dispatches hosted,
+scope token write permissions to publishing jobs, and audit every workflow for
+self-hosted runner selection.
+
+### 0z1777. Dispose SQLite Test Owners Before File Cleanup (2026-10-12)
+
+**What went wrong:** File-backed SQLite tests could pass on POSIX while cleanup
+failed on Windows because a disposed connection remained in the provider pool
+and still held the database file open.
+
+**Why:** POSIX allows unlinking an open file; Windows rejects deletion while a
+pooled native SQLite handle still owns it. A test that deletes its database
+before disposing its service has the same problem even without pooling.
+
+**Prevention:** Dispose every service and connection that owns a test database
+before cleanup. For test-owned file databases, prefer `Pooling=False`; if a
+pooled connection is required, clear that database's specific pool only after
+its connections are closed. Keep cleanup verification on Windows as well as
+POSIX.
+
+### 0z1776. Warm Allocation Tests Through The Measured Instance (2026-10-12)
+
+**What went wrong:** A cache-statistics allocation test warmed the method on a
+different instance with an empty cache. The measured call therefore included
+the first nonempty expired-entry cleanup pass in its allocation measurement.
+
+**Why:** Calling the same method is not enough when its allocation-sensitive
+work depends on cache state. The warm-up must exercise cleanup on the instance
+whose allocation is measured.
+
+**Prevention:** Seed and remove one expired entry on the measured instance
+before populating the large mixed cache. Keep the allocation measurement around
+the real cleanup and statistics pass, and retain the existing allocation cap.
+
+### 0z1775. Reserve Distinct Ports For Full-Instance Tests (2026-10-12)
+
+**What went wrong:** The full-instance test runner selected each TCP port by
+opening a listener on port zero and closing it immediately. A later allocation
+could receive the same port, assigning one instance's API and mesh listeners to
+the same address and aborting startup.
+
+**Why:** A port probe is not a reservation after its socket closes. Releasing
+each probe before all ports are selected also allows concurrent test runners to
+choose the same port.
+
+**Prevention:** Track allocated ports across active test runners and keep each
+reservation until that runner has shut down, including startup-failure cleanup.
+Use the reservation set when selecting every port for an instance.
+
+### 0z1774. Verify Span Interpolation Across Supported SDKs (2026-10-12)
+
+**What went wrong:** `Span<char>.TryWrite` with an interpolated value measured at
+zero allocation under .NET SDK 10.0.401, but allocated 72 bytes per call under
+SDK 10.0.112. The older SDK therefore failed the repeated-comparison allocation
+test even though the newer SDK passed it.
+
+**Why:** Interpolated-string-handler lowering can vary between compiler SDK
+feature bands, so one toolchain's allocation result does not establish the
+allocation behavior of every supported build toolchain.
+
+**Prevention:** For allocation-sensitive formatting, use explicit span
+formatting APIs such as `TryFormat` rather than relying on interpolated-string
+lowering. Run allocation tests with the minimum supported SDK as well as the
+current SDK before claiming the path is allocation-free.
+
+### 0z1773. Regenerate The API Surface Inventory After Adding Controller Routes (2026-10-12)
+
+**What went wrong:** New retained-log API actions were added to `LogsController`,
+but the checked-in route inventory still reported only its original action.
+
+**Why:** Controller edits do not update the generated API surface inventory
+automatically, so new routes can be omitted from the documented security and
+compatibility review surface.
+
+**Prevention:** After adding or changing controller routes, run
+`scripts/generate-route-inventory.sh docs/system-surfaces-current.md` and
+`scripts/check-route-inventory.sh`; include the generated inventory with the
+controller change.
+
+### 0z1772. Ignore Stale Log Preview Requests (2026-10-12)
+
+**What went wrong:** A retained-log preview request can finish after its modal
+has been closed or another file has been selected, reopening the old preview or
+showing content for the wrong file.
+
+**Why:** Network requests outlive the UI action that started them, and promise
+continuations still update component state after the view changes.
+
+**Prevention:** Tie preview results to a cancellable request or monotonically
+increasing request identifier. Ignore success, error, and loading updates from
+any request that is no longer current; invalidate the active request when the
+preview closes or the component unmounts.
+
+### 0z1771. Avoid MVC Action Names That Collide With ControllerBase (2026-10-12)
+
+**What went wrong:** A log-history action named `File` made reflection-based
+authorization tests fail with `AmbiguousMatchException` because
+`ControllerBase` already exposes overloaded `File` methods.
+
+**Why:** `Type.GetMethod(name)` searches inherited public methods as well as
+controller actions, so an otherwise valid action name can make method lookup
+ambiguous.
+
+**Prevention:** Use action names that describe the endpoint, such as `View` or
+`Download`, and keep route templates explicit. When action names must match an
+inherited method, resolve the action by signature or MVC metadata instead of
+name alone.
+
+### 0z1770. Track Upload Queue Lifecycles By Transfer ID (2026-10-12)
+
+**What went wrong:** Upload queue completion matched requests by username and
+filename. Two simultaneous requests for the same shared file could cause one
+request to remove the other's queue entry or return its slot twice. A canceled
+request waiting for a slot also remained eligible to start later.
+
+**Why:** A filename identifies shared content, not a unique transfer attempt,
+and cancellation was not observed by the queue wait operation.
+
+**Prevention:** Carry the transfer ID through enqueue, slot wait, and release.
+Pass the operation cancellation token into the wait, remove canceled entries,
+and release a slot only for the matching transfer that actually acquired it.
+Regress duplicate same-file requests, cancellation before start, and repeated
+completion.
+
 ### 0z1769. Run Candidate Validation Tests Inside A Trusted Outer Sandbox (2026-10-12)
 
 **What went wrong:** Validation tasks used filtered child environments and
@@ -41152,7 +41289,36 @@ environment.
 job-scoped `PLAYWRIGHT_BROWSERS_PATH`. Keep the task's home and other caches
 isolated, and assert the browser cache binding in the engine tests.
 
-### 0z1770. Keep .NET SDK Bootstrap Temporary Files On Runner Storage (2026-10-12)
+### 0z1776. Run Every Local Test Through The Trusted Launcher (2026-10-12)
+
+**What went wrong:** A focused contract test with mocked API responses was run
+directly from the local checkout. Although the fixture did not contact GitHub,
+the command still executed a local test outside the required trusted sandbox.
+
+**Why:** The test looked like a harmless isolated script, so the sandbox rule
+was incorrectly treated as applying only to tests with live credentials or
+network access.
+
+**Prevention:** Treat every local test command as requiring the documented
+trusted bubblewrap launcher, including tests that use mocks. Use hosted CI when
+the launcher cannot supply the declared toolchain, and never infer an exception
+from a test's fixture design.
+
+### 0z1777. Map New Options Through Every Packaging Surface (2026-10-13)
+
+**What went wrong:** The server MTU configuration and example were added, but
+the Unraid template lacked the `SLSKD_SLSK_CONNECTION_MTU` environment mapping,
+so hosted packaging metadata validation failed.
+
+**Why:** The option was validated through application config and Docker build
+paths, but the separate Unraid template has its own config-to-environment
+mapping contract.
+
+**Prevention:** When adding configuration, search every packaging example and
+environment mapping, including the Unraid template, and run packaging metadata
+validation before preparing release notes or tagging.
+
+### 0z1779. Keep .NET SDK Bootstrap Temporary Files On Runner Storage (2026-10-12)
 
 **What went wrong:** `actions/setup-dotnet` could not install the pinned SDK or
 runtime on the persistent Linux runner. The runner's default `/tmp` was nearly
@@ -41162,11 +41328,12 @@ full even though its job-scoped runner temp directory had ample space.
 directory. The later validation step already used `runner.temp`, but that did
 not help the earlier SDK bootstrap.
 
-**Prevention:** Set `TMPDIR: ${{ runner.temp }}` directly on every
-`actions/setup-dotnet` step in workflows that can use the persistent Linux
-runner. Keep the SDK pin unchanged and guard this workflow contract.
+**Prevention:** In each eligible Linux self-hosted job, validate
+`RUNNER_TEMP` and export `TMPDIR` through `GITHUB_ENV` in the first step so SDK
+setup and later build/test steps use runner storage. Step-scoped `TMPDIR` covers
+only the setup action; see `0z1780` for the job-wide workflow contract.
 
-### 0z1771. Export Runner Temporary Storage For The Whole Self-Hosted Job (2026-10-12)
+### 0z1780. Export Runner Temporary Storage For The Whole Self-Hosted Job (2026-10-12)
 
 **What went wrong:** A .NET build on the persistent Linux runner still failed
 after the `setup-dotnet` action was pointed at runner storage. The build ran in
@@ -41180,7 +41347,7 @@ the environment for later build, test, or compiler processes.
 `GITHUB_ENV`. Keep a workflow regression that checks every eligible job starts
 with this fail-closed setup.
 
-### 0z1772. Keep Packaging Guards Aligned With Job-Wide Runner Temp (2026-10-12)
+### 0z1781. Keep Packaging Guards Aligned With Job-Wide Runner Temp (2026-10-12)
 
 **What went wrong:** The workflow switched from step-scoped `TMPDIR` values to
 first-step validation and job-wide export through `GITHUB_ENV`, but packaging

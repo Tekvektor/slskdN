@@ -150,7 +150,7 @@ describe('AdminPolicies', () => {
     );
     expect(saved.dht.lan_only).toBe(true);
     expect(saved.shares.probe_media_attributes).toBe(false);
-    expect(saved.retention.logs).toBe(180);
+    expect(saved.retention.logs).toBe(14);
   });
 
   it('requires a key value before saving a new API key policy', async () => {

@@ -28,16 +28,36 @@
 
 ### Keep Linux self-hosted CI temporary files on runner storage — 2026-10-12
 
-- [x] Configure all eight Linux self-hosted jobs to validate `RUNNER_TEMP`,
-  reject shared `/tmp`, and persist `TMPDIR`, `TMP`, and `TEMP` for later steps.
-- [x] Replace fixed `/tmp` vulnerability-scan output files and extend the
-  runtime matrix guard to cover every self-hosted Linux workflow job.
-- [x] Record gotcha `0z1771`, refresh the active backlog to 12,726 candidates,
-  and pass the remediation baseline and repository lint.
-- [ ] Push the follow-up to PR #357, wait for hosted CI, then merge and verify
-  the resulting main-branch state.
+- [x] Validate `RUNNER_TEMP` and persist `TMPDIR`, `TMP`, and `TEMP` across all
+  eight Linux self-hosted jobs.
+- [x] Replace fixed `/tmp` vulnerability-scan output paths and make the
+  packaging metadata guard use the shared workflow contract check.
+- [x] Record runner-temp setup and packaging-guard gotchas.
+- [ ] Complete the full CI and release-note checks on the exact merged source,
+  then verify the main-branch result before merge and test release.
 
-Status: local implementation is verified; PR #357 hosted checks are pending.
+### Public pull-request runner isolation — 2026-10-12
+
+- [x] Route public pull-request jobs in CI and enhancement workflows to
+  GitHub-hosted runners.
+- [x] Route manual dispatches from non-main refs to GitHub-hosted runners.
+- [x] Run the Windows smoke workflow on `windows-latest`; the repository has
+  no matching self-hosted Windows runner registered.
+- [x] Limit CI token permissions globally and grant release-only write scopes
+  to the release job.
+- [ ] Complete the cross-repository runner pool design after choosing an
+  organization strategy that preserves the current GitHub account limits and
+  after local host capacity is suitable for more concurrency.
+
+### Allocation regression and current-source inventory refresh — 2026-10-12
+
+- [x] Warm expired-entry cleanup on the same `DescriptorRetriever` instance
+  used by the allocation assertion; keep the `<4 KiB` threshold unchanged.
+- [x] Refresh active-bughunt counts against current `main`; callback/event is
+  217, remote/user diagnostics 434, red-team 12,732, and mutable ownership 836.
+  The one candidate-only red-team line is expected CI-permission changelog text.
+- [ ] Run the focused allocation test in hosted CI on the exact branch head;
+  retain the result before merging PR #358.
 
 ### Reported database issue #352 and stable `.349` release — 2026-10-11
 
@@ -7327,3 +7347,17 @@ resource completion.
 - [x] Run the release-note preview, focused engine contracts, sandbox canaries,
   and GitHub target verification.
 - [x] Push the slskdnN security batch to `main` at `ec97d781d`; no release tag created.
+
+## Stable release `.350` — 2026-10-12
+
+- [x] Make upload cancellation and slot release transfer-specific, add retained
+  System Logs history and bounded retention, and add the opt-in server MTU cap.
+- [x] Reuse Docker layers across version changes and keep public pull request
+  workflows away from private runners.
+- [x] Keep codec matching allocation-free across supported SDKs and reserve
+  distinct ports for full-instance integration tests.
+- [x] Pass the full .NET suite (6,145 tests), full Web suite (1,295 tests),
+  `./bin/lint`, Release build, retained-log Playwright regression, Docker build
+  and startup smoke, and version-change Docker cache check.
+- [ ] Push the validated tree to `snapetech/slskdN/main`, create the authorized
+  stable tag, and verify hosted publishers and release artifacts.
