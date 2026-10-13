@@ -41861,3 +41861,15 @@ browsing, so a large library required several full-size object graphs at once.
 merge sorted repository results without retaining the full tree, and serialize
 the counted protocol response directly to the temporary cache file. Keep
 wire-compatibility, lazy-enumeration, and cancellation/failure cleanup tests.
+
+### 0z1805. Match Vendored Test Syntax To Its CSharp Language Version (2026-10-13)
+
+**What went wrong:** New tests in the vendored runtime test project used C# 8
+using declarations, but that project compiles with C# 7.3.
+
+**Why:** The application and vendored test projects use different language
+versions even though they are built from the same checkout.
+
+**Prevention:** Check the target project's language version before choosing
+syntax. Use scoped `using (...)` blocks in the vendored tests unless the
+project configuration is deliberately upgraded.
