@@ -41784,3 +41784,17 @@ so the assertion silently missed the new execution path.
 **Prevention:** When changing EF execution mode, make SQL command interceptors
 observe both synchronous and asynchronous calls before relying on command-count
 assertions.
+
+### 0z1786. Bound Repeated Queue-Limit Rejections (2026-10-13)
+
+**What went wrong:** A peer that keeps retrying after reaching its upload queue
+limit caused the server to repeat the same transfer-history query and rejection
+logs for every request.
+
+**Why:** Per-user serialization and a global concurrency limit control overlap,
+but they do not reduce repeated work when a peer retries the same denied
+request.
+
+**Prevention:** Reuse a very short-lived queue snapshot only for queue-limit
+decisions, invalidate it when uploads change, suppress per-request logs for
+cached denials, and expose an aggregate metric without peer labels.
