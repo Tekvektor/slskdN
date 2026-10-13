@@ -42575,3 +42575,17 @@ intentionally removed before candidate code starts.
 **Prevention:** Set offline mode as explicit task configuration for standard
 browser suites. Keep loopback peer journeys as separately selected tests with
 their own documented network boundary.
+
+### 0z1813. Specify Every Transfer Column In Visibility Fixtures (2026-10-13)
+
+**What went wrong:** A browser regression fixture selected three transfer
+columns but omitted the `requested` visibility setting. The table merged the
+missing setting with its default (`true`), so the fixture rendered a fourth
+column and failed its exact-count assertion.
+
+**Why:** Saved column state is intentionally forward-compatible: missing
+visibility keys inherit the current defaults for newly introduced columns.
+
+**Prevention:** When a test asserts an exact transfer-column set, specify an
+explicit visibility value for every column key, including `false` for hidden
+columns. This keeps the fixture stable when product defaults evolve.
