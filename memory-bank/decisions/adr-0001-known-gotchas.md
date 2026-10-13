@@ -36,16 +36,20 @@ begins with a digit as well as mutable and version-tag references.
 **What went wrong:** The load-test runner started the application with default
 authentication but sent requests to authenticated endpoints without a token.
 Those requests received authorization failures, which became job failures when
-the previous error suppression was removed.
+the previous error suppression was removed. Its search request also sent
+`query`, while the API request model requires `searchText`.
 
 **Why:** The harness had no isolated test configuration or authentication
 header even though its application-state and search endpoints require
-authorization.
+authorization, and it guessed the POST body instead of following the API
+request model.
 
 **Prevention:** Configure loopback-only test authentication explicitly, or
 issue a disposable test token and send it with every authenticated request.
-Verify endpoint status codes before making the load job a required check; do
-not use live Soulseek credentials for API-only load tests.
+Use the API request model's field names and verify endpoint status codes before
+making a load job required; avoid network searches unless the test has an
+isolated Soulseek fixture. Do not use live Soulseek credentials for API-only
+load tests.
 
 ### 0z1779. Make Security Scans Fail When Findings Are Detected (2026-10-13)
 
