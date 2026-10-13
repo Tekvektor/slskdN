@@ -4,6 +4,19 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1838. Match Mock Arguments To The Service Interface (2026-10-13)
+
+**What went wrong:** A search-list controller test placed the source filter in
+the first `ListAsync` mock argument, but the interface expects a search
+predicate there, so the test project did not compile.
+
+**Why:** The HTTP action's parameter order was mistaken for the service
+interface's argument order.
+
+**Prevention:** Read the service interface before setting up a controller mock.
+Assert the complete forwarded predicate, limit, offset, and source arguments in
+their declared order.
+
 ### 0z1837. Pass One Collection To List.AddRange (2026-10-13)
 
 **What went wrong:** A transfer-page test fixture passed multiple collections to
