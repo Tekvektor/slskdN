@@ -43,6 +43,19 @@ changed with paged browsing.
 **Prevention:** Update tooltip assertions alongside scope changes and verify
 the same explanation appears on both halves of a split control.
 
+### 0z1842. Use Keyset Pages For A Live Search List (2026-10-13)
+
+**What went wrong:** Offset-based search pages could shift when live searches
+were created or deleted, causing a later page to repeat rows or skip rows at
+the boundary.
+
+**Why:** Offset positions describe a mutable ordered list, even when live
+updates are merged into the UI.
+
+**Prevention:** Use a stable descending `(StartedAt, Id)` continuation for the
+Web UI and retain offsets only for API compatibility. Keep the sort tie-breaker
+and cursor predicate aligned, and test continuation while new rows are inserted.
+
 ### 0z1838. Match Mock Arguments To The Service Interface (2026-10-13)
 
 **What went wrong:** A search-list controller test placed the source filter in
