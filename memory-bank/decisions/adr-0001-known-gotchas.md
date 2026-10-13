@@ -37,7 +37,9 @@ begins with a digit as well as mutable and version-tag references.
 authentication but sent requests to authenticated endpoints without a token.
 Those requests received authorization failures, which became job failures when
 the previous error suppression was removed. Its search request also sent
-`query`, while the API request model requires `searchText`.
+`query`, while the API request model requires `searchText`, and used a
+nonexistent `/application/state` route instead of the controller's
+`/application` route.
 
 **Why:** The harness had no isolated test configuration or authentication
 header even though its application-state and search endpoints require
@@ -46,10 +48,10 @@ request model.
 
 **Prevention:** Configure loopback-only test authentication explicitly, or
 issue a disposable test token and send it with every authenticated request.
-Use the API request model's field names and verify endpoint status codes before
-making a load job required; avoid network searches unless the test has an
-isolated Soulseek fixture. Do not use live Soulseek credentials for API-only
-load tests.
+Use controller route attributes and API request-model field names, then verify
+endpoint status codes before making a load job required. Avoid network searches
+unless the test has an isolated Soulseek fixture. Do not use live Soulseek
+credentials for API-only load tests.
 
 ### 0z1779. Make Security Scans Fail When Findings Are Detected (2026-10-13)
 
