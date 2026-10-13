@@ -48,6 +48,18 @@ contract, so valid workflow expressions failed validation.
 trusted events or authors change runner eligibility. Exercise both trusted and
 untrusted cases so the guard reflects the actual security boundary.
 
+### 0z1782. Quote Paths Inside Bash Prefix Removal (2026-10-13)
+
+**What went wrong:** ShellCheck flagged prefix removal that expanded a root
+directory variable as part of a shell pattern without quoting it.
+
+**Why:** Quoting the full parameter expansion does not quote expansions inside
+the removal pattern, so glob characters in a path could be treated as pattern
+syntax.
+
+**Prevention:** Quote variables inside bash parameter-removal patterns, for
+example `${path#"$root"/}`, and run ShellCheck on changed shell scripts.
+
 ### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
 **What went wrong:** Public pull requests and manual runs from refs outside
