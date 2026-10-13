@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -417,6 +418,7 @@ public static class WebServiceCollectionExtensions
             {
                 // https://github.com/SignalR/SignalR/issues/1149#issuecomment-973887222
                 options.MaximumParallelInvocationsPerClient = 2;
+                options.AddFilter<ScopedApiKeyHubFilter>();
             })
             .AddJsonProtocol(options =>
             {

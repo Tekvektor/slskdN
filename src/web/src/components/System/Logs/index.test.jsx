@@ -2,6 +2,8 @@ import '@testing-library/jest-dom';
 import Logs from './index';
 import React from 'react';
 import { createLogsHubConnection } from '../../../lib/hubFactory';
+import { downloadLogFile, getLogFile, getLogFiles } from '../../../lib/logs';
+import { downloadFile } from '../../../lib/util';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +11,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../../lib/hubFactory', () => ({
   createLogsHubConnection: vi.fn(),
 }));
+
+vi.mock('../../../lib/logs', () => ({
+  downloadLogFile: vi.fn(),
+  getLogFile: vi.fn(),
+  getLogFiles: vi.fn(),
+}));
+
+vi.mock('../../../lib/util', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, downloadFile: vi.fn() };
+});
 
 const createHub = ({ start } = {}) => {
   const handlers = new Map();
@@ -126,5 +139,53 @@ describe('System Logs', () => {
 
     await waitFor(() => expect(hub.stop).toHaveBeenCalledOnce());
     expect(() => hub.emit('log', records[0])).not.toThrow();
+  });
+
+  it('loads, previews, and downloads retained log files', async () => {
+    const hub = createHub();
+    const file = {
+      lastModified: '2026-10-12T10:20:30Z',
+      length: 1_024,
+      name: 'slskd-20261012.log',
+    };
+    createLogsHubConnection.mockReturnValue(hub);
+    getLogFiles.mockResolvedValue([file]);
+    getLogFile.mockResolvedValue('server started');
+    downloadLogFile.mockResolvedValue(new Blob(['server started']));
+    const user = userEvent.setup();
+
+    render(<Logs />);
+    await user.click(screen.getByRole('button', { name: 'History' }));
+
+    expect(await screen.findByText(file.name)).toBeInTheDocument();
+    expect(getLogFiles).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole('button', { name: `View ${file.name}` }));
+    expect(await screen.findByText('server started')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    await user.click(screen.getByRole('button', { name: `Download ${file.name}` }));
+    await waitFor(() => expect(downloadLogFile).toHaveBeenCalledWith(file.name));
+    expect(downloadFile).toHaveBeenCalledWith(expect.any(Blob), file.name, 'text/plain');
+  });
+
+  it('ignores a preview response after the preview closes', async () => {
+    const hub = createHub();
+    const file = { lastModified: '2026-10-12T10:20:30Z', length: 20, name: 'slskd-20261012.log' };
+    let resolvePreview;
+    createLogsHubConnection.mockReturnValue(hub);
+    getLogFiles.mockResolvedValue([file]);
+    getLogFile.mockImplementation(() => new Promise((resolve) => { resolvePreview = resolve; }));
+    const user = userEvent.setup();
+
+    render(<Logs />);
+    await user.click(screen.getByRole('button', { name: 'History' }));
+    await screen.findByText(file.name);
+    await user.click(screen.getByRole('button', { name: `View ${file.name}` }));
+    await user.click(await screen.findByRole('button', { name: 'Close' }));
+
+    await act(async () => resolvePreview('late preview response'));
+
+    expect(screen.queryByText('late preview response')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

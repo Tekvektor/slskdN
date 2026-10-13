@@ -10,6 +10,7 @@ namespace slskd.Tests.Unit.Transfers.Uploads
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using AutoFixture.Xunit2;
     using Moq;
@@ -387,12 +388,113 @@ namespace slskd.Tests.Unit.Transfers.Uploads
         {
             var (queue, _) = GetFixture();
 
-            queue.Enqueue("user", "file.mp3");
+            var id = EnqueueUpload(queue, "user", "file.mp3");
 
-            var completion = queue.AwaitStartAsync("user", "file.mp3")
-                .ContinueWith(_ => queue.Complete("user", "file.mp3"));
+            var completion = queue.AwaitStartAsync(id, CancellationToken.None)
+                .ContinueWith(_ => queue.Complete(id));
 
             await completion.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        public async Task DuplicateFilesUseTheirOwnTransferIdsAndReleaseSlotsOnce()
+        {
+            var (queue, _) = GetFixture(new Options
+            {
+                Global = new Options.GlobalOptions
+                {
+                    Upload = new Options.GlobalOptions.GlobalUploadOptions { Slots = 2 },
+                },
+                Groups = new Options.GroupsOptions
+                {
+                    Default = new Options.GroupsOptions.BuiltInOptions
+                    {
+                        Upload = new Options.GroupsOptions.UploadOptions { Slots = 2 },
+                    },
+                },
+            });
+
+            var firstId = EnqueueUpload(queue, "user", "same-file.mp3");
+            var secondId = EnqueueUpload(queue, "user", "same-file.mp3");
+            await queue.AwaitStartAsync(firstId, CancellationToken.None);
+            await queue.AwaitStartAsync(secondId, CancellationToken.None);
+
+            queue.Complete(firstId);
+            queue.Complete(firstId);
+
+            var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
+            var groups = queue.GetProperty<Dictionary<string, UploadGroup>>("Groups");
+            Assert.Collection(uploads["user"], upload => Assert.Equal(secondId, upload.Id));
+            Assert.Equal(1, groups[Application.DefaultGroup].UsedSlots);
+
+            Assert.True(queue.TryComplete(secondId));
+            Assert.Equal(0, groups[Application.DefaultGroup].UsedSlots);
+        }
+
+        [Fact]
+        public async Task CancellingAWaitingUploadRemovesItWithoutReleasingAnotherTransfersSlot()
+        {
+            var (queue, _) = GetFixture(new Options
+            {
+                Global = new Options.GlobalOptions
+                {
+                    Upload = new Options.GlobalOptions.GlobalUploadOptions { Slots = 1 },
+                },
+                Groups = new Options.GroupsOptions
+                {
+                    Default = new Options.GroupsOptions.BuiltInOptions
+                    {
+                        Upload = new Options.GroupsOptions.UploadOptions { Slots = 1 },
+                    },
+                },
+            });
+
+            var activeId = EnqueueUpload(queue, "user", "active.mp3");
+            await queue.AwaitStartAsync(activeId, CancellationToken.None);
+
+            var waitingId = EnqueueUpload(queue, "user", "waiting.mp3");
+            using var cancellation = new CancellationTokenSource();
+            var waiting = queue.AwaitStartAsync(waitingId, cancellation.Token);
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
+
+            var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
+            var groups = queue.GetProperty<Dictionary<string, UploadGroup>>("Groups");
+            Assert.Collection(uploads["user"], upload => Assert.Equal(activeId, upload.Id));
+            Assert.Equal(1, groups[Application.DefaultGroup].UsedSlots);
+
+            queue.Complete(activeId);
+            Assert.Equal(0, groups[Application.DefaultGroup].UsedSlots);
+        }
+
+        [Fact]
+        public async Task ForecastDoesNotReportAFreeGroupSlotWhenGlobalCapacityIsFull()
+        {
+            var (queue, mocks) = GetFixture(new Options
+            {
+                Global = new Options.GlobalOptions
+                {
+                    Upload = new Options.GlobalOptions.GlobalUploadOptions { Slots = 1 },
+                },
+                Groups = new Options.GroupsOptions
+                {
+                    Default = new Options.GroupsOptions.BuiltInOptions
+                    {
+                        Upload = new Options.GroupsOptions.UploadOptions { Slots = 1 },
+                    },
+                },
+            });
+
+            mocks.UserService.Setup(m => m.GetGroup("priority-user")).Returns(Application.PrivilegedGroup);
+            var activeId = EnqueueUpload(queue, "priority-user", "active.mp3");
+            await queue.AwaitStartAsync(activeId, CancellationToken.None);
+
+            var forecast = queue.ForecastPosition("default-user");
+
+            Assert.Equal(1, forecast.QueuePosition);
+            Assert.Equal(1, forecast.Slots);
+            queue.Complete(activeId);
         }
 
         public class Enqueue
@@ -404,7 +506,7 @@ namespace slskd.Tests.Unit.Transfers.Uploads
 
                 Assert.Empty(queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads"));
 
-                queue.Enqueue(username, filename);
+                EnqueueUpload(queue, username, filename);
 
                 var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
 
@@ -419,8 +521,8 @@ namespace slskd.Tests.Unit.Transfers.Uploads
             {
                 var (queue, _) = GetFixture();
 
-                queue.Enqueue(username, filename);
-                queue.Enqueue(username, filename2);
+                EnqueueUpload(queue, username, filename);
+                EnqueueUpload(queue, username, filename2);
 
                 var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
 
@@ -438,8 +540,8 @@ namespace slskd.Tests.Unit.Transfers.Uploads
 
                 Assert.Empty(queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads"));
 
-                queue.Enqueue(username, filename);
-                queue.Enqueue(username2, filename2);
+                EnqueueUpload(queue, username, filename);
+                EnqueueUpload(queue, username2, filename2);
 
                 var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
 
@@ -459,30 +561,16 @@ namespace slskd.Tests.Unit.Transfers.Uploads
 
         public class Complete
         {
-            [Theory, AutoData]
-            public void Throws_If_No_Such_Username(string username, string filename)
+            [Fact]
+            public void Repeated_Or_Unknown_Completion_Does_Not_Throw()
             {
                 var (queue, _) = GetFixture();
 
-                var ex = Record.Exception(() => queue.Complete(username, filename));
+                var id = Guid.NewGuid();
+                var ex = Record.Exception(() => queue.Complete(id));
 
-                Assert.NotNull(ex);
-                Assert.IsType<SlskdException>(ex);
-                Assert.True(ex.Message.Contains("no enqueued uploads for user", System.StringComparison.InvariantCultureIgnoreCase));
-            }
-
-            [Theory, AutoData]
-            public void Throws_If_No_Such_Filename(string username, string filename)
-            {
-                var (queue, _) = GetFixture();
-
-                queue.Enqueue(username, filename);
-
-                var ex = Record.Exception(() => queue.Complete(username, "foo"));
-
-                Assert.NotNull(ex);
-                Assert.IsType<SlskdException>(ex);
-                Assert.True(ex.Message.Contains("is not enqueued for user", System.StringComparison.InvariantCultureIgnoreCase));
+                Assert.Null(ex);
+                Assert.False(queue.TryComplete(id));
             }
 
             [Theory, AutoData]
@@ -490,12 +578,12 @@ namespace slskd.Tests.Unit.Transfers.Uploads
             {
                 var (queue, _) = GetFixture();
 
-                queue.Enqueue(username, filename);
-                await queue.AwaitStartAsync(username, filename);
-                queue.Enqueue(username, filename2);
-                await queue.AwaitStartAsync(username, filename2);
+                EnqueueUpload(queue, username, filename);
+                await AwaitUploadStartAsync(queue, username, filename);
+                EnqueueUpload(queue, username, filename2);
+                await AwaitUploadStartAsync(queue, username, filename2);
 
-                queue.Complete(username, filename);
+                CompleteUpload(queue, username, filename);
 
                 var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
 
@@ -510,17 +598,17 @@ namespace slskd.Tests.Unit.Transfers.Uploads
             {
                 var (queue, _) = GetFixture();
 
-                queue.Enqueue(username, filename);
-                await queue.AwaitStartAsync(username, filename);
+                EnqueueUpload(queue, username, filename);
+                await AwaitUploadStartAsync(queue, username, filename);
 
-                queue.Enqueue(username, filename2);
-                await queue.AwaitStartAsync(username, filename2);
+                EnqueueUpload(queue, username, filename2);
+                await AwaitUploadStartAsync(queue, username, filename2);
 
                 var groups = queue.GetProperty<Dictionary<string, UploadGroup>>("Groups");
 
                 Assert.Equal(2, groups[Application.DefaultGroup].UsedSlots);
 
-                queue.Complete(username, filename);
+                CompleteUpload(queue, username, filename);
 
                 groups = queue.GetProperty<Dictionary<string, UploadGroup>>("Groups");
 
@@ -532,15 +620,15 @@ namespace slskd.Tests.Unit.Transfers.Uploads
             {
                 var (queue, _) = GetFixture();
 
-                queue.Enqueue(username, filename);
-                queue.Enqueue(username, filename2);
+                EnqueueUpload(queue, username, filename);
+                EnqueueUpload(queue, username, filename2);
 
                 var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
 
                 Assert.Single(uploads);
 
-                queue.Complete(username, filename);
-                queue.Complete(username, filename2);
+                CompleteUpload(queue, username, filename);
+                CompleteUpload(queue, username, filename2);
 
                 uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
 
@@ -550,44 +638,52 @@ namespace slskd.Tests.Unit.Transfers.Uploads
 
         public class AwaitStartAsync
         {
-            [Theory, AutoData]
-            public async Task Throws_If_No_Such_Username(string username, string filename)
+            [Fact]
+            public async Task Throws_If_TransferId_IsNotEnqueued()
             {
                 var (queue, _) = GetFixture();
 
-                var ex = await Record.ExceptionAsync(() => queue.AwaitStartAsync(username, filename));
+                var ex = await Record.ExceptionAsync(() => queue.AwaitStartAsync(Guid.NewGuid(), CancellationToken.None));
 
                 Assert.NotNull(ex);
                 Assert.IsType<SlskdException>(ex);
-                Assert.True(ex.Message.Contains("no enqueued uploads for user", System.StringComparison.InvariantCultureIgnoreCase));
             }
 
             [Theory, AutoData]
-            public async Task Throws_If_No_Such_Filename(string username, string filename)
+            public async Task Throws_If_TransferId_DoesNotMatchAnEnqueuedFile(string username, string filename)
             {
                 var (queue, _) = GetFixture();
 
-                queue.Enqueue(username, filename);
+                EnqueueUpload(queue, username, filename);
 
-                var ex = await Record.ExceptionAsync(() => queue.AwaitStartAsync(username, "foo"));
+                var ex = await Record.ExceptionAsync(() => queue.AwaitStartAsync(Guid.NewGuid(), CancellationToken.None));
 
                 Assert.NotNull(ex);
                 Assert.IsType<SlskdException>(ex);
-                Assert.True(ex.Message.Contains("is not enqueued for user", System.StringComparison.InvariantCultureIgnoreCase));
             }
 
             [Theory, AutoData]
-            public void Returns_Task_Associated_With_Upload(string username, string filename)
+            public async Task Waits_On_Task_Associated_With_Upload(string username, string filename)
             {
-                var (queue, _) = GetFixture();
+                var (queue, _) = GetFixture(new Options
+                {
+                    Global = new Options.GlobalOptions
+                    {
+                        Upload = new Options.GlobalOptions.GlobalUploadOptions { Slots = 1 },
+                    },
+                });
 
-                queue.Enqueue(username, filename);
+                var activeId = EnqueueUpload(queue, username, filename);
+                await queue.AwaitStartAsync(activeId, CancellationToken.None);
 
-                var uploads = queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads");
+                var queuedId = EnqueueUpload(queue, username, $"{filename}-queued");
+                var task = queue.AwaitStartAsync(queuedId, CancellationToken.None);
 
-                var task = queue.AwaitStartAsync(username, filename);
+                Assert.False(task.IsCompleted);
+                queue.Complete(activeId);
 
-                Assert.Equal(task, uploads[username][0].TaskCompletionSource.Task);
+                await task;
+                Assert.True(task.IsCompletedSuccessfully);
             }
         }
 
@@ -888,6 +984,24 @@ namespace slskd.Tests.Unit.Transfers.Uploads
                 Assert.True(allocatedBytes < 2_048, $"Allocated {allocatedBytes:N0} bytes.");
             }
         }
+
+        private static Guid EnqueueUpload(UploadQueue queue, string username, string filename)
+        {
+            var id = Guid.NewGuid();
+            queue.Enqueue(id, username, filename);
+            return id;
+        }
+
+        private static Guid FindUploadId(UploadQueue queue, string username, string filename)
+            => queue.GetProperty<ConcurrentDictionary<string, List<Upload>>>("Uploads")[username]
+                .First(upload => upload.Filename == filename)
+                .Id;
+
+        private static Task AwaitUploadStartAsync(UploadQueue queue, string username, string filename)
+            => queue.AwaitStartAsync(FindUploadId(queue, username, filename), CancellationToken.None);
+
+        private static void CompleteUpload(UploadQueue queue, string username, string filename)
+            => queue.Complete(FindUploadId(queue, username, filename));
 
         private static (UploadQueue queue, Mocks mocks) GetFixture(Options options = null)
         {

@@ -248,7 +248,7 @@ const buildForm = (options = {}) => {
     jwtConfigured: isConfigured(getOption(jwt, 'key', 'Key')),
     jwtKey: '',
     jwtTtl: String(getOption(jwt, 'ttl', 'Ttl') ?? 3600000),
-    logRetention: String(getOption(retention, 'logs', 'Logs') ?? 180),
+    logRetention: String(getOption(retention, 'logs', 'Logs') ?? 14),
     noAuth: Boolean(getOption(auth, 'disabled', 'Disabled')),
     passthroughCidrs: getOption(passthrough, 'allowedCidrs', 'allowed_cidrs', 'AllowedCidrs') || '',
     rateLimitApi: String(getOption(rateLimiting, 'apiPermitLimit', 'api_permit_limit', 'ApiPermitLimit') ?? 200),
@@ -560,7 +560,7 @@ const AdminPolicies = ({ options = {} }) => {
 
       setOptionalNumber(document, ['retention', 'search'], form.retentionSearch);
       document.setIn(['retention', 'events'], toNumber(form.eventsRetention, 30));
-      document.setIn(['retention', 'logs'], toNumber(form.logRetention, 180));
+      document.setIn(['retention', 'logs'], toNumber(form.logRetention, 14));
       setOptionalNumber(
         document,
         ['retention', 'transfers', 'upload', 'succeeded'],
@@ -1529,6 +1529,7 @@ const AdminPolicies = ({ options = {} }) => {
                   aria-label="Log retention days"
                   disabled={!remoteConfiguration || saving}
                   label="Logs Retention days"
+                  min={2}
                   onChange={(_, { value }) => update('logRetention', value)}
                   type="number"
                   value={form.logRetention}

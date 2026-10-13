@@ -249,7 +249,10 @@ namespace slskd.SocialFederation.API
             try
             {
                 json = Encoding.UTF8.GetString(bodyBytes);
-                activity = SecurityUtils.ParseJsonSafely<ActivityPubActivity>(json, _maxPayload, SecurityUtils.MaxParseDepth);
+                activity = JsonSerializer.Deserialize<ActivityPubActivity>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web)
+                {
+                    MaxDepth = SecurityUtils.MaxParseDepth,
+                });
             }
             catch (ArgumentException)
             {
@@ -539,8 +542,8 @@ namespace slskd.SocialFederation.API
             try
             {
                 var alg = SignatureAlgorithm.Ed25519;
-                using var key = Key.Import(alg, pkix, KeyBlobFormat.PkixPublicKey);
-                var verified = alg.Verify(key.PublicKey, Encoding.UTF8.GetBytes(signingString), signatureBytes);
+                var key = PublicKey.Import(alg, pkix, KeyBlobFormat.PkixPublicKey);
+                var verified = alg.Verify(key, Encoding.UTF8.GetBytes(signingString), signatureBytes);
                 if (verified)
                 {
                     return (true, keyId);
@@ -562,9 +565,21 @@ namespace slskd.SocialFederation.API
                 return false;
             }
 
-            return string.Equals(actor, verifiedKeyId, StringComparison.OrdinalIgnoreCase) ||
-                verifiedKeyId.StartsWith(actor + "#", StringComparison.OrdinalIgnoreCase) ||
-                verifiedKeyId.StartsWith(actor + "/", StringComparison.OrdinalIgnoreCase);
+            var actorBound = string.Equals(actor, verifiedKeyId, StringComparison.Ordinal) ||
+                verifiedKeyId.StartsWith(actor + "#", StringComparison.Ordinal) ||
+                verifiedKeyId.StartsWith(actor + "/", StringComparison.Ordinal);
+            if (!actorBound)
+            {
+                return false;
+            }
+
+            if ((activity.Type == "Undo" || activity.Type == "Remove") &&
+                string.Equals(TryGetObjectType(activity.Object), "Follow", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Equals(TryGetObjectActor(activity.Object), actor, StringComparison.Ordinal);
+            }
+
+            return true;
         }
 
         internal static bool IsFriendsOnlyIdentityAuthorized(

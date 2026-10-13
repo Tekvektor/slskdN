@@ -26,6 +26,29 @@
 
 ## Active Development
 
+### Public pull-request runner isolation — 2026-10-12
+
+- [x] Route public pull-request jobs in CI and enhancement workflows to
+  GitHub-hosted runners.
+- [x] Route manual dispatches from non-main refs to GitHub-hosted runners.
+- [x] Run the Windows smoke workflow on `windows-latest`; the repository has
+  no matching self-hosted Windows runner registered.
+- [x] Limit CI token permissions globally and grant release-only write scopes
+  to the release job.
+- [ ] Complete the cross-repository runner pool design after choosing an
+  organization strategy that preserves the current GitHub account limits and
+  after local host capacity is suitable for more concurrency.
+
+### Allocation regression and current-source inventory refresh — 2026-10-12
+
+- [x] Warm expired-entry cleanup on the same `DescriptorRetriever` instance
+  used by the allocation assertion; keep the `<4 KiB` threshold unchanged.
+- [x] Refresh active-bughunt counts against current `main`; callback/event is
+  217, remote/user diagnostics 434, red-team 12,732, and mutable ownership 836.
+  The one candidate-only red-team line is expected CI-permission changelog text.
+- [ ] Run the focused allocation test in hosted CI on the exact branch head;
+  retain the result before merging PR #358.
+
 ### Reported database issue #352 and stable `.349` release — 2026-10-11
 
 - [x] Reproduce issue #352's transfer-table scan root cause with SQLite query
@@ -7277,3 +7300,54 @@ resource completion.
 - [x] Confirm final hosted run `37326116677` completed successfully with all
   18 jobs green; verify the exact Jammy binary in the Launchpad API and public
   apt index.
+
+## Credential and federation boundary corrections — 2026-10-12
+
+- [x] Enforce narrow credential restrictions before SignalR connection callbacks
+  and invocations; preserve password, wildcard, and legacy-session access.
+- [x] Bind relationship removal to the verified actor with case-sensitive
+  identifiers; correct Ed25519 public-key import and standard inbox JSON parsing.
+- [x] Verify real hub connections and signed inbox requests, including legitimate
+  operations, other actors, missing identities, case changes, and altered bodies.
+- [x] Pass 123 focused regressions, all 6,128 .NET tests, repository lint,
+  release-note validation, and the local identity scan.
+
+### Validation child-process environment isolation — 2026-10-12
+
+- [x] Restrict runtime probes and task processes to the platform/toolchain
+  environment allowlist, with private task home, temporary, XDG, and NuGet
+  settings. Force deterministic CI and test-mode values.
+- [x] Reject arbitrary passEnv names. Retain only the four identity-denylist
+  settings approved for the remediation-baseline task.
+- [x] Pass the focused validation-engine contract suite (13 tests) and plan the
+  local candidate (910 inventoried test files, 17 tasks, 8/8 command
+  prerequisites available).
+- [x] Pass the complete default local engine gate: 14/14 selected tasks and
+  7,303 active cases, with the three browser E2E suites separately excluded by
+  policy. This covers all tests-only tasks and adds the repository checks and
+  web build/output checks.
+## Trusted local validation sandbox — 2026-10-12
+
+- [x] Import today's validation environment-isolation commits and gotcha notes.
+- [x] Add a trusted bubblewrap boundary for local validation tasks, with a
+  read-only candidate workspace dependency mount and marker verification.
+- [x] Add contract canaries for host files, ambient environment values, TCP and
+  Unix sockets, disposable workspace writes, and read-only dependencies.
+- [x] Pass the focused engine contracts and sandbox canaries.
+- [x] Run the release-note preview, focused engine contracts, sandbox canaries,
+  and GitHub target verification.
+- [x] Push the slskdnN security batch to `main` at `ec97d781d`; no release tag created.
+
+## Stable release `.350` — 2026-10-12
+
+- [x] Make upload cancellation and slot release transfer-specific, add retained
+  System Logs history and bounded retention, and add the opt-in server MTU cap.
+- [x] Reuse Docker layers across version changes and keep public pull request
+  workflows away from private runners.
+- [x] Keep codec matching allocation-free across supported SDKs and reserve
+  distinct ports for full-instance integration tests.
+- [x] Pass the full .NET suite (6,145 tests), full Web suite (1,295 tests),
+  `./bin/lint`, Release build, retained-log Playwright regression, Docker build
+  and startup smoke, and version-change Docker cache check.
+- [ ] Push the validated tree to `snapetech/slskdN/main`, create the authorized
+  stable tag, and verify hosted publishers and release artifacts.

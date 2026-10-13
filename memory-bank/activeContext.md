@@ -1,3 +1,36 @@
+## Current state — Public PR runner isolation and CI capacity review — 2026-10-12
+
+Public pull-request workflows in the SLSKDN CI, enhancement, and Windows smoke
+files now select GitHub-hosted runners. Manual dispatches from refs other than
+`main` also use hosted runners; trusted `main` dispatches can opt into hosted
+or follow configured runner policy. The main CI token defaults to read-only;
+release publishing gets its required write scopes in the release job. Focused
+workflow syntax, trigger-policy, identity, diff, and release-note checks pass.
+
+The previously failing allocation assertion now warms expired-entry cleanup on
+the measured `DescriptorRetriever` instance, with its `<4 KiB` cap unchanged.
+The local engine planned one unit-test task but executed zero because `pnpm` and
+the .NET CLI home were unavailable. A direct filtered run also executed zero:
+the scratch package cache lacks the pinned .NET 10.0.12 reference pack. The
+fresh candidate scan reports 217 callback/event, 434 remote-text, 12,732
+red-team, and 836 mutable-ownership matches. After accounting for updated
+ledger descriptions, its only branch-added red-team match is expected
+CI-permission changelog text. PR #358 still needs hosted validation on this
+exact source before merge.
+
+Cross-repository runner pooling is still pending. All repositories remain under
+the existing personal account while its hosted-runner concurrency tier is
+unknown. The local CI hosts are under heavy load and already have active SLSKDN
+and TorrentNG jobs, so no runner agents or additional local test load were
+added. Standard hosted runner minutes remain free for the public repositories.
+
+### Next Steps
+
+- Keep public pull-request workloads on hosted runners.
+- Reassess local host capacity before adding project-specific runner agents.
+- Confirm the account concurrency plan and organization destination before any
+repository transfer or shared organization runner setup.
+
 ## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 
 Issue #352 is fixed and closed. Active transfer lookups use matching SQLite
@@ -19192,3 +19225,78 @@ complete. Keep T-908's sender trust and serving lifecycle, cross-node Party ID
 authority, real assistive-tech and device validation, WAN/resource and
 hidden-tab measurements, the original frontend network-change cause, and
 unconfirmed scanner candidates in the evidence/design-gated follow-up list.
+
+## Current state — Credential and federation corrections complete — 2026-10-12
+
+Narrow credentials are denied before SignalR snapshots or invocations. Signed
+relationship removal is bound to the verified sender, including case-sensitive
+actor paths. Public-key import and standard inbox JSON field handling are
+corrected. The 123 focused regressions, full .NET suite (6,128 tests), repository
+lint, release-note validation, identity scan, and diff checks pass.
+
+### Next Steps
+
+No active implementation or validation work remains for these corrections.
+Unrelated validation-tool branch commits remain separate. Release tagging
+requires a separate explicit instruction.
+
+## Current state — Validation child-process environment isolation — 2026-10-12
+
+The local validation engine now filters runtime probes and task children
+through an explicit platform/toolchain allowlist, creates private task user,
+temporary, XDG, and NuGet paths, and limits passEnv to declared task settings.
+The remediation-baseline task retains only its four approved identity-denylist
+inputs. The focused engine suite passes 13/13.
+
+The complete default local engine gate passed on the current worktree: 14/14
+selected tasks, 7,303 active test cases, zero failures or blocked tasks, and
+three documented browser E2E tasks excluded. The plan discovered 910 test
+files, found all 8 command prerequisites, and matched Node 24.21.0, pnpm
+12.4.1, .NET 10.0.401, and Python 3.14.8. The first attempt hit a full `/tmp`
+tmpfs; the successful run used disk-backed temporary storage. The code, policy
+docs, task record, and release-note fragment remain on the
+codex/validation-environment-isolation-20261012 branch and have not been
+pushed.
+
+### Next Steps
+
+Run repository lint, validate and preview the release note after committing,
+then integrate this branch carefully with the existing validation-progress PR.
+No publication has been performed.
+## Current state — Trusted local validation sandbox — 2026-10-12
+
+The validation engine now requires the trusted outer bubblewrap marker before
+local test tasks execute. The launcher creates a disposable source snapshot,
+filters secret and local configuration files, hides host home/service/network
+surfaces, and mounts dependencies read-only. Tests verify marker matching and
+host file/TCP/Unix socket isolation. The existing environment-isolation branch
+changes are included. The sandbox changes and release-note fragment are
+committed and pushed to `main` at `ec97d781d`; release-note preview, focused
+engine contracts, and GitHub target verification pass.
+
+Focused validation-engine and sandbox tests pass. The full local gate is not
+verified because this host's package managers, SDKs, and caches are installed
+under the operator home, which the launcher deliberately hides. No release tag
+was created.
+
+## Current state — Stable `.350` release validation — 2026-10-12
+
+Upload queue cancellation and capacity forecasts are consistent by transfer
+ID. System Logs exposes retained daily files, retention is bounded at two days,
+and the optional server MTU cap remains disabled by default. Docker version
+changes reuse the web and system-package layers; public pull requests use
+GitHub-hosted runners. Codec matching is allocation-free across supported SDKs,
+and full-instance tests reserve distinct ports.
+
+The full .NET suite passes 6,145 tests, the Web suite passes 1,295 tests, and
+`./bin/lint` passes. The Release build has zero warnings and errors. The
+retained-log Playwright regression passes against that build. The no-`.git`
+Docker build, container version smoke, and version-change cache check pass.
+Release-note preview, local identity scan, route inventory, and GitHub target
+verification pass.
+
+### Next Steps
+
+Fetch and verify current `origin/main`, push the validated tree to
+`snapetech/slskdN/main`, create the authorized stable `.350` tag, verify hosted
+release publishers and artifacts, then remove task-scoped scratch data.

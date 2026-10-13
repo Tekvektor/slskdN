@@ -18922,3 +18922,69 @@ gotcha entries and refreshed backlog, are pushed to `main`; the worktree is
 clean. Stable `.349` remains the released product version; the post-release
 Launchpad polling correction is on `main` with a validated release-note
 fragment for the next release.
+
+## Update 2026-10-12 — Credential and federation boundary corrections
+
+SignalR now rejects narrowly scoped integration credentials before connection
+callbacks and invocations. Wildcard and legacy sessions retain existing access.
+Federation relationship removal requires the nested actor to match the verified
+sender, with case-sensitive actor identities. Real signed-request regressions
+also exposed incompatible public-key import and case-sensitive parsing of
+standard lowercase wire fields; both are corrected at their existing boundaries.
+
+The 123 focused regressions pass. Full .NET tests pass 6,128 (5,765 unit,
+74 application, 289 integration); repository lint, structured release-note
+validation, the identity scan, and diff whitespace checks pass. Gotchas
+0z1761–0z1765 precede the implementation commit. No release tag is requested.
+
+## Update 2026-10-12 — Validation environment isolation
+
+Runtime version probes and validation task processes now start from a strict
+platform/toolchain allowlist. Tasks receive run-owned user, temporary, XDG, and
+.NET package settings; CI and test mode are forced. passEnv is rejected unless
+the exact name is approved for that task; only slskdn's remediation-baseline
+task retains its four existing identity-denylist inputs.
+
+The focused validation-engine suite passes 13 tests. The real slskdn plan
+discovers 910 test files across 17 tasks and reports all 8 command prerequisites
+available. The complete default local engine gate passes all 14 selected tasks
+with 7,303 active cases, zero failures, and zero blocked tasks. Three browser
+E2E tasks remain separately excluded by policy. Node 24.21.0, pnpm 12.4.1,
+.NET 10.0.401, and Python 3.14.8 match the declared runtime matrix. The first
+attempt hit a full `/tmp` tmpfs; the successful run used disk-backed temporary
+storage.
+## Update 2026-10-12 — Trusted outer sandbox for local validation
+
+Local validation tasks now require a private marker from the trusted Linux
+bubblewrap launcher. The launcher snapshots candidate source, removes ambient
+credentials and local configuration, hides the operator home, temporary files,
+service sockets, and network, and mounts dependency directories read-only. The
+launcher contract checks that host files and TCP/Unix endpoints stay
+unreachable, secrets are not inherited, and only the disposable workspace is
+writable. Focused engine and sandbox tests pass across the six sibling repos.
+
+The runner's full `--tests-only` gate was not run in this local sandbox: several
+repository toolchains and package caches are installed beneath the operator
+home, which the sandbox intentionally hides. The repository-specific engine
+contracts and unit tests were run directly inside the sandbox. No release tag
+was created.
+
+The slskdnN security batch is pushed to `main` at `ec97d781d`. Focused Node
+engine contracts, including the host file, secret, network, dependency, and
+writable workspace canaries, pass inside the trusted launcher. The release-note
+preview and `scripts/verify-github-target.sh` pass. No release tag was created.
+
+## Update 2026-10-12 — Stable `.350` validation
+
+Upload queue cancellation now follows transfer IDs and releases only acquired
+slots. Administrators can browse retained daily logs; the retention minimum and
+default are bounded. Server MTU control remains opt-in. Container builds reuse
+version-independent layers, and public pull request workflows use hosted
+runners. Codec-profile comparisons remain allocation-free on both supported
+SDKs, and full-instance tests reserve distinct TCP ports.
+
+The full .NET suite passes 6,145 tests; the full Web suite passes 1,295 tests.
+`./bin/lint`, the Release build, retained-log Playwright regression, Docker
+build/startup, version-change cache check, release-note preview, identity scan,
+route inventory, and GitHub target verification pass. Push and hosted stable
+release verification remain.

@@ -58,12 +58,31 @@ node scripts/validate-development.mjs --task browser-e2e
 node scripts/validate-development.mjs --task web-browser-e2e
 ```
 
+Local execution of test tasks requires the trusted Linux bubblewrap launcher.
+When evaluating an unreviewed branch, copy `trusted-test-launcher.mjs` from a
+reviewed revision to a location outside the checkout and run:
+
+```bash
+node /path/to/trusted-test-launcher.mjs "$PWD" -- node scripts/validate-development.mjs --tests-only
+```
+
+Run planning for an unreviewed candidate through that launcher too, because
+planning imports its validation configuration. GitHub Actions remains
+responsible for hosted validation.
+
 `--plan` discovers test files, records the Git candidate and supported runtime
 versions, and reports command availability. It does not execute tests.
 `--tests-only` runs registered unit, regression, integration-smoke, release-note,
 and engine-contract tests. The default run adds repository checks and the web
 build/output checks. Browser suites remain separately selectable because they
 need more time and platform setup.
+
+During execution, the engine writes cumulative task progress to stderr when a
+task starts and finishes, with a heartbeat every minute for long tasks. The
+summary reports completed, failed, blocked, and pending tasks plus the active
+task and elapsed time. Native test-case totals update when each task finishes;
+GitHub Actions shows these live updates in the step log because rendered job
+summaries are published after the step completes.
 
 Each execution creates a fresh receipt and per-task logs in a private directory
 under the operating system's temporary directory. Receipts bind the Git commit,
@@ -72,8 +91,19 @@ digests, runtime versions, and (on GitHub Actions) the workflow run and attempt.
 Test tasks pass only when their native command succeeds and reports at least
 one active case. No previous result is reused. A task that changes the planned
 source blocks remaining work and fails the run. Sensitive environment values
-are removed from child commands by default; a task must explicitly name any
-private value it needs.
+are excluded by constructing runtime-probe and child environments from a
+narrow platform and toolchain allowlist. Each task receives private home,
+temporary, XDG, and .NET package directories, plus declared settings. `passEnv`
+allows only variables approved for that task by the engine. The engine forces
+`CI=true`; test tasks use `NODE_ENV=test`. Loader options, proxy settings,
+workflow context, arbitrary variables, and operator configuration paths do not
+reach child commands.
+
+Playwright tasks keep those private home and XDG directories and use the
+job-scoped `slskdn-playwright-browsers` cache under the runner temporary root.
+The E2E workflow installs Chromium into that same cache before the engine runs.
+For local browser validation, set `PLAYWRIGHT_BROWSERS_PATH` to the equivalent
+temporary-root path before installing browsers; see `tests/e2e/README.md`.
 
 GitHub CI uploads the receipt and logs as a seven-day artifact. A passing local
 or hosted engine run does not include the separate Nix packaging job, release

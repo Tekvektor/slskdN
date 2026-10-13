@@ -17,11 +17,13 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { requireTrustedLocalTestSandbox } from './trusted-sandbox.mjs';
 
 export const ENGINE_VERSION = 1;
 const ENGINE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(ENGINE_DIR, '..', '..');
 const MAX_BUFFER = 8 * 1024 * 1024;
+const PROGRESS_INTERVAL_MS = 60_000;
 const IGNORED_DIRS = new Set([
   '.git',
   '.next',
@@ -35,8 +37,20 @@ const IGNORED_DIRS = new Set([
   '_tests',
   'TestResults',
 ]);
-const SECRET_ENV = /(?:TOKEN|PASSWORD|SECRET|API[_-]?KEY|CREDENTIAL|COOKIE|AUTH|IDENTITY|DENYLIST|DATABASE_URL|DB_PASS|AWS_|AZURE_|GCP_)/i;
-const TEST_HARNESS_ENV = new Set(['NODE_TEST_CONTEXT']);
+const INHERITED_ENVIRONMENT_KEYS = new Set([
+  'ASDF_DATA_DIR', 'ASDF_DIR', 'COMSPEC', 'DOTNET_ROOT', 'DOTNET_ROOT_X64',
+  'DOTNET_ROOT_X86', 'LANG', 'LC_ALL', 'LC_CTYPE', 'MISE_DATA_DIR',
+  'MISE_HOME', 'NVM_DIR', 'PATH', 'PATHEXT', 'VOLTA_HOME', 'SYSTEMROOT',
+  'TZ', 'WINDIR',
+]);
+const APPROVED_TASK_PASS_ENVIRONMENT = new Map([
+  ['remediation-baseline', new Set([
+    'LOCAL_IDENTITY_DENYLIST',
+    'LOCAL_IDENTITY_DENYLIST_FILE',
+    'SLSKDN_LOCAL_IDENTITY_DENYLIST',
+    'SLSKDN_LOCAL_IDENTITY_DENYLIST_FILE',
+  ])],
+]);
 
 function fail(message) {
   throw new Error(message);
@@ -54,6 +68,24 @@ function stable(value) {
     ).join(',') + '}';
   }
   return JSON.stringify(value);
+}
+
+function formatElapsed(milliseconds) {
+  const seconds = Math.floor(milliseconds / 1000);
+  return `${Math.floor(seconds / 60)}m${String(seconds % 60).padStart(2, '0')}s`;
+}
+
+export function formatValidationProgress(repository, tasks, results, currentTask = null, elapsedMs = 0) {
+  const receipts = tasks.map((task) => results.get(task.id)).filter(Boolean);
+  const passed = receipts.filter((receipt) => receipt.status === 'passed').length;
+  const failed = receipts.filter((receipt) => ['failed', 'incomplete'].includes(receipt.status)).length;
+  const blocked = receipts.filter((receipt) => ['blocked', 'not-run'].includes(receipt.status)).length;
+  const completed = passed + failed;
+  const pending = Math.max(0, tasks.length - completed - blocked);
+  const active = currentTask
+    ? `; running ${currentTask.name ?? currentTask.id} (${formatElapsed(elapsedMs)})`
+    : '';
+  return `[validation] ${repository}: ${completed}/${tasks.length} selected tasks complete (${passed} passed, ${failed} failed, ${blocked} blocked, ${pending} pending)${active}`;
 }
 
 function git(root, args) {
@@ -219,6 +251,16 @@ function commandAvailable(command) {
   });
 }
 
+function inheritedToolchainEnvironment(inherited = process.env) {
+  const values = new Map();
+  for (const [key, value] of Object.entries(inherited)) {
+    const normalized = key.toUpperCase();
+    if (!INHERITED_ENVIRONMENT_KEYS.has(normalized) || typeof value !== 'string') continue;
+    if (!values.has(normalized) || key === normalized) values.set(normalized, value);
+  }
+  return Object.fromEntries(values);
+}
+
 function inspectRuntime(root, runtime) {
   const available = commandAvailable(runtime.command);
   if (!available) return { ...runtime, available, version: null, exitCode: null };
@@ -227,7 +269,7 @@ function inspectRuntime(root, runtime) {
     encoding: 'utf8',
     timeout: 10_000,
     maxBuffer: 1024 * 1024,
-    env: sanitizedEnvironment(),
+    env: inheritedToolchainEnvironment(),
   });
   const version = (result.stdout ?? '') + (result.stderr ?? '');
   const versionLine = version.trim().split(/\r?\n/, 1)[0] ?? '';
@@ -265,6 +307,10 @@ function validateConfig(config) {
     }
     if (!Array.isArray(task.passEnv ?? [])) {
       fail('Explicitly inherited environment variables must be listed by task: ' + task.id);
+    }
+    if ((task.passEnv ?? []).some((name) => typeof name !== 'string' ||
+        !APPROVED_TASK_PASS_ENVIRONMENT.get(task.id)?.has(name))) {
+      fail('Task requests an unapproved inherited environment variable: ' + task.id);
     }
   }
   const laneIds = new Set(config.inventory.map((rule) => rule.id));
@@ -393,9 +439,11 @@ export function createPlan(root, config, options = {}) {
       cwd: task.cwd ?? '.',
       casePattern: task.casePattern ?? null,
       minimumCases: task.minimumCases ?? null,
+      browserCache: task.browserCache ?? null,
       envKeys: [...new Set([
         ...Object.keys(task.env ?? {}),
         ...(task.passEnv ?? []),
+        ...(task.browserCache === 'playwright' ? ['PLAYWRIGHT_BROWSERS_PATH'] : []),
       ])].sort(),
       inventoryLanes: task.inventoryLanes ?? [],
     })),
@@ -404,17 +452,58 @@ export function createPlan(root, config, options = {}) {
   return plan;
 }
 
-function sanitizedEnvironment(additional = {}, passEnv = []) {
-  const env = {};
-  const allowed = new Set(passEnv);
-  for (const [key, value] of Object.entries(process.env)) {
-    if ((!SECRET_ENV.test(key) || allowed.has(key)) && !TEST_HARNESS_ENV.has(key)) {
-      env[key] = value;
-    }
+export function isolatedTaskEnvironment(task, runRoot, inherited = process.env) {
+  if (typeof task?.id !== 'string' || !/^[a-z0-9][a-z0-9-]*$/.test(task.id)) {
+    fail('Validation task ID must be a safe lowercase identifier.');
   }
-  env.NO_COLOR = '1';
-  env.CI = env.CI ?? 'true';
-  return { ...env, ...additional };
+  if (task.browserCache !== undefined && task.browserCache !== 'playwright') {
+    fail('Validation task requests an unsupported browser cache: ' + task.id);
+  }
+  const env = inheritedToolchainEnvironment(inherited);
+  const approvedPassEnv = APPROVED_TASK_PASS_ENVIRONMENT.get(task.id) ?? new Set();
+  const passEnv = task.passEnv ?? [];
+  if (!Array.isArray(passEnv) || passEnv.some((name) =>
+    typeof name !== 'string' || !approvedPassEnv.has(name))) {
+    fail('Task requests an unapproved inherited environment variable: ' + task.id);
+  }
+  for (const name of passEnv) {
+    const match = Object.entries(inherited).find(([key]) => key.toUpperCase() === name.toUpperCase());
+    if (match && typeof match[1] === 'string') env[name] = match[1];
+  }
+  for (const [key, value] of Object.entries(task.env ?? {})) {
+    if (typeof value === 'string') env[key] = value;
+  }
+
+  const environmentRoot = path.join(runRoot, `${task.id}-environment`);
+  const directories = {
+    HOME: path.join(environmentRoot, 'home'),
+    USERPROFILE: path.join(environmentRoot, 'home'),
+    TMPDIR: path.join(environmentRoot, 'tmp'),
+    TMP: path.join(environmentRoot, 'tmp'),
+    TEMP: path.join(environmentRoot, 'tmp'),
+    XDG_CONFIG_HOME: path.join(environmentRoot, 'xdg-config'),
+    XDG_CACHE_HOME: path.join(environmentRoot, 'xdg-cache'),
+    APPDATA: path.join(environmentRoot, 'AppData', 'Roaming'),
+    LOCALAPPDATA: path.join(environmentRoot, 'AppData', 'Local'),
+    DOTNET_CLI_HOME: path.join(environmentRoot, 'dotnet-home'),
+    NUGET_PACKAGES: path.join(environmentRoot, 'nuget-packages'),
+  };
+  for (const directory of new Set(Object.values(directories))) {
+    mkdirSync(directory, { recursive: true, mode: 0o700 });
+  }
+  Object.assign(env, directories, {
+    CI: 'true',
+    NO_COLOR: '1',
+    DOTNET_CLI_TELEMETRY_OPTOUT: '1',
+    DOTNET_NOLOGO: '1',
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1',
+  });
+  if (task.browserCache === 'playwright') {
+    const cacheRoot = inherited.RUNNER_TEMP || inherited.TMPDIR || inherited.TEMP || os.tmpdir();
+    env.PLAYWRIGHT_BROWSERS_PATH = path.join(path.resolve(cacheRoot), 'slskdn-playwright-browsers');
+  }
+  if (task.kind === 'test') env.NODE_ENV = 'test';
+  return env;
 }
 
 function terminate(child) {
@@ -443,7 +532,7 @@ export async function runCommand(task, root, logPath, options = {}) {
   let timedOut = false;
   const child = spawn(command, args, {
     cwd,
-    env: sanitizedEnvironment(task.env, task.passEnv),
+    env: isolatedTaskEnvironment(task, path.dirname(logPath)),
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: process.platform !== 'win32',
     windowsHide: true,
@@ -572,7 +661,22 @@ export async function executePlan(root, config, plan, options = {}) {
   }
 
   let sourceChanged = false;
-  for (const task of plan.tasks.filter((item) => item.selected)) {
+  const selectedTasks = plan.tasks.filter((item) => item.selected);
+  let lastProgressSummary = null;
+  const reportProgress = (currentTask = null, taskStartedAt = 0) => {
+    if (typeof options.onProgress !== 'function') return;
+    const summary = formatValidationProgress(
+      config.repository,
+      selectedTasks,
+      receiptById,
+      currentTask,
+      currentTask ? Date.now() - taskStartedAt : 0,
+    );
+    if (summary === lastProgressSummary) return;
+    lastProgressSummary = summary;
+    options.onProgress(summary);
+  };
+  for (const task of selectedTasks) {
     const dependencyReceipts = (task.dependsOn ?? []).map((id) => receiptById.get(id));
     const failedDependency = dependencyReceipts.find((item) => item?.status !== 'passed');
     if (failedDependency) {
@@ -582,6 +686,7 @@ export async function executePlan(root, config, plan, options = {}) {
         reason: 'dependency did not pass',
         required: task.required !== false,
       });
+      reportProgress();
       continue;
     }
     if (captureCandidate(root, config.inputs ?? [], {
@@ -594,22 +699,33 @@ export async function executePlan(root, config, plan, options = {}) {
         reason: 'candidate source changed after planning',
         required: task.required !== false,
       });
+      reportProgress();
       break;
     }
     const configuredTask = config.tasks.find((item) => item.id === task.id);
     if (!configuredTask) fail('Selected task is missing from the registered configuration: ' + task.id);
-    const taskReceipt = await runCommand(
-      configuredTask,
-      root,
-      path.join(runRoot, task.id + '.log'),
-      options
-    );
+    const taskStartedAt = Date.now();
+    reportProgress(task, taskStartedAt);
+    const heartbeat = setInterval(() => reportProgress(task, taskStartedAt), PROGRESS_INTERVAL_MS);
+    heartbeat.unref();
+    let taskReceipt;
+    try {
+      taskReceipt = await runCommand(
+        configuredTask,
+        root,
+        path.join(runRoot, task.id + '.log'),
+        options
+      );
+    } finally {
+      clearInterval(heartbeat);
+    }
     taskReceipt.inventory = (configuredTask.inventoryLanes ?? []).map((lane) => ({
       lane,
       discoveredFiles: plan.inventoryCounts[lane] ?? 0,
       inventorySha256: plan.inventoryLaneDigests[lane],
     }));
     receiptById.set(task.id, taskReceipt);
+    reportProgress();
     if (captureCandidate(root, config.inputs ?? [], {
       entries: plan.inventory,
     }).sourceSha256 !== plan.candidate.sourceSha256) {
@@ -655,6 +771,7 @@ export async function executePlan(root, config, plan, options = {}) {
     tasks,
     totals,
   };
+  reportProgress();
   writeFileSync(path.join(runRoot, 'receipt.json'), JSON.stringify(receipt, null, 2), { mode: 0o600 });
   return { receipt, runRoot, exitCode: status === 'passed' ? 0 : 1 };
 }
@@ -721,7 +838,12 @@ export async function main(argv = process.argv.slice(2), root = DEFAULT_ROOT, co
         plan.prerequisites.length + ' command prerequisites available.\n');
     return 0;
   }
-  const result = await executePlan(root, loaded, plan);
+  if (plan.tasks.some((task) => task.selected && task.kind === 'test')) {
+    requireTrustedLocalTestSandbox();
+  }
+  const result = await executePlan(root, loaded, plan, {
+    onProgress: (summary) => process.stderr.write(summary + '\n'),
+  });
   process.stdout.write(JSON.stringify(summarizeResult(loaded.repository, result), null, 2) + '\n');
   return result.exitCode;
 }

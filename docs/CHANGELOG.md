@@ -22,11 +22,69 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Security
+
+- Manual workflow runs on refs outside `main` use GitHub-hosted runners. The
+  main CI workflow now uses read-only token permissions by default and grants
+  release write access only to its release job.
+
+- Manual CI runs can select a GitHub-hosted runner while tag builds retain the
+  configured runner policy.
+- The README includes a Ko-fi link for users who want to support maintenance.
+- The Unraid template exposes the optional Soulseek server MTU setting.
+- System requirements explain storage growth and how to place application data,
+  downloads, and shared files on storage.
+
+## [2026101222-slskdn.350] — 2026-10-12
+
+### Added
+
+- System Logs now lets administrators browse, preview, and download retained
+  daily log files.
+- An optional MTU cap can limit TCP segment size for the Soulseek server
+  connection on networks where packet sizing causes connection stalls. It is
+  disabled by default.
+
+### Changed
+
+- Maintainers can use a successful manual CI run to validate the exact main
+  commit before tagging when local test execution is unavailable.
+- Manual CI runs can select a GitHub-hosted runner while tag builds retain the
+  configured runner policy.
+- The README includes a Ko-fi link for users who want to support maintenance.
+- The Unraid template exposes the optional Soulseek server MTU setting.
+- System requirements explain storage growth and how to place application data,
+  downloads, and shared files on storage.
+- Repeated audio codec profile comparisons now avoid transient string allocations.
+- Container builds now reuse web assets and system-package layers when release
+  metadata changes, and no longer need a `.git` directory in the build context.
+- Default log retention is 14 days, with a minimum of 2 days. Operators who
+  set one day must increase `retention.logs`.
+
 ### Fixed
 
+- Queued uploads now cancel promptly while waiting, release only their own
+  slot, and report estimates against global capacity. Retry actions apply to
+  downloads.
 - The Launchpad PPA publication waiter now queries by binary package name and
   checks the exact version locally, avoiding stale version-filtered API
   responses after a binary is published.
+
+### Security
+
+- Public pull requests and manual runs from refs outside `main` use GitHub-hosted
+  runners. CI defaults to read-only permissions and limits publishing access to
+  the release job.
+- Narrowly scoped integration credentials are restricted from general-purpose
+  real-time hubs, while password and wildcard sessions retain existing access.
+- Federation relationship removal is bound to the verified sender and exact
+  actor identity. Public-key verification and standard inbox JSON field handling
+  correctly accept valid signed messages and reject altered ones.
+- Local candidate test runs require the trusted sandbox launcher, which hides
+  operator files, secrets, service sockets, and network access from test code.
+- Validation probes and task processes use restricted environments and private
+  temporary and configuration settings to reduce exposure of unrelated values.
+
 
 ## [2026101120-slskdn.349] — 2026-10-11
 

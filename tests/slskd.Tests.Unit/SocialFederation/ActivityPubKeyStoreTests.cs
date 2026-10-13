@@ -9,6 +9,8 @@ namespace slskd.Tests.Unit.SocialFederation
     using Microsoft.AspNetCore.DataProtection;
     using Microsoft.Extensions.Logging;
     using Moq;
+    using NSec.Cryptography;
+    using System.Text;
     using slskd.SocialFederation;
     using Xunit;
 
@@ -30,6 +32,24 @@ namespace slskd.Tests.Unit.SocialFederation
         private ActivityPubKeyStore CreateKeyStore()
         {
             return new ActivityPubKeyStore(_dataProtectorMock.Object, new FakeEd25519KeyPairGenerator(), _loggerMock.Object);
+        }
+
+        [Fact]
+        public async Task VerifySignatureAsync_AcceptsRealSignatureAndRejectsChangedMessage()
+        {
+            using var signingKey = Key.Import(SignatureAlgorithm.Ed25519,
+                Convert.FromBase64String("nWGxne/9WqC6hCmKMH36EcONbGqL9a5f/c4g+NpR+n0="), KeyBlobFormat.RawPrivateKey);
+            var publicKeyPem = "-----BEGIN PUBLIC KEY-----\n" +
+                Convert.ToBase64String(signingKey.PublicKey.Export(KeyBlobFormat.PkixPublicKey)) +
+                "\n-----END PUBLIC KEY-----";
+            var generator = new Mock<IEd25519KeyPairGenerator>();
+            generator.Setup(value => value.GenerateKeypair()).Returns((publicKeyPem, FakeEd25519KeyPairGenerator.PrivateKeyPem1));
+            using var store = new ActivityPubKeyStore(_dataProtectorMock.Object, generator.Object, _loggerMock.Object);
+            const string message = "signed activity";
+            var signature = Convert.ToBase64String(SignatureAlgorithm.Ed25519.Sign(signingKey, Encoding.UTF8.GetBytes(message)));
+
+            Assert.True(await store.VerifySignatureAsync("https://remote.example/actors/sender", signature, message));
+            Assert.False(await store.VerifySignatureAsync("https://remote.example/actors/sender", signature, message + " tampered"));
         }
 
         [Fact]

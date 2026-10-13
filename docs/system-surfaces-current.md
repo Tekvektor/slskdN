@@ -1,6 +1,6 @@
 # Current API surface inventory
 
-Generated: 2026-10-05T23:11:14Z
+Generated: 2026-10-12T22:44:40Z
 
 This inventory is generated from controller attributes. It is intended for parity/security review, not as a replacement for Swagger or integration tests.
 
@@ -50,7 +50,7 @@ Route bucket policy: new web-consumed JSON APIs should be versioned. Non-version
 | `src/slskd/Capabilities/API/CapabilitiesController.cs` | `"api/v{version:apiVersion}/[controller]"` | versioned | [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.ReadWriteOrAdministrator)] [Authorize(Policy = AuthPolicy.Any)] | yes | no | 5 |
 | `src/slskd/Common/Security/API/SecurityController.cs` | `"api/v{version:apiVersion}/security"` | versioned | [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Roles = "Administrator")] [Authorize(Roles = "Administrator")] [Authorize(Roles = "Administrator")] [Authorize(Roles = "Administrator")] [Authorize(Roles = "Administrator")] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] | yes | no | 34 |
 | `src/slskd/Core/API/Controllers/ApplicationController.cs` | `"api/v{version:apiVersion}/[controller]"` | versioned | [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.JwtOnly, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.JwtOnly, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.ReadWriteOrAdministrator)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.ReadWriteOrAdministrator)] | yes | yes | 9 |
-| `src/slskd/Core/API/Controllers/LogsController.cs` | `"api/v{version:apiVersion}/[controller]"` | versioned | [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] | yes | no | 1 |
+| `src/slskd/Core/API/Controllers/LogsController.cs` | `"api/v{version:apiVersion}/[controller]"` | versioned | [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] | yes | no | 4 |
 | `src/slskd/Core/API/Controllers/NetworkController.cs` | `"api/v{version:apiVersion}/network"` | versioned | [Authorize(Policy = AuthPolicy.Any)] | yes | no | 1 |
 | `src/slskd/Core/API/Controllers/OptionsController.cs` | `"api/v{version:apiVersion}/[controller]"<br>"startup"<br>"debug"<br>"yaml/location"<br>"yaml"<br>"yaml"<br>"yaml/validate"` | versioned | [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any)] [Authorize(Policy = AuthPolicy.JwtOnly, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.JwtOnly, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.JwtOnly, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.JwtOnly, Roles = AuthRole.AdministratorOnly)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.ReadWriteOrAdministrator)] | yes | no | 8 |
 | `src/slskd/Core/API/Controllers/ServerController.cs` | `"api/v{version:apiVersion}/[controller]"<br>""<br>""<br>""` | versioned | [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.ReadWriteOrAdministrator)] [Authorize(Policy = AuthPolicy.Any, Roles = AuthRole.ReadWriteOrAdministrator)] [Authorize(Policy = AuthPolicy.Any)] | yes | no | 3 |
@@ -231,13 +231,13 @@ None found.
   - 153:        [HttpGet("{actorName}/inbox")]
   - 202:        [HttpPost("{actorName}/inbox")]
   - 203:        [AllowAnonymous]
-  - 294:        [HttpGet("{actorName}/outbox")]
-  - 295:        [AllowAnonymous]
-  - 354:        [HttpGet("{actorName}/followers")]
-  - 355:        [AllowAnonymous]
-  - 381:        [HttpGet("{actorName}/following")]
-  - 382:        [AllowAnonymous]
-  - 419:        [HttpPost("{actorName}/outbox")]
+  - 297:        [HttpGet("{actorName}/outbox")]
+  - 298:        [AllowAnonymous]
+  - 357:        [HttpGet("{actorName}/followers")]
+  - 358:        [AllowAnonymous]
+  - 384:        [HttpGet("{actorName}/following")]
+  - 385:        [AllowAnonymous]
+  - 422:        [HttpPost("{actorName}/outbox")]
 - src/slskd/SocialFederation/API/WebFingerController.cs
   - 62:        [HttpGet("webfinger")]
   - 63:        [AllowAnonymous]

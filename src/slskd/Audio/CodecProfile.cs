@@ -108,12 +108,47 @@ namespace slskd.Audio
             string key)
         {
             Span<char> buffer = stackalloc char[256];
-            var formatted = IsLosslessCodec(codec) && bitDepth.HasValue
-                ? buffer.TryWrite($"{codec}-{bitDepth.Value}bit-{sampleRateHz}Hz-{channels}ch", out var charsWritten)
-                : buffer.TryWrite($"{codec}-lossy-{sampleRateHz}Hz-{channels}ch", out charsWritten);
+            var charsWritten = 0;
+            var formatted = TryAppendText(codec.AsSpan(), buffer, ref charsWritten)
+                && TryAppendText("-", buffer, ref charsWritten)
+                && (IsLosslessCodec(codec) && bitDepth.HasValue
+                    ? TryAppendNumber(bitDepth.Value, buffer, ref charsWritten)
+                        && TryAppendText("bit-", buffer, ref charsWritten)
+                    : TryAppendText("lossy-", buffer, ref charsWritten))
+                && TryAppendNumber(sampleRateHz, buffer, ref charsWritten)
+                && TryAppendText("Hz-", buffer, ref charsWritten)
+                && TryAppendNumber(channels, buffer, ref charsWritten)
+                && TryAppendText("ch", buffer, ref charsWritten);
             return formatted
                 ? buffer[..charsWritten].SequenceEqual(key)
                 : string.Equals(BuildKey(codec, sampleRateHz, bitDepth, channels), key, StringComparison.Ordinal);
+        }
+
+        private static bool TryAppendText(ReadOnlySpan<char> value, Span<char> buffer, ref int charsWritten)
+        {
+            if (value.Length > buffer.Length - charsWritten)
+            {
+                return false;
+            }
+
+            value.CopyTo(buffer[charsWritten..]);
+            charsWritten += value.Length;
+            return true;
+        }
+
+        private static bool TryAppendNumber(int value, Span<char> buffer, ref int charsWritten)
+        {
+            if (!value.TryFormat(
+                buffer[charsWritten..],
+                out var numberCharsWritten,
+                default,
+                System.Globalization.CultureInfo.CurrentCulture))
+            {
+                return false;
+            }
+
+            charsWritten += numberCharsWritten;
+            return true;
         }
 
         private static string BuildKey(string codec, int sampleRateHz, int? bitDepth, int channels)

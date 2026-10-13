@@ -18,7 +18,9 @@ import {
   createPlan,
   discoverInventory,
   executePlan,
+  formatValidationProgress,
   globRegex,
+  isolatedTaskEnvironment,
   summarizeResult,
 } from './engine.mjs';
 
@@ -104,6 +106,22 @@ test('glob matching covers root and nested files without crossing sibling names'
   assert.equal(globRegex('**/*.spec.ts').test('a.spec.ts'), true);
 });
 
+test('live progress summary distinguishes completed, blocked, pending, and active tasks', () => {
+  const tasks = [
+    { id: 'passed', name: 'Passed task' },
+    { id: 'blocked', name: 'Blocked task' },
+    { id: 'running', name: 'Long task' },
+  ];
+  const results = new Map([
+    ['passed', { status: 'passed', startedAt: '2026-10-12T00:00:00.000Z' }],
+    ['blocked', { status: 'blocked' }],
+  ]);
+  assert.equal(
+    formatValidationProgress('sample', tasks, results, tasks[2], 65_000),
+    '[validation] sample: 1/3 selected tasks complete (1 passed, 0 failed, 1 blocked, 1 pending); running Long task (1m05s)',
+  );
+});
+
 test('inventory records scoped file digests and rejects empty or duplicate ownership', () => {
   const { root, config } = fixture();
   const inventory = discoverInventory(root, config.inventory);
@@ -143,6 +161,7 @@ test('plan binds the candidate and closes test selection over its dependencies',
     name: 'Optional browser suite',
     stage: 'browser',
     kind: 'test',
+    browserCache: 'playwright',
     command: [process.execPath, '-e', 'process.exit(0)'],
     casePattern: 'passed (\\d+)',
     minimumCases: 1,
@@ -153,6 +172,9 @@ test('plan binds the candidate and closes test selection over its dependencies',
     'prepare',
     'unit-tests',
   ]);
+  const browserTask = plan.tasks.find((task) => task.id === 'optional-browser');
+  assert.equal(browserTask.browserCache, 'playwright');
+  assert.ok(browserTask.envKeys.includes('PLAYWRIGHT_BROWSERS_PATH'));
   assert.equal(plan.inventoryCounts.unit, 1);
   assert.equal(plan.candidate.commit.length, 40);
   assert.match(plan.candidate.sourceSha256, /^[a-f0-9]{64}$/);
@@ -252,29 +274,111 @@ test('execution records timeouts and does not accept failed native commands', as
 
 test('child environments hide sensitive values unless a task explicitly needs them', async () => {
   const key = 'VALIDATION_ENGINE_TEST_SECRET';
-  const previous = process.env[key];
-  process.env[key] = 'do-not-log-me';
+  const operatorTemp = mkdtempSync(path.join(os.tmpdir(), 'slskdn-validation-operator-tmp-'));
+  const injected = {
+    [key]: 'do-not-log-me',
+    GITHUB_TOKEN: 'synthetic-github-token',
+    NODE_OPTIONS: '--require=/nonexistent-slskdn-validation-module.cjs',
+    HOME: '/operator/home',
+    TMPDIR: operatorTemp,
+    XDG_CONFIG_HOME: '/operator/config',
+    NUGET_PACKAGES: '/operator/nuget',
+    HTTPS_PROXY: 'http://proxy.invalid',
+    RANDOM_PRIVATE_VALUE: 'synthetic-private-value',
+    LOCAL_IDENTITY_DENYLIST: 'synthetic-local-identity-list',
+    CI: 'false',
+  };
+  const previous = new Map(Object.keys(injected).map((name) => [name, process.env[name]]));
+  Object.assign(process.env, injected);
   try {
+    assert.throws(
+      () => isolatedTaskEnvironment({ id: '../outside' }, operatorTemp),
+      /safe lowercase identifier/,
+    );
     const { root, config } = fixture();
+    config.runtimes = [{
+      command: process.execPath,
+      args: ['-e', `process.stdout.write(process.env[${JSON.stringify(key)}] ?? 'not-inherited')`],
+    }];
+    const plan = createPlan(root, config);
+    assert.equal(plan.runtimes[0].version, 'not-inherited');
+
     config.tasks[0].kind = 'check';
     config.tasks[0].command = [
       process.execPath,
       '-e',
-      `process.stdout.write(process.env.${key} ?? '')`,
+      `const keys = ${JSON.stringify(Object.keys(injected))}; process.stdout.write(JSON.stringify(Object.fromEntries(keys.map((name) => [name, process.env[name] ?? null]))))`,
     ];
     let result = await executePlan(root, config, fixturePlan(root, config));
     let log = path.join(result.runRoot, result.receipt.tasks[0].logFile);
-    assert.equal(readFileSync(log, 'utf8'), '');
+    const childEnvironment = JSON.parse(readFileSync(log, 'utf8'));
+    const environmentRoot = path.join(result.runRoot, `${config.tasks[0].id}-environment`);
+    assert.equal(childEnvironment[key], null);
+    assert.equal(childEnvironment.GITHUB_TOKEN, null);
+    assert.equal(childEnvironment.NODE_OPTIONS, null);
+    assert.equal(childEnvironment.HTTPS_PROXY, null);
+    assert.equal(childEnvironment.RANDOM_PRIVATE_VALUE, null);
+    assert.equal(childEnvironment.LOCAL_IDENTITY_DENYLIST, null);
+    assert.equal(childEnvironment.HOME, path.join(environmentRoot, 'home'));
+    assert.equal(childEnvironment.TMPDIR, path.join(environmentRoot, 'tmp'));
+    assert.equal(childEnvironment.XDG_CONFIG_HOME, path.join(environmentRoot, 'xdg-config'));
+    assert.equal(childEnvironment.NUGET_PACKAGES, path.join(environmentRoot, 'nuget-packages'));
+    assert.equal(childEnvironment.CI, 'true');
 
     config.tasks[0].passEnv = [key];
+    assert.throws(() => fixturePlan(root, config), /unapproved inherited environment variable/);
+    config.tasks[0].id = 'remediation-baseline';
+    config.tasks[0].passEnv = ['LOCAL_IDENTITY_DENYLIST'];
+    config.tasks[0].command = [process.execPath, '-e', "process.stdout.write(process.env.LOCAL_IDENTITY_DENYLIST ?? '')"];
     result = await executePlan(root, config, fixturePlan(root, config));
     log = path.join(result.runRoot, result.receipt.tasks[0].logFile);
-    assert.equal(readFileSync(log, 'utf8'), 'do-not-log-me');
-    assert.deepEqual(result.receipt.tasks[0].envKeys, [key]);
+    assert.equal(readFileSync(log, 'utf8'), 'synthetic-local-identity-list');
+    assert.deepEqual(result.receipt.tasks[0].envKeys, ['LOCAL_IDENTITY_DENYLIST']);
   } finally {
-    if (previous === undefined) delete process.env[key];
-    else process.env[key] = previous;
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+    rmSync(operatorTemp, { recursive: true, force: true });
   }
+});
+
+test('Playwright tasks use the job-scoped browser cache selected by the workflow', () => {
+  const runRoot = makeRoot({ 'package.json': '{}\n' });
+  const runnerTemp = path.join(os.tmpdir(), 'slskdn-validation-runner-temp');
+  const task = {
+    id: 'browser-e2e',
+    kind: 'test',
+    browserCache: 'playwright',
+  };
+  const env = isolatedTaskEnvironment(task, runRoot, {
+    RUNNER_TEMP: runnerTemp,
+    TMPDIR: '/operator/temp',
+    HOME: '/operator/home',
+    XDG_CACHE_HOME: '/operator/cache',
+    PLAYWRIGHT_BROWSERS_PATH: '/operator/cache/untrusted-browsers',
+  });
+  const environmentRoot = path.join(runRoot, 'browser-e2e-environment');
+  const workflow = readFileSync(
+    new URL('../../.github/workflows/e2e-tests.yml', import.meta.url),
+    'utf8',
+  );
+
+  assert.equal(
+    env.PLAYWRIGHT_BROWSERS_PATH,
+    path.join(runnerTemp, 'slskdn-playwright-browsers'),
+  );
+  assert.equal(env.HOME, path.join(environmentRoot, 'home'));
+  assert.equal(env.XDG_CACHE_HOME, path.join(environmentRoot, 'xdg-cache'));
+  assert.notEqual(env.PLAYWRIGHT_BROWSERS_PATH, '/operator/cache/untrusted-browsers');
+  assert.match(
+    workflow,
+    /PLAYWRIGHT_BROWSERS_PATH:\s*\$\{\{\s*runner\.temp\s*\}\}\/slskdn-playwright-browsers/,
+  );
+  assert.throws(
+    () => isolatedTaskEnvironment({ ...task, browserCache: '/operator/cache' }, runRoot, {}),
+    /unsupported browser cache/,
+  );
 });
 
 test('plan and executor reject dependency cycles and report missing tools', async () => {

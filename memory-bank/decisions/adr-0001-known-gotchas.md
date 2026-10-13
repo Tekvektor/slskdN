@@ -4,7 +4,7 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
-### 0z1761. Give Grid Header Rows The Same Row Spacing Class As Data Rows (2026-10-12)
+### 0z1779. Give Grid Header Rows The Same Row Spacing Class As Data Rows (2026-10-12)
 
 **What went wrong:** The transfer table header row used only
 `.transfer-header-row` while data rows used `.transfer-row`, which adds
@@ -22,6 +22,262 @@ the header was meant to carry `.transfer-row` too.
 only header-specific styling. Share one list of right-aligned column keys
 between header and data cells, and pin the header row class and template in
 a component regression test.
+
+### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
+
+**What went wrong:** Public pull requests and manual runs from refs outside
+`main` could select persistent self-hosted runners through a repository
+preference variable. Contributor-controlled code could then run on a
+long-lived host with access to its local environment and Docker service.
+
+**Why:** Runner selection checked the preference variable but did not account
+for both the triggering event and the selected ref. The same expression was
+copied into the normal CI, performance, load, dependency, and container
+workflows.
+
+**Prevention:** Route all `pull_request` events and workflow dispatches from
+refs outside `main` to GitHub-hosted runners. Keep release dispatches hosted,
+scope token write permissions to publishing jobs, and audit every workflow for
+self-hosted runner selection.
+
+### 0z1777. Dispose SQLite Test Owners Before File Cleanup (2026-10-12)
+
+**What went wrong:** File-backed SQLite tests could pass on POSIX while cleanup
+failed on Windows because a disposed connection remained in the provider pool
+and still held the database file open.
+
+**Why:** POSIX allows unlinking an open file; Windows rejects deletion while a
+pooled native SQLite handle still owns it. A test that deletes its database
+before disposing its service has the same problem even without pooling.
+
+**Prevention:** Dispose every service and connection that owns a test database
+before cleanup. For test-owned file databases, prefer `Pooling=False`; if a
+pooled connection is required, clear that database's specific pool only after
+its connections are closed. Keep cleanup verification on Windows as well as
+POSIX.
+
+### 0z1776. Warm Allocation Tests Through The Measured Instance (2026-10-12)
+
+**What went wrong:** A cache-statistics allocation test warmed the method on a
+different instance with an empty cache. The measured call therefore included
+the first nonempty expired-entry cleanup pass in its allocation measurement.
+
+**Why:** Calling the same method is not enough when its allocation-sensitive
+work depends on cache state. The warm-up must exercise cleanup on the instance
+whose allocation is measured.
+
+**Prevention:** Seed and remove one expired entry on the measured instance
+before populating the large mixed cache. Keep the allocation measurement around
+the real cleanup and statistics pass, and retain the existing allocation cap.
+
+### 0z1775. Reserve Distinct Ports For Full-Instance Tests (2026-10-12)
+
+**What went wrong:** The full-instance test runner selected each TCP port by
+opening a listener on port zero and closing it immediately. A later allocation
+could receive the same port, assigning one instance's API and mesh listeners to
+the same address and aborting startup.
+
+**Why:** A port probe is not a reservation after its socket closes. Releasing
+each probe before all ports are selected also allows concurrent test runners to
+choose the same port.
+
+**Prevention:** Track allocated ports across active test runners and keep each
+reservation until that runner has shut down, including startup-failure cleanup.
+Use the reservation set when selecting every port for an instance.
+
+### 0z1774. Verify Span Interpolation Across Supported SDKs (2026-10-12)
+
+**What went wrong:** `Span<char>.TryWrite` with an interpolated value measured at
+zero allocation under .NET SDK 10.0.401, but allocated 72 bytes per call under
+SDK 10.0.112. The older SDK therefore failed the repeated-comparison allocation
+test even though the newer SDK passed it.
+
+**Why:** Interpolated-string-handler lowering can vary between compiler SDK
+feature bands, so one toolchain's allocation result does not establish the
+allocation behavior of every supported build toolchain.
+
+**Prevention:** For allocation-sensitive formatting, use explicit span
+formatting APIs such as `TryFormat` rather than relying on interpolated-string
+lowering. Run allocation tests with the minimum supported SDK as well as the
+current SDK before claiming the path is allocation-free.
+
+### 0z1773. Regenerate The API Surface Inventory After Adding Controller Routes (2026-10-12)
+
+**What went wrong:** New retained-log API actions were added to `LogsController`,
+but the checked-in route inventory still reported only its original action.
+
+**Why:** Controller edits do not update the generated API surface inventory
+automatically, so new routes can be omitted from the documented security and
+compatibility review surface.
+
+**Prevention:** After adding or changing controller routes, run
+`scripts/generate-route-inventory.sh docs/system-surfaces-current.md` and
+`scripts/check-route-inventory.sh`; include the generated inventory with the
+controller change.
+
+### 0z1772. Ignore Stale Log Preview Requests (2026-10-12)
+
+**What went wrong:** A retained-log preview request can finish after its modal
+has been closed or another file has been selected, reopening the old preview or
+showing content for the wrong file.
+
+**Why:** Network requests outlive the UI action that started them, and promise
+continuations still update component state after the view changes.
+
+**Prevention:** Tie preview results to a cancellable request or monotonically
+increasing request identifier. Ignore success, error, and loading updates from
+any request that is no longer current; invalidate the active request when the
+preview closes or the component unmounts.
+
+### 0z1771. Avoid MVC Action Names That Collide With ControllerBase (2026-10-12)
+
+**What went wrong:** A log-history action named `File` made reflection-based
+authorization tests fail with `AmbiguousMatchException` because
+`ControllerBase` already exposes overloaded `File` methods.
+
+**Why:** `Type.GetMethod(name)` searches inherited public methods as well as
+controller actions, so an otherwise valid action name can make method lookup
+ambiguous.
+
+**Prevention:** Use action names that describe the endpoint, such as `View` or
+`Download`, and keep route templates explicit. When action names must match an
+inherited method, resolve the action by signature or MVC metadata instead of
+name alone.
+
+### 0z1770. Track Upload Queue Lifecycles By Transfer ID (2026-10-12)
+
+**What went wrong:** Upload queue completion matched requests by username and
+filename. Two simultaneous requests for the same shared file could cause one
+request to remove the other's queue entry or return its slot twice. A canceled
+request waiting for a slot also remained eligible to start later.
+
+**Why:** A filename identifies shared content, not a unique transfer attempt,
+and cancellation was not observed by the queue wait operation.
+
+**Prevention:** Carry the transfer ID through enqueue, slot wait, and release.
+Pass the operation cancellation token into the wait, remove canceled entries,
+and release a slot only for the matching transfer that actually acquired it.
+Regress duplicate same-file requests, cancellation before start, and repeated
+completion.
+
+### 0z1769. Run Candidate Validation Tests Inside A Trusted Outer Sandbox (2026-10-12)
+
+**What went wrong:** Validation tasks used filtered child environments and
+private temporary directories, but the test process still shared the operator's
+filesystem, service sockets, and network namespace.
+
+**Why:** Environment filtering limits inherited settings; it does not restrict
+what a test process can open or which local services it can reach.
+
+**Prevention:** For local candidate tests, copy the trusted bubblewrap launcher
+from a reviewed revision to a location outside the candidate checkout and run
+the engine through it. Require its private marker before local test tasks start,
+and keep canaries for host files, inherited secrets, service endpoints, and
+read-only dependencies.
+
+### 0z1767. Build Validation Child Environments From An Allowlist (2026-10-12)
+
+**What went wrong:** A credential-name denylist still passed loader options,
+Python import paths, proxy settings, arbitrary custom variables, and operator
+home/configuration paths into validation children.
+
+**Why:** Environment variable names do not define a trust boundary. Many
+non-secret values change code loading, network routing, tool configuration, or
+which user caches and settings a child process reads.
+
+**Prevention:** Construct child environments from a small platform/toolchain
+allowlist, then add only declared task settings and deliberate task-specific
+pass-through values. Force CI mode and run-owned home, temporary, config, and
+cache paths. Regressions should prove synthetic secrets and injection settings
+are absent while required executable and toolchain paths remain available.
+
+### 0z1768. Keep Runtime-Probe Call Sites When Replacing Environment Builders (2026-10-12)
+
+**What went wrong:** Refactoring validation task environments removed the old
+sanitizer while runtime inspection still called it, so creating a plan could
+throw before any task ran.
+
+**Why:** Runtime probes are child processes started during planning and are a
+separate call path from scheduled task execution.
+
+**Prevention:** Search all references when replacing environment helpers. Keep
+a shared allowlisted base for runtime probes and task environments, and run a
+plan-creation regression whenever the probe environment changes.
+
+### 0z1766. Anchor Changelog Section Searches To Whole Heading Lines (2026-10-12)
+
+**What went wrong:** An automated changelog edit matched an inline mention of
+Unreleased in the introduction and inserted entries into the heading example.
+The staged changelog gate rejected the misplaced entries.
+
+**Why:** A substring search cannot distinguish prose and fenced examples from
+the actual section heading.
+
+**Prevention:** Match the complete heading line, locate the next section after
+that heading, and inspect the staged diff before committing. Keep the staged
+changelog gate enabled so misplaced entries cannot pass as release notes.
+
+### 0z1765. Compare Actor Identifiers Without Folding URL Paths (2026-10-12)
+
+**What went wrong:** Actor-to-key binding compared entire identifiers without
+case sensitivity, allowing distinct case-sensitive actor paths to match.
+
+**Why:** Hostnames are case-insensitive, but actor identifiers also include URL
+paths. Applying a hostname comparison to the full identity conflates accounts.
+
+**Prevention:** Require the exact advertised actor identifier at signature and
+nested ownership boundaries. Test a signed request naming a different-case
+actor path, including a nested Follow carrying that same forged identity.
+
+### 0z1764. Preserve ActivityPub Wire Names At The Bounded Inbox Parser (2026-10-12)
+
+**What went wrong:** Correctly signed ActivityPub JSON with lowercase actor,
+type, and object fields still returned unauthorized after public-key import
+was corrected.
+
+**Why:** The generic bounded JSON parser is case-sensitive and the activity
+model uses PascalCase properties. Default property values hid the ignored
+wire fields and made sender binding fail.
+
+**Prevention:** Use the web JSON naming contract at the inbox boundary while
+preserving the existing payload-size and depth limits. Test standard lowercase
+wire payloads, along with signature and relationship ownership checks.
+
+### 0z1761. Enforce Scoped Credentials At SignalR Connection Boundaries (2026-10-12)
+
+**What went wrong:** API keys restricted to a webhook scope could connect to
+SignalR hubs and receive search snapshots and application broadcasts.
+
+**Why:** Scoped credential restrictions were MVC authorization filters. SignalR
+preserved the scope claims but did not run those filters.
+
+**Prevention:** Apply a global hub filter before connection callbacks and method
+invocations. Reject narrow credentials on unmapped hubs, preserve wildcard and
+legacy sessions, and test actual connections before any snapshot is sent.
+
+### 0z1762. Bind Nested Relationship Actors To The Verified Sender (2026-10-12)
+
+**What went wrong:** Relationship removal selected its target from the nested
+Follow actor without checking that it matched the authenticated outer actor.
+
+**Why:** Verifying the outer signature authenticates the sender, not ownership
+of every identity mentioned in the signed payload.
+
+**Prevention:** Require nested Follow actors in Undo and Remove activities to
+match the verified sender before storage or mutation. Cover both another actor
+and the legitimate self-removal path with signed inbox requests.
+
+### 0z1763. Import Ed25519 Verification Material As A Public Key (2026-10-12)
+
+**What went wrong:** Valid ActivityPub inbox signatures returned unauthorized.
+The key-store verifier used the same incompatible import operation.
+
+**Why:** NSec Key.Import expects private key material; PKIX public keys must be
+loaded through PublicKey.Import. The catch converted the import failure into a
+normal invalid-signature result, hiding the broken successful path.
+
+**Prevention:** Import verification keys with PublicKey.Import and test real
+Ed25519 signatures, including successful verification and tampered payloads.
 
 ### 0z1760. Recount Abuse-Lens Candidates After Test-Only Changes (2026-10-11)
 
@@ -41036,3 +41292,47 @@ readiness signal.
 **Prevention:** Give service unit tests explicit ephemeral DHT and overlay
 ports. Keep production port-sharing defaults unchanged and do not increase a
 test timeout to hide listener contention.
+
+### 0z1769. Bind Playwright Installation To The Isolated Browser Cache (2026-10-12)
+
+**What went wrong:** The E2E workflow installed Chromium in the runner's
+default Playwright cache. The validation engine gave the browser task a private
+`XDG_CACHE_HOME`, so Playwright looked for Chromium in a different directory
+and the suite failed before its tests could launch.
+
+**Why:** Browser installation and browser execution did not share an explicit
+job-scoped cache path after the engine stopped inheriting the runner's cache
+environment.
+
+**Prevention:** Bind browser installation and execution to the same
+job-scoped `PLAYWRIGHT_BROWSERS_PATH`. Keep the task's home and other caches
+isolated, and assert the browser cache binding in the engine tests.
+
+### 0z1776. Run Every Local Test Through The Trusted Launcher (2026-10-12)
+
+**What went wrong:** A focused contract test with mocked API responses was run
+directly from the local checkout. Although the fixture did not contact GitHub,
+the command still executed a local test outside the required trusted sandbox.
+
+**Why:** The test looked like a harmless isolated script, so the sandbox rule
+was incorrectly treated as applying only to tests with live credentials or
+network access.
+
+**Prevention:** Treat every local test command as requiring the documented
+trusted bubblewrap launcher, including tests that use mocks. Use hosted CI when
+the launcher cannot supply the declared toolchain, and never infer an exception
+from a test's fixture design.
+
+### 0z1777. Map New Options Through Every Packaging Surface (2026-10-13)
+
+**What went wrong:** The server MTU configuration and example were added, but
+the Unraid template lacked the `SLSKD_SLSK_CONNECTION_MTU` environment mapping,
+so hosted packaging metadata validation failed.
+
+**Why:** The option was validated through application config and Docker build
+paths, but the separate Unraid template has its own config-to-environment
+mapping contract.
+
+**Prevention:** When adding configuration, search every packaging example and
+environment mapping, including the Unraid template, and run packaging metadata
+validation before preparing release notes or tagging.

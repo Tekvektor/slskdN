@@ -67,11 +67,11 @@ public class FeatureOptionsTests
     }
 
     [Fact]
-    public void Defaults_RetainDiskLogsForThirtyDays()
+    public void Defaults_RetainDiskLogsForFourteenDays()
     {
         var options = new slskd.Options();
 
         Assert.True(options.Logger.Disk);
-        Assert.Equal(30, options.Retention.Logs);
+        Assert.Equal(14, options.Retention.Logs);
     }
 }
