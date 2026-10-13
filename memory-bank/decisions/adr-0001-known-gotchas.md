@@ -4,11 +4,28 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
-### 0z1771. Do Not Delete SQLite Test Files While Pools Hold Their Handles (2026-10-12)
+### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
-**What went wrong:** File-backed SQLite tests could pass on POSIX while their
-cleanup failed on Windows because a disposed connection remained in the
-provider pool and still held the database file open.
+**What went wrong:** Public pull requests and manual runs from refs outside
+`main` could select persistent self-hosted runners through a repository
+preference variable. Contributor-controlled code could then run on a
+long-lived host with access to its local environment and Docker service.
+
+**Why:** Runner selection checked the preference variable but did not account
+for both the triggering event and the selected ref. The same expression was
+copied into the normal CI, performance, load, dependency, and container
+workflows.
+
+**Prevention:** Route all `pull_request` events and workflow dispatches from
+refs outside `main` to GitHub-hosted runners. Keep release dispatches hosted,
+scope token write permissions to publishing jobs, and audit every workflow for
+self-hosted runner selection.
+
+### 0z1777. Dispose SQLite Test Owners Before File Cleanup (2026-10-12)
+
+**What went wrong:** File-backed SQLite tests could pass on POSIX while cleanup
+failed on Windows because a disposed connection remained in the provider pool
+and still held the database file open.
 
 **Why:** POSIX allows unlinking an open file; Windows rejects deletion while a
 pooled native SQLite handle still owns it. A test that deletes its database
@@ -34,22 +51,95 @@ whose allocation is measured.
 before populating the large mixed cache. Keep the allocation measurement around
 the real cleanup and statistics pass, and retain the existing allocation cap.
 
-### 0z1770. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
+### 0z1775. Reserve Distinct Ports For Full-Instance Tests (2026-10-12)
 
-**What went wrong:** Public pull-request workflows and manual dispatches from
-non-main refs selected persistent self-hosted runners from a repository
-preference variable. Contributor-controlled code could then run on a long-lived
-host with access to its local environment and Docker service.
+**What went wrong:** The full-instance test runner selected each TCP port by
+opening a listener on port zero and closing it immediately. A later allocation
+could receive the same port, assigning one instance's API and mesh listeners to
+the same address and aborting startup.
 
-**Why:** Runner selection checked the preference variable but did not account
-for both the triggering event and the selected ref. The same expression was
-copied into the normal CI, performance, load, dependency, and container
-workflows.
+**Why:** A port probe is not a reservation after its socket closes. Releasing
+each probe before all ports are selected also allows concurrent test runners to
+choose the same port.
 
-**Prevention:** Route every public `pull_request` event and manual run outside
-`main` to a GitHub-hosted runner explicitly. Audit all workflow files for
-self-hosted labels, scope `GITHUB_TOKEN` permissions to the jobs that need
-them, and use hosted runners when no matching local runner is registered.
+**Prevention:** Track allocated ports across active test runners and keep each
+reservation until that runner has shut down, including startup-failure cleanup.
+Use the reservation set when selecting every port for an instance.
+
+### 0z1774. Verify Span Interpolation Across Supported SDKs (2026-10-12)
+
+**What went wrong:** `Span<char>.TryWrite` with an interpolated value measured at
+zero allocation under .NET SDK 10.0.401, but allocated 72 bytes per call under
+SDK 10.0.112. The older SDK therefore failed the repeated-comparison allocation
+test even though the newer SDK passed it.
+
+**Why:** Interpolated-string-handler lowering can vary between compiler SDK
+feature bands, so one toolchain's allocation result does not establish the
+allocation behavior of every supported build toolchain.
+
+**Prevention:** For allocation-sensitive formatting, use explicit span
+formatting APIs such as `TryFormat` rather than relying on interpolated-string
+lowering. Run allocation tests with the minimum supported SDK as well as the
+current SDK before claiming the path is allocation-free.
+
+### 0z1773. Regenerate The API Surface Inventory After Adding Controller Routes (2026-10-12)
+
+**What went wrong:** New retained-log API actions were added to `LogsController`,
+but the checked-in route inventory still reported only its original action.
+
+**Why:** Controller edits do not update the generated API surface inventory
+automatically, so new routes can be omitted from the documented security and
+compatibility review surface.
+
+**Prevention:** After adding or changing controller routes, run
+`scripts/generate-route-inventory.sh docs/system-surfaces-current.md` and
+`scripts/check-route-inventory.sh`; include the generated inventory with the
+controller change.
+
+### 0z1772. Ignore Stale Log Preview Requests (2026-10-12)
+
+**What went wrong:** A retained-log preview request can finish after its modal
+has been closed or another file has been selected, reopening the old preview or
+showing content for the wrong file.
+
+**Why:** Network requests outlive the UI action that started them, and promise
+continuations still update component state after the view changes.
+
+**Prevention:** Tie preview results to a cancellable request or monotonically
+increasing request identifier. Ignore success, error, and loading updates from
+any request that is no longer current; invalidate the active request when the
+preview closes or the component unmounts.
+
+### 0z1771. Avoid MVC Action Names That Collide With ControllerBase (2026-10-12)
+
+**What went wrong:** A log-history action named `File` made reflection-based
+authorization tests fail with `AmbiguousMatchException` because
+`ControllerBase` already exposes overloaded `File` methods.
+
+**Why:** `Type.GetMethod(name)` searches inherited public methods as well as
+controller actions, so an otherwise valid action name can make method lookup
+ambiguous.
+
+**Prevention:** Use action names that describe the endpoint, such as `View` or
+`Download`, and keep route templates explicit. When action names must match an
+inherited method, resolve the action by signature or MVC metadata instead of
+name alone.
+
+### 0z1770. Track Upload Queue Lifecycles By Transfer ID (2026-10-12)
+
+**What went wrong:** Upload queue completion matched requests by username and
+filename. Two simultaneous requests for the same shared file could cause one
+request to remove the other's queue entry or return its slot twice. A canceled
+request waiting for a slot also remained eligible to start later.
+
+**Why:** A filename identifies shared content, not a unique transfer attempt,
+and cancellation was not observed by the queue wait operation.
+
+**Prevention:** Carry the transfer ID through enqueue, slot wait, and release.
+Pass the operation cancellation token into the wait, remove canceled entries,
+and release a slot only for the matching transfer that actually acquired it.
+Regress duplicate same-file requests, cancellation before start, and repeated
+completion.
 
 ### 0z1769. Run Candidate Validation Tests Inside A Trusted Outer Sandbox (2026-10-12)
 

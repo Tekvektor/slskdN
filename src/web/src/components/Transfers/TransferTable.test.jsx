@@ -27,10 +27,10 @@ describe('TransferTable', () => {
     vi.unstubAllGlobals();
   });
 
-  const renderTable = (transfers = [], selectedFiles = []) => render(
+  const renderTable = (transfers = [], selectedFiles = [], direction = 'download') => render(
     <MemoryRouter>
       <TransferTable
-        direction="download"
+        direction={direction}
         onCancel={vi.fn()}
         onCancelSelected={vi.fn()}
         onOpenRequest={vi.fn()}
@@ -68,6 +68,22 @@ describe('TransferTable', () => {
 
       expect(await screen.findByText(tooltip)).toBeInTheDocument();
     }
+  });
+
+  it('hides retry actions for failed uploads, including selected transfers', () => {
+    const transfer = {
+      direction: 'Upload',
+      filename: 'Artist/Track.flac',
+      id: 'upload-1',
+      size: 10,
+      state: 'Errored',
+      username: 'peer-one',
+    };
+
+    renderTable([transfer], [transfer], 'upload');
+
+    expect(screen.queryByRole('button', { name: 'Retry transfer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
   });
 
   it('applies each resize movement from the drag-start width', () => {

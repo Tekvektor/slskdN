@@ -20,8 +20,8 @@ permissions:
 jobs:
   build:
     name: Build and Test
-    # Public pull requests always use GitHub-hosted runners. Self-hosted runners
-    # are reserved for trusted tag and manual runs.
+    # Public pull requests and manual dispatches outside main use hosted runners.
+    # Self-hosted runners are reserved for trusted tag pushes and main dispatches.
     runs-on: ${{ (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
     timeout-minutes: 120
     outputs:

@@ -19267,3 +19267,25 @@ Focused validation-engine and sandbox tests pass. The full local gate is not
 verified because this host's package managers, SDKs, and caches are installed
 under the operator home, which the launcher deliberately hides. No release tag
 was created.
+
+## Current state — Stable `.350` release validation — 2026-10-12
+
+Upload queue cancellation and capacity forecasts are consistent by transfer
+ID. System Logs exposes retained daily files, retention is bounded at two days,
+and the optional server MTU cap remains disabled by default. Docker version
+changes reuse the web and system-package layers; public pull requests use
+GitHub-hosted runners. Codec matching is allocation-free across supported SDKs,
+and full-instance tests reserve distinct ports.
+
+The full .NET suite passes 6,145 tests, the Web suite passes 1,295 tests, and
+`./bin/lint` passes. The Release build has zero warnings and errors. The
+retained-log Playwright regression passes against that build. The no-`.git`
+Docker build, container version smoke, and version-change cache check pass.
+Release-note preview, local identity scan, route inventory, and GitHub target
+verification pass.
+
+### Next Steps
+
+Fetch and verify current `origin/main`, push the validated tree to
+`snapetech/slskdN/main`, create the authorized stable `.350` tag, verify hosted
+release publishers and artifacts, then remove task-scoped scratch data.

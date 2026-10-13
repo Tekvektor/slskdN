@@ -23,7 +23,7 @@ permissions:
 jobs:
   performance-regression:
     name: Performance Regression Testing
-    # Public pull requests always use GitHub-hosted runners.
+    # Public pull requests and manual dispatches outside main use hosted runners.
     runs-on: ${{ (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && 'ubuntu-latest' || vars.PREFER_SELF_HOSTED != 'false' && fromJSON('["self-hosted","Linux","X64","slskdn"]') || 'ubuntu-latest' }}
     timeout-minutes: 30
     continue-on-error: true

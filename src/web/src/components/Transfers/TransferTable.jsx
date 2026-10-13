@@ -125,14 +125,14 @@ const Row = React.memo(({ index, style, ...data }) => {
   const {
     onCancel, onRemove, onRetry, onOpenRequest,
     onSelectionChange, selectedKeys, transfers,
-    cols: columnOrder, widths,
+    cols: columnOrder, widths, direction,
   } = data;
   const transfer = transfers[index];
   const key = transferKey(transfer);
   const selected = selectedKeys.has(key);
   const inProgress = transfer.state === 'InProgress';
   const color = stateColor(transfer.state);
-  const retryable = isStateRetryable(transfer.state);
+  const retryable = direction === 'download' && isStateRetryable(transfer.state);
   const cancellable = Boolean(isStateCancellable(transfer.state));
   const removable = isStateRemovable(transfer.state);
   const attempts = transfer.attempts ?? 1;
@@ -439,8 +439,9 @@ const TransferTable = ({
     onCancel, onRemove, onRetry, onOpenRequest,
     onSelectionChange, selectedKeys,
     transfers: sorted,
+    direction,
     cols: keys, widths: colState.widths,
-  }), [onCancel, onRemove, onRetry, onOpenRequest, onSelectionChange, selectedKeys, sorted, keys, colState.widths]);
+  }), [onCancel, onRemove, onRetry, onOpenRequest, onSelectionChange, selectedKeys, sorted, direction, keys, colState.widths]);
 
   const gridRef = useRef(null);
   const [gridHeight, setGridHeight] = useState(400);
@@ -509,11 +510,13 @@ const TransferTable = ({
         <div className="transfer-bulk-bar">
           <span>{`${selectedFiles.length} selected`}</span>
           <Button.Group size="small">
-            <Popup
-              content={`Retry all ${selectedFiles.length} selected transfers.`}
-              position="top center"
-              trigger={<Button color="green" content="Retry" icon="redo" onClick={onRetrySelected} />}
-            />
+            {direction === 'download' && (
+              <Popup
+                content={`Retry all ${selectedFiles.length} selected transfers.`}
+                position="top center"
+                trigger={<Button color="green" content="Retry" icon="redo" onClick={onRetrySelected} />}
+              />
+            )}
             <Popup
               content={`Cancel all ${selectedFiles.length} selected transfers.`}
               position="top center"

@@ -11,8 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 
 - Public pull-request workflows now run on GitHub-hosted runners. Persistent
-  self-hosted runners are reserved for trusted workflows, and release jobs
-  receive only the token permissions they need.
+  self-hosted runners are reserved for trusted workflows. Manual runs from
+  refs outside `main` also use hosted runners, and release jobs receive only
+  the token permissions they need.
 
 ### Changed
 

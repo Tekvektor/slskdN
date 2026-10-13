@@ -18973,13 +18973,18 @@ The slskdnN security batch is pushed to `main` at `ec97d781d`. Focused Node
 engine contracts, including the host file, secret, network, dependency, and
 writable workspace canaries, pass inside the trusted launcher. The release-note
 preview and `scripts/verify-github-target.sh` pass. No release tag was created.
-## Update 2026-10-12 — Isolate public PRs from persistent Actions runners
 
-SLSKDN's main CI and enhancement workflows now route public pull requests and
-manual dispatches from non-main refs to GitHub-hosted runners. The Windows
-smoke workflow uses `windows-latest`, since no matching self-hosted Windows
-runner is registered. The main CI workflow now
-defaults to read-only `GITHUB_TOKEN` permissions and grants release publishing
-scopes only to the release job. Cross-repository runner pooling remains open
-pending an organization/runner-scope decision and recovery of local host
-capacity.
+## Update 2026-10-12 — Stable `.350` validation
+
+Upload queue cancellation now follows transfer IDs and releases only acquired
+slots. Administrators can browse retained daily logs; the retention minimum and
+default are bounded. Server MTU control remains opt-in. Container builds reuse
+version-independent layers, and public pull request workflows use hosted
+runners. Codec-profile comparisons remain allocation-free on both supported
+SDKs, and full-instance tests reserve distinct TCP ports.
+
+The full .NET suite passes 6,145 tests; the full Web suite passes 1,295 tests.
+`./bin/lint`, the Release build, retained-log Playwright regression, Docker
+build/startup, version-change cache check, release-note preview, identity scan,
+route inventory, and GitHub target verification pass. Push and hosted stable
+release verification remain.

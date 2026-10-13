@@ -558,7 +558,8 @@ namespace slskd
                 EnqueueDownload,
                 SearchResponseResolver,
                 PlaceInQueueResolver,
-                Log.Warning);
+                Log.Warning,
+                ConfigureSocketMtu);
 
             await Client.ReconfigureOptionsAsync(patch);
 
@@ -814,7 +815,8 @@ namespace slskd
             Func<string, IPEndPoint, string, Task> enqueueDownload,
             Func<string, int, SearchQuery, Task<SearchResponse?>> searchResponseResolver,
             Func<string, IPEndPoint, string, Task<int?>> placeInQueueResolver,
-            Action<string, string>? warnInvalidListenAddress = null)
+            Action<string, string>? warnInvalidListenAddress = null,
+            Action<Socket, Options.SoulseekOptions.ConnectionOptions>? configureServerSocketMtuOptions = null)
         {
             ProxyOptions? proxyOptions = null;
 
@@ -837,7 +839,11 @@ namespace slskd
 
             var serverOptions = connectionOptions.With(
                 inactivityTimeout: -1,
-                configureSocket: socket => configureSocketKeepaliveOptions(socket, optionsAtStartup.Soulseek.Connection));
+                configureSocket: socket =>
+                {
+                    configureSocketKeepaliveOptions(socket, optionsAtStartup.Soulseek.Connection);
+                    configureServerSocketMtuOptions?.Invoke(socket, optionsAtStartup.Soulseek.Connection);
+                });
 
             var distributedOptions = connectionOptions.With(
                 writeQueueSize: optionsAtStartup.Soulseek.Connection.Buffer.WriteQueue,
@@ -1019,6 +1025,50 @@ namespace slskd
                 Log.Warning("Failed to configure connection keepalive settings: \"{Message}\". Performance is degraded. Set the configuration flag \"Legacy Windows TCP Keepalive\" to avoid this.",
                     LoggingSanitizer.SanitizeExternalIdentifier(ex.Message));
             }
+        }
+
+        private void ConfigureSocketMtu(Socket socket, Options.SoulseekOptions.ConnectionOptions options)
+        {
+            if (!options.Mtu.HasValue)
+            {
+                return;
+            }
+
+            if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsFreeBSD())
+            {
+                Log.Warning("The configured Soulseek server MTU is not supported by this operating system; using its default");
+                return;
+            }
+
+            var maximumSegmentSize = CalculateMaximumTcpSegmentSize(options.Mtu.Value, socket.AddressFamily);
+
+            try
+            {
+                // TCP_MAXSEG is option 2 at the TCP level on the supported POSIX systems.
+                socket.SetSocketOption(SocketOptionLevel.Tcp, (SocketOptionName)2, maximumSegmentSize);
+            }
+            catch (SocketException ex)
+            {
+                Log.Warning("Failed to apply the configured Soulseek server MTU: {Message}",
+                    LoggingSanitizer.SanitizeExternalIdentifier(ex.Message));
+            }
+            catch (PlatformNotSupportedException ex)
+            {
+                Log.Warning("Failed to apply the configured Soulseek server MTU: {Message}",
+                    LoggingSanitizer.SanitizeExternalIdentifier(ex.Message));
+            }
+        }
+
+        internal static int CalculateMaximumTcpSegmentSize(int mtu, AddressFamily addressFamily)
+        {
+            var headerSize = addressFamily switch
+            {
+                AddressFamily.InterNetwork => 40,
+                AddressFamily.InterNetworkV6 => 60,
+                _ => throw new ArgumentOutOfRangeException(nameof(addressFamily), addressFamily, "The socket must use IPv4 or IPv6"),
+            };
+
+            return mtu - headerSize;
         }
 
         // todo: consider moving this somewhere else; it's pretty long and complicated
@@ -2657,7 +2707,11 @@ namespace slskd
 
                         serverPatch = connectionPatch.With(
                             inactivityTimeout: -1, // don't disconnect due to inactivity
-                            configureSocket: socket => ConfigureSocketKeepaliveOptions(socket, options: connection));
+                            configureSocket: socket =>
+                            {
+                                ConfigureSocketKeepaliveOptions(socket, options: connection);
+                                ConfigureSocketMtu(socket, options: connection);
+                            });
 
                         distributedPatch = connectionPatch.With(
                             writeQueueSize: connection.Buffer.WriteQueue, // write queue set to keep distributed children from impacting performance
@@ -2895,7 +2949,7 @@ namespace slskd
                         // note: the following uses cached user data to determine group, so if the user's data
                         // isn't cached they may get a forecast based on the wrong group.  this is a hot path though,
                         // and we don't want to incur the massive penalties that would caching data for each request.
-                        var forecastedPosition = Transfers.Uploads.Queue.ForecastPosition(username);
+                        var uploadForecast = Transfers.Uploads.Queue.ForecastPosition(username);
 
                         Log.Debug("Sending search response with {Count} files to {Username} for query '{Query}'", results.Count(),
                             LoggingSanitizer.SanitizeExternalIdentifier(username), LoggingSanitizer.SanitizeQueryText(query.SearchText));
@@ -2912,8 +2966,8 @@ namespace slskd
                             Client.Username,
                             token,
                             uploadSpeed: State.CurrentValue.User.Statistics.AverageSpeed,
-                            hasFreeUploadSlot: forecastedPosition == 0,
-                            queueLength: forecastedPosition,
+                            hasFreeUploadSlot: uploadForecast.QueuePosition == 0,
+                            queueLength: uploadForecast.QueuePosition,
                             fileList: results);
                     }
 
@@ -3195,13 +3249,12 @@ namespace slskd
                 // note: users must first be watched or cached for leech and privilege detection to work.
                 // we are deliberately skipping it here; if the username is watched
                 // leech detection works and they get accurate info, if not, they won't
-                var groupName = await Users.GetOrFetchGroupAsync(username);
-                var group = Transfers.Uploads.Queue.GetGroupInfo(groupName);
+                await Users.GetOrFetchGroupAsync(username);
 
                 // forecast the position at which this user would enter the queue if they were to request
                 // a file at this moment. this will be zero if a slot is available and the transfer would
                 // begin immediately
-                var forecastedPosition = Transfers.Uploads.Queue.ForecastPosition(username);
+                var uploadForecast = Transfers.Uploads.Queue.ForecastPosition(username);
 
                 // if i get a user's info to determine whether i want to download files from them,
                 // i want to know how many slots they have, which gives me an idea of how fast their
@@ -3210,9 +3263,9 @@ namespace slskd
                 // revisited 3 years later: why was it important to leave this comment??
                 var info = new UserInfo(
                     description: description,
-                    uploadSlots: group.Slots,
-                    queueLength: forecastedPosition,
-                    hasFreeUploadSlot: forecastedPosition == 0,
+                    uploadSlots: uploadForecast.Slots,
+                    queueLength: uploadForecast.QueuePosition,
+                    hasFreeUploadSlot: uploadForecast.QueuePosition == 0,
                     picture: pictureBytes);
 
                 return info;

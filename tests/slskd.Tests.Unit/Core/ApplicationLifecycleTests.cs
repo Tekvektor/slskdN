@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -211,6 +213,62 @@ public class ApplicationLifecycleTests
         Assert.Equal(patch.PeerConnectionOptions.InactivityTimeout, patch.IncomingConnectionOptions.InactivityTimeout);
         Assert.Equal(60_000, patch.PeerConnectionOptions.InactivityTimeout);
         Assert.Equal(60_000, patch.TransferConnectionOptions.InactivityTimeout);
+    }
+
+    [Fact]
+    public void CreateStartupSoulseekClientOptionsPatch_UsesMtuCallbackForServerOnly()
+    {
+        var options = new OptionsAtStartup
+        {
+            Soulseek = new Options.SoulseekOptions
+            {
+                Connection = new Options.SoulseekOptions.ConnectionOptions { Mtu = 1500 },
+            },
+        };
+        var serverMtuCalls = 0;
+        var patch = Application.CreateStartupSoulseekClientOptionsPatch(
+            options,
+            static (_, _) => { },
+            static (_, _) => Task.FromResult<UserInfo>(null!),
+            static (_, _) => Task.FromResult<BrowseResponse>(null!),
+            static (_, _, _, _) => Task.FromResult<IEnumerable<Soulseek.Directory>>(Array.Empty<Soulseek.Directory>()),
+            static (_, _, _) => Task.CompletedTask,
+            static (_, _, _) => Task.FromResult<SearchResponse?>(null),
+            static (_, _, _) => Task.FromResult<int?>(null),
+            configureServerSocketMtuOptions: (_, connectionOptions) =>
+            {
+                Assert.Equal(1500, connectionOptions.Mtu);
+                serverMtuCalls++;
+            });
+
+        using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        patch.ServerConnectionOptions.ConfigureSocket(socket);
+        patch.DistributedConnectionOptions.ConfigureSocket(socket);
+
+        Assert.Equal(1, serverMtuCalls);
+    }
+
+    [Theory]
+    [InlineData(AddressFamily.InterNetwork, 1460)]
+    [InlineData(AddressFamily.InterNetworkV6, 1440)]
+    public void CalculateMaximumTcpSegmentSize_AccountsForIpAndTcpHeaders(AddressFamily family, int expected)
+    {
+        Assert.Equal(expected, Application.CalculateMaximumTcpSegmentSize(1500, family));
+    }
+
+    [Theory]
+    [InlineData(1279, false)]
+    [InlineData(1500, true)]
+    [InlineData(9000, true)]
+    [InlineData(9001, false)]
+    public void SoulseekConnectionMtu_ValidatesConfiguredRange(int mtu, bool expectedValid)
+    {
+        var options = new Options.SoulseekOptions.ConnectionOptions { Mtu = mtu };
+        var results = new List<ValidationResult>();
+
+        var valid = Validator.TryValidateObject(options, new ValidationContext(options), results, validateAllProperties: true);
+
+        Assert.Equal(expectedValid, valid);
     }
 
     [Fact]

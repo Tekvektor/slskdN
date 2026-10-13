@@ -5,6 +5,7 @@ namespace slskd.Tests.Integration.Harness;
 
 using System.Collections.Concurrent;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -23,6 +24,8 @@ public class SlskdnFullInstanceRunner : IAsyncDisposable
 {
     private static readonly TimeSpan ApiStartupTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan ApiStartupProbeDelay = TimeSpan.FromMilliseconds(500);
+    private static readonly object TcpPortReservationLock = new();
+    private static readonly HashSet<int> ReservedTcpPorts = new();
     private const int CapturedLogLineLimit = 200;
     private readonly ILogger<SlskdnFullInstanceRunner> logger;
     private readonly string testId;
@@ -31,6 +34,7 @@ public class SlskdnFullInstanceRunner : IAsyncDisposable
     private readonly string stderrLogPath;
     private readonly ConcurrentQueue<string> stdoutLines = new();
     private readonly ConcurrentQueue<string> stderrLines = new();
+    private readonly List<int> reservedTcpPorts = new();
     private Process? slskdnProcess;
     private int apiPort;
     private int? bridgePort;
@@ -179,31 +183,40 @@ public class SlskdnFullInstanceRunner : IAsyncDisposable
     /// </summary>
     public async Task StopAsync()
     {
-        if (slskdnProcess != null && !slskdnProcess.HasExited)
+        try
         {
-            logger.LogInformation("[TEST-SLSKDN-FULL] Stopping instance {TestId}", testId);
+            if (slskdnProcess != null && !slskdnProcess.HasExited)
+            {
+                logger.LogInformation("[TEST-SLSKDN-FULL] Stopping instance {TestId}", testId);
 
-            try
-            {
-                slskdnProcess.CancelOutputRead();
-                slskdnProcess.CancelErrorRead();
-                slskdnProcess.Kill(entireProcessTree: true);
-                await slskdnProcess.WaitForExitAsync();
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "[TEST-SLSKDN-FULL] Error stopping process");
-            }
-            finally
-            {
-                await CleanupVpnNamespaceAsync(CancellationToken.None);
+                try
+                {
+                    slskdnProcess.CancelOutputRead();
+                    slskdnProcess.CancelErrorRead();
+                    slskdnProcess.Kill(entireProcessTree: true);
+                    await slskdnProcess.WaitForExitAsync();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "[TEST-SLSKDN-FULL] Error stopping process");
+                }
+                finally
+                {
+                    await CleanupVpnNamespaceAsync(CancellationToken.None);
+                }
             }
 
-            slskdnProcess.Dispose();
-            slskdnProcess = null;
+            if (slskdnProcess == null || slskdnProcess.HasExited)
+            {
+                slskdnProcess?.Dispose();
+                slskdnProcess = null;
+                ReleaseReservedTcpPorts();
+            }
         }
-
-        isRunning = false;
+        finally
+        {
+            isRunning = false;
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -664,11 +677,48 @@ public class SlskdnFullInstanceRunner : IAsyncDisposable
 
     private int AllocateEphemeralPort()
     {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
+        const int firstDynamicPort = 49152;
+        const int lastDynamicPortExclusive = 65536;
+
+        lock (TcpPortReservationLock)
+        {
+            for (var attempt = 0; attempt < lastDynamicPortExclusive - firstDynamicPort; attempt++)
+            {
+                var port = Random.Shared.Next(firstDynamicPort, lastDynamicPortExclusive);
+                if (ReservedTcpPorts.Contains(port))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    using var listener = new TcpListener(IPAddress.Loopback, port);
+                    listener.Start();
+                    ReservedTcpPorts.Add(port);
+                    reservedTcpPorts.Add(port);
+                    return port;
+                }
+                catch (SocketException)
+                {
+                    // Another local service already owns this candidate port.
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Unable to reserve a unique TCP port for the full-instance test runner.");
+    }
+
+    private void ReleaseReservedTcpPorts()
+    {
+        lock (TcpPortReservationLock)
+        {
+            foreach (var port in reservedTcpPorts)
+            {
+                ReservedTcpPorts.Remove(port);
+            }
+
+            reservedTcpPorts.Clear();
+        }
     }
 
     private int AllocateEphemeralPortUdp()

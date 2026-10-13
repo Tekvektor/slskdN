@@ -1,9 +1,8 @@
 ---
 category: security
 audience: operators
-area: ci
+area: ci-security
 action: none
 breaking: false
 ---
-
-Public pull-request checks and manual runs outside `main` now use GitHub-hosted runners. Persistent self-hosted runners are reserved for trusted workflows, and release jobs use narrower token permissions.
+Public pull request workflows use GitHub-hosted runners. Trusted tag and manual runs can still use configured self-hosted runners, keeping untrusted contributions away from private runner environments.
