@@ -19057,3 +19057,17 @@ smoke passed. The previous run's branch-sync failure came from `main` advancing
 after checkout. The local remediation baseline also passes after refreshing the
 candidate inventory to 12,811 matches; these are review candidates, not
 confirmed defects.
+
+## Update 2026-10-13 — System file management and responsive workflows
+
+System file browsing now supports on-demand subtree sizes and validated
+multi-item deletion with per-item outcomes. The narrow-screen workflow covers
+keyboard navigation, retry after a failed delete, selected-item confirmation,
+and partial-success reporting. Room queries preserve slash-containing names,
+and watched-user state is published after registration.
+
+The full .NET suite passes 6,180 tests, the web suite passes 1,300 tests, and
+the selected headless browser suite passes 97 tests with seven opt-in network
+and soak scenarios skipped. Repository lint and the Release build pass with
+zero compiler warnings and errors. The stable build tag and hosted artifact
+verification remain.

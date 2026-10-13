@@ -26,6 +26,23 @@
 
 ## Active Development
 
+### Files API and responsive system workflows — 2026-10-13
+
+- [x] Add on-demand subtree sizes and guarded multi-item file/directory deletion
+  with per-item outcomes.
+- [x] Complete keyboard-accessible selection, confirmation, recovery, and
+  partial-result handling in the System Files view.
+- [x] Preserve room-query routing for slash-containing identifiers and publish
+  watched-user state after successful registration.
+- [x] Verify API/filesystem boundaries and user workflows with integration,
+  unit, component, and headless browser coverage.
+- [x] Pass the full .NET suite (6,180 tests), web suite (1,300 tests), the
+  selected headless browser suite (97 passed, 7 opt-in skips), repository lint,
+  and the Release build.
+
+Status: implementation and validation are complete. A stable build tag and
+hosted artifact verification remain for the release step.
+
 ### SLSKDN runner-temp reliability — 2026-10-13
 
 - [x] Validate runner-owned temporary storage and export TMPDIR, TMP,

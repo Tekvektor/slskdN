@@ -19328,3 +19328,23 @@ verification pass.
 Fetch and verify current `origin/main`, push the validated tree to
 `snapetech/slskdN/main`, create the authorized stable `.350` tag, verify hosted
 release publishers and artifacts, then remove task-scoped scratch data.
+
+## Current state — System file management release validation — 2026-10-13 12:50 UTC
+
+System file browsing supports on-demand subtree sizes and validated mixed-item
+deletion with per-item results. Responsive browser coverage exercises folder
+sizes, keyboard navigation, deletion recovery, selection, and partial success.
+Room queries retain slash-containing names, and watched-user state is
+published after registration.
+
+The full .NET suite passes 6,180 tests; the web suite passes 1,300 tests; and
+the selected headless browser suite passes 97 tests with seven opt-in network
+and soak scenarios skipped. Repository lint and the Release build pass with
+zero compiler warnings and errors. Local Soulseek/DHT and VPN validation was
+not run because no credentials or VPN profile were available.
+
+### Next Steps
+
+- Commit and push the validated branch to `snapetech/slskdN`.
+- Create the authorized stable build tag and verify the hosted release gate and
+  artifacts.
