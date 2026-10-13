@@ -87,6 +87,18 @@ refer to a directory even though the type name suggests otherwise.
 method from the path type. Use `File.SetUnixFileMode` and `File.GetUnixFileMode`
 for directory paths, and compile the application and tests before proceeding.
 
+### 0z1828. Qualify File APIs When Soulseek Types Are Imported (2026-10-13)
+
+**What went wrong:** A filesystem test used `File.Delete` in a file that also
+imports `Soulseek.File`, so the test project failed to compile with an
+ambiguous type reference.
+
+**Why:** Both namespaces expose a type named `File`; implicit global usings do
+not resolve a collision when the protocol namespace is imported explicitly.
+
+**Prevention:** Use `System.IO.File` for filesystem operations in files that
+also import `Soulseek`, or define a clear type alias for the intended API.
+
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
 **What went wrong:** A Windows test could not delete its temporary share
