@@ -66,6 +66,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Changed
 
+- Transfer tables now open with the newest requests first and show request time;
+  a sort choice already saved for a direction remains in effect.
 - CI validates and uses runner-owned temporary storage for .NET work while
   keeping push builds tag-triggered and the heavy load harness on hosted Linux.
   The API-only load harness binds to loopback and stays offline.
