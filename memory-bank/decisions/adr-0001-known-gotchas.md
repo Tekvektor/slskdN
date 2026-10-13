@@ -4,6 +4,24 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1787. Pin Actions Before Enabling SHA-Only Repository Policy (2026-10-13)
+
+**What went wrong:** Release publisher jobs attached to an immutable tag failed
+before their first action ran because the workflow at that tag still referenced
+actions by version tags. The repository now requires every action to use a full
+commit SHA, so updating only the default branch does not make an older tag's
+workflow rerunnable.
+
+**Why:** GitHub loads the workflow definition from the exact tagged commit. A
+retry therefore evaluates the same mutable action references that failed
+setup, even after a corrected workflow has been pushed to another ref.
+
+**Prevention:** Pin actions across release workflows before enabling the
+repository's SHA-only policy or cutting a release. For an already-published
+immutable release, use an explicit manual recovery path on a SHA-pinned workflow
+ref, select the existing tag, and skip rebuilds and publishers that already
+succeeded.
+
 ### 0z1786. Do Not Trust Pull Request Authors For Persistent Runners (2026-10-13)
 
 **What went wrong:** CI routed pull requests authored by `snapetech` to a
