@@ -42144,12 +42144,17 @@ tagging.
 ### 0z1808. Clear SQLite Pools Before Deleting File-Backed Test Databases (2026-10-13)
 
 **What went wrong:** Windows tests failed while deleting temporary SQLite
-databases even though their contexts and connections had been disposed.
+databases because repository/service connections or pooled connections were
+still open during cleanup. A concurrent remediation test also assumed that
+background download callbacks would arrive in recording order.
 
-**Why:** Disposed Microsoft.Data.Sqlite connections can remain open in the
-default connection pool. Linux permits unlinking an open file, while Windows
-keeps the file locked.
+**Why:** A `using` declaration inside a `try` block may remain alive while its
+associated `finally` block runs, disposed Microsoft.Data.Sqlite connections
+can remain open in the default pool, and parallel tasks do not guarantee
+callback order. Linux permits unlinking an open file, so these mistakes can
+stay hidden outside Windows.
 
-**Prevention:** Disable pooling for temporary file-backed database tests or
-clear SQLite pools after disposing test services and before deleting their
-database files or containing directories. Keep the Windows test job enabled.
+**Prevention:** Dispose repositories and services before cleanup runs, disable
+pooling for temporary file-backed database tests or clear pools after closing
+connections, and assert the complete set of asynchronous results instead of
+relying on scheduling order. Keep the Windows test job enabled.
