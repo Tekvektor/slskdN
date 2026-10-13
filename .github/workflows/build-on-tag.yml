@@ -12,6 +12,36 @@ on:
       - 'build-main-*'
       - 'build-dev-*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing build-main tag whose GitHub release assets are already published.
+        required: true
+        type: string
+      retry_aur:
+        description: Retry the AUR publisher
+        required: false
+        default: false
+        type: boolean
+      retry_copr:
+        description: Retry the COPR publisher
+        required: false
+        default: false
+        type: boolean
+      retry_ppa:
+        description: Retry the PPA publisher
+        required: false
+        default: false
+        type: boolean
+      retry_docker:
+        description: Retry the main Docker publisher
+        required: false
+        default: false
+        type: boolean
+      retry_nix:
+        description: Retry the Nix metadata publisher
+        required: false
+        default: false
+        type: boolean
 
 env:
   DOTNET_VERSION: '10.0.100'
@@ -22,15 +52,36 @@ jobs:
   parse:
     name: Parse Tag
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       channel: ${{ steps.parse.outputs.channel }}
       version: ${{ steps.parse.outputs.version }}
     steps:
       - name: Parse Tag
         id: parse
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+          RETRY_AUR: ${{ inputs.retry_aur }}
+          RETRY_COPR: ${{ inputs.retry_copr }}
+          RETRY_PPA: ${{ inputs.retry_ppa }}
+          RETRY_DOCKER: ${{ inputs.retry_docker }}
+          RETRY_NIX: ${{ inputs.retry_nix }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="${REQUESTED_TAG:-$GITHUB_REF_NAME}"
           echo "Tag: $TAG"
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ ! "$TAG" =~ ^build-main-[A-Za-z0-9._-]+$ ]]; then
+              echo "::error::Manual publisher recovery requires an existing build-main-* tag"
+              exit 1
+            fi
+            if [[ "$RETRY_AUR" != true && "$RETRY_COPR" != true && "$RETRY_PPA" != true && "$RETRY_DOCKER" != true && "$RETRY_NIX" != true ]]; then
+              echo "::error::Select at least one publisher to retry"
+              exit 1
+            fi
+          fi
           
           # Extract channel and version from tag
           # Format: build-main-<version> or build-dev-<version>
@@ -44,13 +95,19 @@ jobs:
           
           echo "Channel: $CHANNEL"
           echo "Version: $VERSION"
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]] && ! gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null; then
+            echo "::error::Manual publisher recovery requires an existing published release for $TAG"
+            exit 1
+          fi
           
-          echo "channel=$CHANNEL" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build
     needs: parse
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -105,6 +162,7 @@ jobs:
   publish:
     name: Publish ${{ matrix.runtime }}
     needs: [parse, build]
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -207,7 +265,7 @@ jobs:
   release-main:
     name: Create Main Release
     needs: [parse, publish]
-    if: needs.parse.outputs.channel == 'main'
+    if: needs.parse.outputs.channel == 'main' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -286,7 +344,7 @@ jobs:
   announce-main:
     name: Announce Main Release to Discord
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: needs.parse.outputs.channel == 'main' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Post Discord announcement
@@ -441,7 +499,7 @@ jobs:
   aur-main:
     name: Publish to AUR (Main - Source & Binary)
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: always() && needs.parse.outputs.channel == 'main' && ((github.event_name == 'workflow_dispatch' && inputs.retry_aur) || (github.event_name != 'workflow_dispatch' && needs.release-main.result == 'success'))
     runs-on: ubuntu-latest
     outputs:
       short_sha: ${{ steps.info.outputs.short_sha }}
@@ -449,7 +507,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Get commit info
         id: info
@@ -621,14 +679,14 @@ jobs:
   copr-main:
     name: Publish to COPR (Main)
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: always() && needs.parse.outputs.channel == 'main' && ((github.event_name == 'workflow_dispatch' && inputs.retry_copr) || (github.event_name != 'workflow_dispatch' && needs.release-main.result == 'success'))
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Download from Release
         env:
@@ -809,7 +867,7 @@ jobs:
   ppa-main:
     name: Publish to PPA (Main)
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: always() && needs.parse.outputs.channel == 'main' && ((github.event_name == 'workflow_dispatch' && inputs.retry_ppa) || (github.event_name != 'workflow_dispatch' && needs.release-main.result == 'success'))
     continue-on-error: true
     runs-on: ubuntu-latest
     concurrency:
@@ -819,7 +877,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Download from Release
         env:
@@ -1062,7 +1120,7 @@ jobs:
   docker-main:
     name: Build and Push Docker (Main)
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: always() && needs.parse.outputs.channel == 'main' && ((github.event_name == 'workflow_dispatch' && inputs.retry_docker) || (github.event_name != 'workflow_dispatch' && needs.release-main.result == 'success'))
     runs-on: ubuntu-latest
     env:
       DOCKERHUB_IMAGE: snapetech/slskdn
@@ -1073,6 +1131,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Download from Release
         env:
@@ -1144,7 +1204,7 @@ jobs:
   docker-omnibus:
     name: Build and Push Docker (Omnibus Testers)
     needs: [parse, release-main, docker-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: needs.parse.outputs.channel == 'main' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1189,7 +1249,7 @@ jobs:
   chocolatey-main:
     name: Publish to Chocolatey (Stable)
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: needs.parse.outputs.channel == 'main' && github.event_name != 'workflow_dispatch'
     continue-on-error: true
     runs-on: windows-latest
     steps:
@@ -1312,7 +1372,7 @@ jobs:
   nix-main:
     name: Update Nix/Main Release Metadata
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: always() && needs.parse.outputs.channel == 'main' && ((github.event_name == 'workflow_dispatch' && inputs.retry_nix) || (github.event_name != 'workflow_dispatch' && needs.release-main.result == 'success'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -1320,7 +1380,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Install Nix
@@ -1436,7 +1496,7 @@ jobs:
   homebrew-main:
     name: Update Homebrew Tap (Main)
     needs: [parse, release-main]
-    if: needs.parse.outputs.channel == 'main'
+    if: needs.parse.outputs.channel == 'main' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write

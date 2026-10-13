@@ -150,6 +150,7 @@ jobs:
           web:
             port: 5099
             address: 127.0.0.1
+            content_path: wwwroot
             https:
               disabled: true
             authentication:
@@ -159,7 +160,11 @@ jobs:
             no_share_scan: true
           YAML
           # Start slskdn in background for load testing
-          dotnet src/slskd/bin/Release/net10.0/slskd.dll \
+          application_assembly="src/slskd/bin/Release/net10.0/slskd.dll"
+          application_directory="$(dirname "$application_assembly")"
+          # API-only startup still validates the static content directory.
+          mkdir -p "$application_directory/wwwroot"
+          dotnet "$application_assembly" \
             --config "$RUNNER_TEMP/slskdn-load-test.yml" \
             --app-dir "$RUNNER_TEMP/slskdn-load-test" \
             --no-connect \

@@ -130,6 +130,17 @@ if ! awk '
   failed=1
 fi
 
+if ! awk '
+  $0 == "      - name: Start Application" { in_step = 1; next }
+  in_step && /^      - name:/ { exit }
+  in_step && /content_path: wwwroot/ { configured = 1 }
+  in_step && /mkdir -p .*wwwroot/ { created = 1 }
+  END { exit !(configured && created) }
+' "$repo_root/.github/workflows/ci-enhancements.yml"; then
+  printf '.github/workflows/ci-enhancements.yml must create the configured web root for its API-only process\n' >&2
+  failed=1
+fi
+
 if ! python3 - "$repo_root/.github/workflows" <<'PYTHON'
 import re
 import sys
@@ -151,6 +162,43 @@ for name, text in texts.items():
 
 ci = texts["ci.yml"]
 enhancements = texts["ci-enhancements.yml"]
+tag_workflow = texts["build-on-tag.yml"]
+
+def job_block(workflow, job):
+    match = re.search(rf"(?ms)^  {re.escape(job)}:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", workflow)
+    if not match:
+        raise SystemExit(f"build-on-tag.yml is missing {job}")
+    return match.group(1)
+
+parse_job = job_block(tag_workflow, "parse")
+if "Manual publisher recovery requires an existing build-main-* tag" not in parse_job:
+    raise SystemExit("manual publisher recovery must accept only stable build tags")
+if not re.search(r"(?m)^    permissions:\n      contents: read$", parse_job):
+    raise SystemExit("manual publisher recovery must use a read-only token to verify the release")
+if "GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}" not in parse_job:
+    raise SystemExit("manual publisher recovery must authenticate its release lookup")
+if 'gh release view "$VERSION" --repo "$GITHUB_REPOSITORY"' not in parse_job:
+    raise SystemExit("manual publisher recovery must verify the existing release before publishing")
+if "Select at least one publisher to retry" not in parse_job:
+    raise SystemExit("manual publisher recovery must require an explicit target")
+
+for job, retry_input in {
+    "aur-main": "retry_aur",
+    "copr-main": "retry_copr",
+    "ppa-main": "retry_ppa",
+    "docker-main": "retry_docker",
+    "nix-main": "retry_nix",
+}.items():
+    block = job_block(tag_workflow, job)
+    if f"inputs.{retry_input}" not in block or "needs.release-main.result == 'success'" not in block:
+        raise SystemExit(f"{job} must be selected explicitly for recovery and gated on the normal release")
+    if "ref: ${{ inputs.tag || github.ref }}" not in block:
+        raise SystemExit(f"{job} must read source from the selected release tag during recovery")
+
+for job in ("build", "publish", "release-main", "announce-main", "docker-omnibus", "chocolatey-main", "homebrew-main"):
+    block = job_block(tag_workflow, job)
+    if "github.event_name != 'workflow_dispatch'" not in block:
+        raise SystemExit(f"{job} must be skipped during selected publisher recovery")
 
 for job in ("performance-regression", "dependency-scanning", "container-scanning"):
     match = re.search(rf"(?ms)^  {re.escape(job)}:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", enhancements)
