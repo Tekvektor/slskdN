@@ -63,6 +63,20 @@ credential/config extensions, while allowing source files with unrelated
 extensions. Keep contract tests for both credential files and token-named
 source code.
 
+### 0z1792. Filter Credential Folders Without Hiding Their Source Files (2026-10-13)
+
+**What went wrong:** The sandbox filter matched credential names only at the
+file leaf, so extensionless files and environment-style credentials nested in
+credential folders could still enter the source snapshot.
+
+**Why:** Preserving code such as `token.js` and `tokens.rs` narrowed matching
+to known credential filenames, but the matcher did not distinguish data files
+inside credential folders from source files stored there.
+
+**Prevention:** Recognize `.env` credential variants and non-source files under
+credential-named folders while retaining source-language files. Test the
+filtered snapshot itself for both hidden credentials and retained source.
+
 ### 0z1787. Pin Actions Before Enabling SHA-Only Repository Policy (2026-10-13)
 
 **What went wrong:** Release publisher jobs attached to an immutable tag failed
