@@ -72,8 +72,9 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Security
 
-- Public pull request workflows run on GitHub-hosted runners, keeping untrusted
-  contributions away from private self-hosted environments.
+- Public pull requests and manual runs from refs outside `main` use GitHub-hosted
+  runners. CI defaults to read-only permissions and limits publishing access to
+  the release job.
 - Narrowly scoped integration credentials are restricted from general-purpose
   real-time hubs, while password and wildcard sessions retain existing access.
 - Federation relationship removal is bound to the verified sender and exact
