@@ -7397,3 +7397,18 @@ resource completion.
   the published-binary API and current Jammy amd64 index. The release waiter
   timed out after repeated API SSL timeouts. Do not upload the accepted source
   again while this publication remains in progress.
+
+## Trusted Playwright cache and browser verification — 2026-10-13
+
+- [x] Preserve the browser cache only when it is supplied through the trusted
+  sandbox dependency mount; keep arbitrary host cache paths isolated.
+- [x] Document the local launcher invocation and add the validation release-note
+  fragment.
+- [x] Fix the transfer-view regression fixture to explicitly hide the
+  default-visible `requested` column; record gotcha `0z1813`.
+- [x] Pass validation-engine tests (16), the complete headless Web suite
+  (89 passed, 16 skipped), the 15-minute loopback radio-renewal soak (1),
+  Release build, and repository formatting lint.
+- [ ] Complete the backend unit suite and exact-head hosted release gate. The
+  local trusted backend task stalled during restore/build before starting a
+  test host, so that task did not produce a result.

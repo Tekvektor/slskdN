@@ -46,6 +46,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ### Fixed
 
+- Trusted local browser tests now use the preinstalled Playwright cache through
+  its read-only sandbox mount instead of resolving an empty private cache path.
 - Download workers that end before the remote enqueue acknowledgement no
   longer leave an enqueue task waiting and delaying service shutdown.
 - Share database scans and maintenance now release query readers before

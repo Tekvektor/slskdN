@@ -407,6 +407,20 @@ test('Playwright tasks use the job cache and keep standard runs offline', () => 
   assert.equal(env.HOME, path.join(environmentRoot, 'home'));
   assert.equal(env.XDG_CACHE_HOME, path.join(environmentRoot, 'xdg-cache'));
   assert.notEqual(env.PLAYWRIGHT_BROWSERS_PATH, '/operator/cache/untrusted-browsers');
+  const mountedCacheEnv = isolatedTaskEnvironment(task, runRoot, {
+    PLAYWRIGHT_BROWSERS_PATH: '/mnt/run-data/dependencies/0',
+  });
+  assert.equal(
+    mountedCacheEnv.PLAYWRIGHT_BROWSERS_PATH,
+    '/mnt/run-data/dependencies/0',
+  );
+  const nestedHostPathEnv = isolatedTaskEnvironment(task, runRoot, {
+    PLAYWRIGHT_BROWSERS_PATH: '/mnt/run-data/dependencies/0/../../home/operator',
+  });
+  assert.equal(
+    nestedHostPathEnv.PLAYWRIGHT_BROWSERS_PATH,
+    path.join(os.tmpdir(), 'slskdn-playwright-browsers'),
+  );
   for (const id of ['browser-e2e', 'web-browser-e2e']) {
     const definition = validation.tasks.find((candidate) => candidate.id === id);
     assert.equal(definition?.env?.SLSKDN_TEST_NO_CONNECT, 'true');

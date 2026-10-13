@@ -516,7 +516,12 @@ export function isolatedTaskEnvironment(task, runRoot, inherited = process.env) 
   });
   if (task.browserCache === 'playwright') {
     const cacheRoot = inherited.RUNNER_TEMP || inherited.TMPDIR || inherited.TEMP || os.tmpdir();
-    env.PLAYWRIGHT_BROWSERS_PATH = path.join(path.resolve(cacheRoot), 'slskdn-playwright-browsers');
+    const mountedCache = inherited.PLAYWRIGHT_BROWSERS_PATH;
+    env.PLAYWRIGHT_BROWSERS_PATH =
+      typeof mountedCache === 'string' &&
+      /^\/mnt\/run-data\/dependencies\/\d+$/u.test(mountedCache)
+        ? mountedCache
+        : path.join(path.resolve(cacheRoot), 'slskdn-playwright-browsers');
   }
   if (task.kind === 'test') env.NODE_ENV = 'test';
   return env;

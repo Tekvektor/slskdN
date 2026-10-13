@@ -19071,3 +19071,18 @@ the selected headless browser suite passes 97 tests with seven opt-in network
 and soak scenarios skipped. Repository lint and the Release build pass with
 zero compiler warnings and errors. The stable build tag and hosted artifact
 verification remain.
+
+## Update 2026-10-13 — Trusted browser cache and full E2E follow-up
+
+The trusted validation engine now preserves the Playwright browser cache when
+it comes from the launcher's read-only dependency mount, while continuing to
+isolate untrusted cache paths. Local testing instructions and a validation
+release-note fragment are updated. The transfer-column E2E fixture now marks
+the default-visible `requested` column hidden when asserting an exact set.
+
+The validation-engine suite passes 16 tests. The full headless Web suite passes
+89 tests with 16 skipped by opt-in/offline policy; the dedicated 15-minute
+loopback radio-renewal soak passes. Release build and repository formatting
+lint pass. The trusted local backend unit task did not reach test execution
+because restore/build stalled before launching a test host; no backend result
+is claimed from that attempt.

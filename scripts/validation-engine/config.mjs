@@ -22,6 +22,7 @@ export const validation = {
     'scripts/validation-engine/engine.mjs',
     'scripts/validation-engine/config.mjs',
     'scripts/validation-engine/engine.test.mjs',
+    'release-notes/20261013-trusted-playwright-cache.md',
     'scripts/validation-engine/trusted-sandbox.mjs',
     'scripts/validation-engine/trusted-sandbox.contract.mjs',
     'scripts/validation-engine/trusted-test-launcher.mjs',

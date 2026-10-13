@@ -19348,3 +19348,22 @@ not run because no credentials or VPN profile were available.
 - Commit and push the validated branch to `snapetech/slskdN`.
 - Create the authorized stable build tag and verify the hosted release gate and
   artifacts.
+
+## Current state — Trusted browser cache and E2E follow-up — 2026-10-13
+
+The validation engine keeps the browser cache from its trusted read-only mount
+and falls back to an isolated task cache for all other values. Local test
+guidance and a validation release-note fragment are updated. The transfer
+column fixture explicitly hides `requested`, whose product default is visible.
+
+The validation-engine suite passes 16 tests; the full headless Web suite passes
+89 with 16 expected skips; the dedicated 15-minute loopback radio-renewal soak
+passes. The Release build and repository lint pass. The trusted local backend
+unit task stalled before test execution and is not counted as passing. Public
+DHT/VPN behavior was not exercised in the network-isolated runner.
+
+### Next Steps
+
+- Commit the browser-cache implementation, release fragment, and documentation.
+- Complete the backend unit suite and exact-head hosted release gate before
+  publication.
