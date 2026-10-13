@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1791. Preserve Extensionless Credential Files In Sandbox Filtering (2026-10-13)
+
+**What went wrong:** Narrowing the sandbox's sensitive-path filter to known
+credential extensions also stopped excluding extensionless files named
+`auth`, `tokens`, `credentials`, or `secrets`.
+
+**Why:** The filter needed to stop misclassifying source files such as
+`token.js` and `tokens.rs`, but the extension-based rule did not distinguish
+those files from extensionless credential data.
+
+**Prevention:** Exclude exact extensionless credential names and recognized
+credential/config extensions, while allowing source files with unrelated
+extensions. Keep contract tests for both credential files and token-named
+source code.
+
 ### 0z1787. Pin Actions Before Enabling SHA-Only Repository Policy (2026-10-13)
 
 **What went wrong:** Release publisher jobs attached to an immutable tag failed
