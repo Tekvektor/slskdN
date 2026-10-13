@@ -69,9 +69,23 @@ mode only at creation does not guarantee the configured mode on the new
 directory.
 
 **Prevention:** After creating a download destination directory, apply the
-configured mode explicitly to directories created for that download. Do not
-change permissions on pre-existing parent directories, and skip Unix mode
-operations on Windows. Cover both restrictive umasks and nested paths.
+configured mode explicitly to directories created for that download with
+`File.SetUnixFileMode`. Do not change permissions on pre-existing parent
+directories, and skip Unix mode operations on Windows. Cover both restrictive
+umasks and nested paths.
+
+### 0z1827. Use File APIs For Unix Modes On Directory Paths (2026-10-13)
+
+**What went wrong:** The directory-mode implementation called
+`Directory.SetUnixFileMode`, which is not part of the .NET API and stopped the
+application build.
+
+**Why:** The Unix mode methods are exposed on `File`; their path argument may
+refer to a directory even though the type name suggests otherwise.
+
+**Prevention:** Check the target framework's API surface instead of inferring a
+method from the path type. Use `File.SetUnixFileMode` and `File.GetUnixFileMode`
+for directory paths, and compile the application and tests before proceeding.
 
 ### 0z1821. Dispose SQLite Readers Before Their Connections (2026-10-13)
 
