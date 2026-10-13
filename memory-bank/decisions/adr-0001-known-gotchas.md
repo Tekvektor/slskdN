@@ -41971,3 +41971,17 @@ versions even though they are built from the same checkout.
 **Prevention:** Check the target project's language version before choosing
 syntax. Use scoped `using (...)` blocks in the vendored tests unless the
 project configuration is deliberately upgraded.
+
+### 0z1806. Keep Vendored Runtime Patch In Sync With The Mirror (2026-10-13)
+
+**What went wrong:** Runtime source and test files changed in the vendored
+mirror, but the declared local patch did not include those edits. The runtime
+sync check therefore rejected the otherwise passing product changes.
+
+**Why:** Builds consume the runtime source revision plus the checked-in local
+patch. Editing the mirror alone leaves the reproducible source definition
+behind the files being built.
+
+**Prevention:** Regenerate the declared runtime patch from the pinned source
+revision whenever vendored runtime files change, commit the patch with the
+mirror, and run `scripts/check-slsknet-runtime-sync.sh` before pushing.
