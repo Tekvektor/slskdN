@@ -31566,6 +31566,20 @@ repo.UpsertContentItem(contentId, "GenericFile", null, maskedFilename, true, str
 
 ## ⚠️ HIGH: Common Mistakes
 
+### 0z1796. Mark Interrupted Share Scans Suspect (2026-10-13)
+
+**What went wrong:** A cancelled share scan still wrote an end timestamp, which
+made the partial scan look complete. Startup therefore accepted a cache that
+could be missing files or directories.
+
+**Why:** Cancellation was recorded in process state, but the persistent scan
+record was finalized without setting its existing `suspect` flag.
+
+**Prevention:** When a scan is interrupted, mark that specific scan record
+suspect before finalizing it. Keep a regression that cancels an in-progress scan
+and verifies the persisted record is ended and suspect; startup must reject it
+and rebuild the cache.
+
 ### 4. Copyright Headers - Wrong Company Attribution
 
 **The Rule**: New slskdN files use `company="slskdN Team"`, existing upstream files keep `company="slskd Team"`.
