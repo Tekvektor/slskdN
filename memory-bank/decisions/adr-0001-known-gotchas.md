@@ -4,6 +4,20 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1773. Keep Pull Requests Off Persistent Self-Hosted Runners (2026-10-13)
+
+**What went wrong:** The validation workflow's runner preference applied to
+pull requests, so pull-request code could execute on a persistent self-hosted
+machine. Its tag-only push filter also left trusted working-branch pushes
+without the local validation run requested by the maintainer.
+
+**Why:** Runner selection did not distinguish trusted pushes from pull requests,
+and the workflow event filter omitted branch pushes.
+
+**Prevention:** Route pull-request validation to GitHub-hosted runners and
+trusted branch-push validation to the configured local runner pool. Keep release
+publication tag-gated, and add workflow regressions for both event routes.
+
 ### 0z1769. Run Candidate Validation Tests Inside A Trusted Outer Sandbox (2026-10-12)
 
 **What went wrong:** Validation tasks used filtered child environments and
