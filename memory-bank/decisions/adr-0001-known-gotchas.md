@@ -56,6 +56,19 @@ updates are merged into the UI.
 Web UI and retain offsets only for API compatibility. Keep the sort tie-breaker
 and cursor predicate aligned, and test continuation while new rows are inserted.
 
+### 0z1843. Update Interface Fakes For Added Optional Parameters (2026-10-13)
+
+**What went wrong:** Extending `ISearchService.ListAsync` with optional cursor
+parameters left a test fake implementing the old method signature, so the unit
+test project did not compile.
+
+**Why:** Optional values keep call sites source-compatible, but interface
+implementations must still declare the complete updated signature.
+
+**Prevention:** Search for direct interface implementations and mocks whenever
+an interface method changes. Update fake signatures as well as production
+implementations, then compile the affected test project before running tests.
+
 ### 0z1838. Match Mock Arguments To The Service Interface (2026-10-13)
 
 **What went wrong:** A search-list controller test placed the source filter in
