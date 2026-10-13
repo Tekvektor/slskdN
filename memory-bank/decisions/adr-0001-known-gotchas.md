@@ -31609,6 +31609,21 @@ writing binding assertions. Bind through the actual CLR property (`Global` for
 the aliased `transfers` section) and keep tests for both YAML and attributed
 CLI/environment input paths.
 
+### 0z1799. Bound Remote Path Components By Filesystem Bytes (2026-10-13)
+
+**What went wrong:** Remote filenames were sanitized for invalid characters
+but not bounded by the filesystem's per-component limit. UTF-8 names could
+therefore fail during file creation even when their character count looked
+reasonable.
+
+**Why:** Filesystems commonly measure component limits in encoded bytes, while
+application validation often counts UTF-16 characters.
+
+**Prevention:** Keep short names unchanged; shorten only overlong components on
+Unicode text-element boundaries, reserve room for a deterministic digest, and
+retain a short file extension where possible. Test both directory and filename
+components by creating the mapped path on disk.
+
 ### 4. Copyright Headers - Wrong Company Attribution
 
 **The Rule**: New slskdN files use `company="slskdN Team"`, existing upstream files keep `company="slskd Team"`.
