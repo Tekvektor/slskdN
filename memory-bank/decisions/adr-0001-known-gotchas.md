@@ -41835,3 +41835,15 @@ directory tree back toward the configured incomplete-download root.
 **Prevention:** After a successful move, prune empty ancestors one at a time,
 stop at the configured incomplete root, and verify containment before deleting.
 Treat a non-empty directory or a filesystem race as a normal stop condition.
+
+### 0z1803. Parse Share Aliases Before Bracketed Paths (2026-10-13)
+
+**What went wrong:** Share parsing used a greedy alias match, so a closing
+bracket later in the local path could be mistaken for the alias delimiter.
+
+**Why:** The share grammar uses the first `]` to end an optional alias, while
+filesystem paths may contain additional `]` characters.
+
+**Prevention:** Locate the alias delimiter once at the grammar boundary and
+pass the remaining path through unchanged. Keep regression coverage for
+bracketed paths, aliases, excluded shares, and unaliased paths.
