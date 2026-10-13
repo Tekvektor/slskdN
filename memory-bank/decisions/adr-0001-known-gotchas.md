@@ -40,10 +40,11 @@ request model.
 **Prevention:** Configure loopback-only test authentication explicitly, or
 issue a disposable test token and send it with every authenticated request.
 Use a dedicated test config with loopback-only HTTP, authentication disabled,
-and public DHT disabled. Use controller route attributes and API request-model
-field names, then verify endpoint status codes before making a load job
-required. Avoid network searches unless the test has an isolated Soulseek
-fixture. Do not use live Soulseek credentials for API-only load tests.
+public DHT disabled, and `no-connect` enabled. Use controller route attributes
+and API request-model field names, then verify endpoint status codes before
+making a load job required. Avoid network searches unless the test has an
+isolated Soulseek fixture. Do not use live Soulseek credentials for API-only
+load tests.
 
 ### 0z1784. Default GitHub Actions Tokens to Read Only (2026-10-13)
 

@@ -109,13 +109,28 @@ if ! awk '
   failed=1
 fi
 
+if ! awk '
+  $0 == "      - name: Start Application" { in_step = 1; next }
+  in_step && /^      - name:/ { exit }
+  in_step && /--no-connect/ { no_connect = 1 }
+  in_step && /--no-auth/ { no_auth = 1 }
+  in_step && /--no-https/ { no_https = 1 }
+  in_step && /--http-address 127\.0\.0\.1/ { loopback = 1 }
+  in_step && /--http-port 5099/ { port = 1 }
+  END { exit !(no_connect && no_auth && no_https && loopback && port) }
+' "$repo_root/.github/workflows/ci-enhancements.yml"; then
+  printf '.github/workflows/ci-enhancements.yml must keep the API load-test instance offline, unauthenticated, and loopback-only\n' >&2
+  failed=1
+fi
+
 if ! python3 - "$repo_root/.github/workflows" <<'PYTHON'
 import re
 import sys
 from pathlib import Path
 
 workflow_dir = Path(sys.argv[1])
-texts = {path.name: path.read_text() for path in workflow_dir.glob("*.yml")}
+workflow_paths = [*workflow_dir.glob("*.yml"), *workflow_dir.glob("*.yaml")]
+texts = {path.name: path.read_text() for path in workflow_paths}
 for name, text in texts.items():
     for line_number, line in enumerate(text.splitlines(), 1):
         match = re.match(r"^\s*uses:\s*([^\s#]+)", line)

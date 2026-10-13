@@ -162,6 +162,7 @@ jobs:
           dotnet src/slskd/bin/Release/net10.0/slskd.dll \
             --config "$RUNNER_TEMP/slskdn-load-test.yml" \
             --app-dir "$RUNNER_TEMP/slskdn-load-test" \
+            --no-connect \
             --no-auth \
             --no-https \
             --http-address 127.0.0.1 \

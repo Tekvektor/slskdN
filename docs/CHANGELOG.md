@@ -49,6 +49,7 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 - CI validates and uses runner-owned temporary storage for .NET work, while
   keeping push builds tag-triggered and the heavy load harness on hosted Linux.
+  The API-only load harness binds to loopback and never connects to Soulseek.
 
 ## [2026101222-slskdn.350] — 2026-10-12
 
