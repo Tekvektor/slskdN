@@ -4,6 +4,17 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1818. Import Temporary Probe Cleanup Helpers (2026-10-13)
+
+**What went wrong:** Runtime-probe cleanup called `rmSync` without importing
+it, so the engine contract test failed in the cleanup path.
+
+**Why:** The probe refactor introduced a new filesystem operation without
+checking the module's existing named imports.
+
+**Prevention:** Keep cleanup imports adjacent to the other filesystem imports
+and run the engine contract suite after changing temporary-resource lifecycles.
+
 ### 0z1817. Probe Runtimes With Private Tool Homes (2026-10-13)
 
 **What went wrong:** The validation plan reported the installed .NET SDK as
