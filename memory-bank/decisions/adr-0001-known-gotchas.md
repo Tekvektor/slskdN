@@ -35,6 +35,19 @@ The workflow remained parseable, but the shell received `env:` and
 indentation. Validate the complete workflow after edits and inspect script
 blocks when moving keys between steps.
 
+### 0z1781. Keep Workflow Policy Checks Aligned With Runner Rules (2026-10-13)
+
+**What went wrong:** A repository check required every pull request to use a
+hosted runner even after trusted same-repository authors were explicitly
+allowed to use the local pool.
+
+**Why:** The runner policy changed without updating the static workflow
+contract, so valid workflow expressions failed validation.
+
+**Prevention:** Update the policy contract and its test together whenever
+trusted events or authors change runner eligibility. Exercise both trusted and
+untrusted cases so the guard reflects the actual security boundary.
+
 ### 0z1778. Keep Untrusted Workflow Refs Off Persistent Runners (2026-10-12)
 
 **What went wrong:** Public pull requests and manual runs from refs outside
