@@ -48,7 +48,9 @@
       <FakeFfmpegOutputFiles Include="$(FakeFfmpegOutputDirectory)*" />
     </ItemGroup>
     <Copy SourceFiles="@(FakeFfmpegOutputFiles)" DestinationFolder="$(OutDir)fake-ffmpeg" />
-    <Error Condition="!Exists('$(OutDir)fake-ffmpeg/slskd.Tests.FakeFfmpeg$(ExecutableExtension)')"
+    <Error Condition="'$(OS)' == 'Windows_NT' and !Exists('$(OutDir)fake-ffmpeg/slskd.Tests.FakeFfmpeg.exe')"
+           Text="The fake FFmpeg apphost was not copied to $(OutDir)fake-ffmpeg." />
+    <Error Condition="'$(OS)' != 'Windows_NT' and !Exists('$(OutDir)fake-ffmpeg/slskd.Tests.FakeFfmpeg')"
            Text="The fake FFmpeg apphost was not copied to $(OutDir)fake-ffmpeg." />
   </Target>
 
