@@ -31,6 +31,20 @@ every class that implements the service interfaces across the solution.
 and test doubles in `src/` and `tests/`, then build and test the full solution
 instead of relying only on focused test projects.
 
+### 0z1850. Keep Snapshot Fixtures Away From Millisecond Watermark Edges (2026-10-13)
+
+**What went wrong:** A transfer snapshot test relied on the default
+`DateTime.UtcNow` timestamps. The API quantizes its snapshot watermark to Unix
+milliseconds, so rows created immediately before the request could still be
+newer than the rounded-down watermark and disappear from the initial page.
+
+**Why:** The fixture and the API cursor used different timestamp precision,
+and the test data was created inside the precision interval being truncated.
+
+**Prevention:** Assign transfer fixture timestamps explicitly, comfortably
+before the request watermark. For cursor-boundary tests, set timestamps to
+specific values on both sides of the serialized millisecond boundary.
+
 ### 0z1847. Include New Environment Options In Every Maintained Installer Template (2026-10-13)
 
 **What went wrong:** Several options documented as environment variables were
