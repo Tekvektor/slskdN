@@ -4,6 +4,21 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1796. Pass The Sender When Raising `EventHandler<T>` In Moq (2026-10-13)
+
+**What went wrong:** A unit test raised an `EventHandler<T>` mock event with only
+the payload. Moq invoked the two-parameter delegate with one argument and failed
+with `TargetParameterCountException` before the handler ran.
+
+**Why:** `EventHandler<T>` has both a sender and an event payload. Moq's
+`Raise` helper needs both arguments in delegate order; it does not synthesize an
+omitted sender for this overload.
+
+**Prevention:** When raising an `EventHandler<T>` with Moq, pass the sender
+(usually `null`) followed by the payload. Keep the regression assertion on the
+observable handler effect so a malformed event invocation cannot look like a
+product failure.
+
 ### 0z1793. Bound Validation Output And Reap Task Descendants (2026-10-12)
 
 **What went wrong:** Validation output could accumulate in an unbounded pump
