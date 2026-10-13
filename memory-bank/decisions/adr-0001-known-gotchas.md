@@ -41985,3 +41985,18 @@ behind the files being built.
 **Prevention:** Regenerate the declared runtime patch from the pinned source
 revision whenever vendored runtime files change, commit the patch with the
 mirror, and run `scripts/check-slsknet-runtime-sync.sh` before pushing.
+
+### 0z1807. Keep Versioned Changelog Sections Out Of Unmerged Pull Requests (2026-10-13)
+
+**What went wrong:** A release version section was prepared on a feature branch,
+but the pull request changelog check requires the branch to update
+`## [Unreleased]`.
+
+**Why:** Pull request validation checks the normal development changelog
+contract, while the tag helper requires versioned notes only after the change
+is on the validated default branch.
+
+**Prevention:** Keep shipped bullets under `## [Unreleased]` in the pull
+request. After merge, move the exact shipped bullets into the dated version
+section on the default branch and run the exact-head release gate before
+tagging.
