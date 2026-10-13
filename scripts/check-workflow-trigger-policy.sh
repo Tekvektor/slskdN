@@ -69,20 +69,13 @@ from pathlib import Path
 
 text = Path(sys.argv[1]).read_text()
 push = re.search(r"(?ms)^  push:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", text)
-build = re.search(r"(?ms)^  build:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)", text)
-if not push or not re.search(r'(?m)^    branches:\n      - "\*\*"$', push.group(1)):
-    raise SystemExit("CI must trigger on every branch push")
 if not push or not re.search(r"(?m)^    tags:\n", push.group(1)):
     raise SystemExit("CI must preserve its release tag triggers")
-if not build:
-    raise SystemExit("CI build job is missing")
-if "github.event_name == 'push' && github.ref_type == 'branch'" not in build.group(1):
-    raise SystemExit("CI branch pushes must use the local runner")
-if '["self-hosted","Linux","X64","slskdn-server"]' not in build.group(1):
-    raise SystemExit("CI branch pushes must select the stable local runner")
+if re.search(r"(?m)^    branches(?:-ignore)?:", push.group(1)):
+    raise SystemExit("CI builds must not be added to branch pushes")
 PYTHON
 then
-  printf '.github/workflows/ci.yml must validate branch pushes locally and preserve tag triggers\n' >&2
+  printf '.github/workflows/ci.yml must keep builds tag-triggered\n' >&2
   failed=1
 fi
 

@@ -1,4 +1,4 @@
-## Current state — Trusted branch CI and runner-temp stability — 2026-10-13
+## Current state — Runner-temp stability — 2026-10-13
 
 Main now routes public pull requests and non-main manual dispatches to hosted
 runners, scopes release write permissions to the publisher, and keeps the
@@ -7,23 +7,22 @@ needs hosted validation on its exact source.
 
 PR #357 validates runner-owned temporary storage in every Linux self-hosted
 job, exports TMPDIR, TMP, and TEMP job-wide, and updates the runtime matrix and
-packaging guard. It now runs CI on every trusted branch push, targets the
-stable server-role runner for the complete .NET gate, and keeps public
-pull-request validation on GitHub-hosted runners. Publish, Docker, and release
-jobs remain tag-gated. The standalone load harness runs on hosted Linux after
-the prior local SIGBUS.
+packaging guard. Existing CI triggers remain tag, pull-request, and manual
+dispatch events; the runner-temp fix does not add branch-push builds. Public
+pull-request validation stays on GitHub-hosted runners. The standalone load
+harness runs on hosted Linux after the prior local SIGBUS.
 
-The previous local PR run executed 13 of 14 validation tasks. The Web
-unit-test task failed in Contacts, Integrations, and Admin Policies, and a
-separate load-test job exited with SIGBUS while shared temporary storage was
-full. Focused workflow policy, runtime matrix, YAML, and diff checks now pass.
-Exact-head hosted PR and trusted branch CI are pending, so those earlier
-failures are not counted as resolved yet.
+The merged `68b36d3` validation run executed 15/15 tasks and failed two checks
+because `main` advanced during the run; the release-branch-sync check and the
+remediation baseline's nested copy both saw the checkout behind origin/main.
+A fresh full run for `252e92f` is pending. Earlier Web unit-test failures and
+the load-test SIGBUS still require exact-head hosted verification. Focused
+workflow policy, runtime matrix, YAML, and diff checks pass on the PR branch.
 
 ### Next Steps
 
-- Verify GitHub schedules the hosted PR jobs and trusted branch job on the
-  expected runner.
+- Verify GitHub schedules the hosted PR jobs and main manual run on the
+  expected runners.
 - Rerun exact-head CI and report failures, actual task counts, skips, and
   exclusions separately.
 - Keep public pull-request jobs hosted and reassess runner capacity before

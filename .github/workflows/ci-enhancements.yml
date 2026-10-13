@@ -38,8 +38,8 @@ jobs:
           fi
           runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
           case "$runner_temp_resolved" in
-            /|/tmp|/tmp/*)
-              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+            /|/tmp|/tmp/*|/var/tmp|/var/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under a shared temporary directory\n' >&2
               exit 1
               ;;
           esac
@@ -119,8 +119,8 @@ jobs:
           fi
           runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
           case "$runner_temp_resolved" in
-            /|/tmp|/tmp/*)
-              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+            /|/tmp|/tmp/*|/var/tmp|/var/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under a shared temporary directory\n' >&2
               exit 1
               ;;
           esac
@@ -265,8 +265,8 @@ jobs:
           fi
           runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
           case "$runner_temp_resolved" in
-            /|/tmp|/tmp/*)
-              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+            /|/tmp|/tmp/*|/var/tmp|/var/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under a shared temporary directory\n' >&2
               exit 1
               ;;
           esac
@@ -340,8 +340,8 @@ jobs:
           fi
           runner_temp_resolved="$(cd -- "$RUNNER_TEMP" && pwd -P)"
           case "$runner_temp_resolved" in
-            /|/tmp|/tmp/*)
-              printf 'RUNNER_TEMP must not resolve under shared /tmp\n' >&2
+            /|/tmp|/tmp/*|/var/tmp|/var/tmp/*)
+              printf 'RUNNER_TEMP must not resolve under a shared temporary directory\n' >&2
               exit 1
               ;;
           esac

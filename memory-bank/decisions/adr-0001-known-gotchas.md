@@ -41362,17 +41362,16 @@ first-step ordering.
 guard in the same change. Reuse the shared workflow-matrix check rather than
 asserting a stale step-scoped environment literal.
 
-### 0z1782. Add Trusted Branch Validation Without Changing Release Triggers (2026-10-13)
+### 0z1782. Keep Runner-Temp Fixes Within Existing CI Triggers (2026-10-13)
 
-**What went wrong:** The CI workflow ran on tags and pull requests but did not
-validate trusted same-repository branch pushes on the local runner pool.
+**What went wrong:** A runner-temp reliability change also added CI builds to
+every branch push, expanding the workflow's trigger policy beyond its existing
+tag, pull-request, and manual events.
 
-**Why:** The push event filter was limited to version tags, so the local runner
-policy was never exercised by ordinary branch changes. A resource-heavy load
-harness also failed with SIGBUS on a persistent local runner.
+**Why:** The storage fix was bundled with a separate runner-routing change even
+though this repository intentionally keeps builds off ordinary branch pushes.
 
-**Prevention:** Add branch pushes to the validation workflow, keep release and
-publish jobs guarded by tag refs, and route pull-request events to hosted
-runners. Pin resource-heavy .NET validation to the suitable local runner and
-keep its temporary files on runner-owned storage. Keep the standalone load
-harness hosted after a local SIGBUS.
+**Prevention:** Keep runner-temp validation scoped to existing workflow events.
+Run pull-request checks on hosted runners and use an explicitly dispatched
+main-branch validation when a trusted self-hosted run is needed. Keep the
+resource-heavy load harness hosted after a local SIGBUS.

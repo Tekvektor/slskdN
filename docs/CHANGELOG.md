@@ -35,6 +35,11 @@ For dev or build tags, use the same logical version string embedded in the tag.
 - System requirements explain storage growth and how to place application data,
   downloads, and shared files on storage.
 
+### Changed
+
+- CI validates and uses runner-owned temporary storage for .NET work, while
+  keeping push builds tag-triggered and the heavy load harness on hosted Linux.
+
 ## [2026101222-slskdn.350] — 2026-10-12
 
 ### Added
@@ -69,8 +74,6 @@ For dev or build tags, use the same logical version string embedded in the tag.
 - The Launchpad PPA publication waiter now queries by binary package name and
   checks the exact version locally, avoiding stale version-filtered API
   responses after a binary is published.
-- CI .NET setup now stages SDK downloads in the job-scoped temp directory,
-  so a full shared system temporary directory does not block builds.
 
 ### Security
 

@@ -1,4 +1,19 @@
-# Update 2026-10-13 — Add trusted branch validation and isolate load tests
+# Update 2026-10-13 — Keep CI triggers unchanged for runner-temp hardening
+
+Repository policy keeps builds on tags, pull requests, and explicit manual
+dispatches. The runner-temp fix validates each Linux job's `RUNNER_TEMP`,
+rejects `/tmp` and `/var/tmp` (including symlink targets), then exports TMPDIR,
+TMP, and TEMP for later steps. The standalone load harness remains on hosted
+Linux after its previous local SIGBUS. Workflow checks preserve tag-only push
+builds and tag-gated publication.
+
+The stale `68b36d3` main run executed 15/15 tasks; its release-branch-sync and
+remediation-baseline failures both came from `main` advancing to `252e92f`
+during execution. A fresh full run for `252e92f` and exact-head PR checks are
+pending. Earlier Web unit-test failures and the load-test SIGBUS still need
+exact-head hosted verification.
+
+# Update 2026-10-13 — Initial trusted branch CI proposal (superseded)
 
 The CI workflow now runs on all branch pushes. Its complete .NET branch gate
 uses a dedicated server-role runner label; pull requests remain on
@@ -17,13 +32,13 @@ test failures and SIGBUS are not counted as resolved yet.
 # Update 2026-10-12 21:47 UTC — Persist runner temp for self-hosted CI
 
 The earlier runner-temp workaround covered only `actions/setup-dotnet`; later
-build and scan steps still inherited the full shared `/tmp`. All eight Linux
+build and scan steps still inherited the full shared `/tmp`. All seven Linux
 self-hosted jobs in `ci.yml` and `ci-enhancements.yml` now validate the runner
-temporary directory, reject root and shared `/tmp` (including symlinks), and
-persist `TMPDIR`, `TMP`, and `TEMP` through `GITHUB_ENV`. The NuGet vulnerability
-scan output now uses the validated job temp directory. The workflow guard checks
-all Linux self-hosted jobs and rejects fixed `/tmp` or `/var/tmp` use in later
-steps. Gotcha `0z1771` records the step-scope failure.
+temporary directory, reject root, `/tmp`, and `/var/tmp` (including symlinks),
+and persist `TMPDIR`, `TMP`, and `TEMP` through `GITHUB_ENV`. The NuGet
+vulnerability scan output now uses the validated job temp directory. The
+workflow guard checks all Linux self-hosted jobs and rejects fixed `/tmp` or
+`/var/tmp` use in later steps. Gotcha `0z1771` records the step-scope failure.
 
 `bash scripts/check-dotnet-runtime-matrix.sh`, workflow YAML parsing, shell
 syntax, runner-temp behavior checks, `./bin/lint`, and the complete remediation
