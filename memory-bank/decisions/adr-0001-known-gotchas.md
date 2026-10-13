@@ -31,7 +31,7 @@ at a token boundary.
 hexadecimal characters for a commit pin. Add a test case for a valid SHA that
 begins with a digit as well as mutable and version-tag references.
 
-### 0z1784. Run API Load Tests With Explicit Test Authentication (2026-10-13)
+### 0z1784. Keep API Load Tests Authenticated and Offline (2026-10-13)
 
 **What went wrong:** The load-test runner started the application with default
 authentication but sent requests to authenticated endpoints without a token.
@@ -39,7 +39,8 @@ Those requests received authorization failures, which became job failures when
 the previous error suppression was removed. Its search request also sent
 `query`, while the API request model requires `searchText`, and used a
 nonexistent `/application/state` route instead of the controller's
-`/application` route.
+`/application` route. The default app configuration also enables public DHT,
+which an API-only load test does not need to contact.
 
 **Why:** The harness had no isolated test configuration or authentication
 header even though its application-state and search endpoints require
@@ -48,10 +49,11 @@ request model.
 
 **Prevention:** Configure loopback-only test authentication explicitly, or
 issue a disposable test token and send it with every authenticated request.
-Use controller route attributes and API request-model field names, then verify
-endpoint status codes before making a load job required. Avoid network searches
-unless the test has an isolated Soulseek fixture. Do not use live Soulseek
-credentials for API-only load tests.
+Use a dedicated test config with loopback-only HTTP, authentication disabled,
+and public DHT disabled. Use controller route attributes and API request-model
+field names, then verify endpoint status codes before making a load job
+required. Avoid network searches unless the test has an isolated Soulseek
+fixture. Do not use live Soulseek credentials for API-only load tests.
 
 ### 0z1779. Make Security Scans Fail When Findings Are Detected (2026-10-13)
 
