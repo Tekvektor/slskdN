@@ -35,6 +35,18 @@ configured remote and `gh` default repository through the API, and require each
 to match the pinned repository ID. Keep the upstream remote check separate and
 read-only.
 
+### 0z1857. Recheck Self-Referential Candidate Counts After Backlog Edits (2026-10-14)
+
+**What went wrong:** Updating the active candidate backlog changed the count it
+records because the broad source scan includes the backlog document itself.
+
+**Why:** The generated report and its durable count summary are both inputs to
+the same discovery scan, so new wording can match the scan patterns.
+
+**Prevention:** Regenerate and verify the candidate count after the final
+backlog edit. Avoid introducing scan terms into refresh prose unless the new
+match is intended and classified.
+
 ### 0z1854. Exclude Synthetic Sandbox Identity From Leak Scans (2026-10-13)
 
 **What went wrong:** The trusted validation environment sets `HOME` to a
