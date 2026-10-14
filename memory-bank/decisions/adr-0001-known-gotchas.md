@@ -15,10 +15,11 @@ repository alias.
 organization transfer. A mutable display name is not a reliable identity
 check for a run.
 
-**Prevention:** Resolve the configured target repository to its immutable
-numeric ID and compare the workflow run's repository ID to that value. Keep
-the release-gate contract test for a renamed repository and confirm the run's
-workflow, event, branch, commit, status, and conclusion independently.
+**Prevention:** Pin the intended fork's immutable numeric repository ID,
+confirm that the configured alias resolves to that ID, and compare the run's
+repository ID to it. Keep the release-gate contract test for a renamed
+repository and confirm the run's workflow, event, branch, commit, status, and
+conclusion independently.
 
 ### 0z1854. Exclude Synthetic Sandbox Identity From Leak Scans (2026-10-13)
 
