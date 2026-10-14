@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1855. Compare GitHub Runs By Repository ID Across Renames (2026-10-14)
+
+**What went wrong:** The hosted release-gate verifier rejected a successful
+workflow run for the intended repository because GitHub returned its current
+canonical owner/name while the verifier compared that value to the configured
+repository alias.
+
+**Why:** GitHub repository aliases and canonical names can differ after an
+organization transfer. A mutable display name is not a reliable identity
+check for a run.
+
+**Prevention:** Resolve the configured target repository to its immutable
+numeric ID and compare the workflow run's repository ID to that value. Keep
+the release-gate contract test for a renamed repository and confirm the run's
+workflow, event, branch, commit, status, and conclusion independently.
+
 ### 0z1854. Exclude Synthetic Sandbox Identity From Leak Scans (2026-10-13)
 
 **What went wrong:** The trusted validation environment sets `HOME` to a
