@@ -36,6 +36,7 @@ namespace slskd.LibraryHealth
         private readonly IMusicBrainzClient musicBrainzClient;
         private readonly ILogger<LibraryHealthService> log;
         private readonly IOptionsMonitor<slskd.Options> optionsMonitor;
+        private readonly ISpectralAnalyzer? spectralAnalyzer;
         private readonly ConcurrentDictionary<string, LibraryHealthScan> activeScans = new();
         private readonly object scanAdmissionLock = new();
         private string? runningScanId;
@@ -49,8 +50,10 @@ namespace slskd.LibraryHealth
             ICanonicalStatsService canonicalStats,
             IMusicBrainzClient musicBrainzClient,
             IOptionsMonitor<slskd.Options> optionsMonitor,
-            ILogger<LibraryHealthService> log)
+            ILogger<LibraryHealthService> log,
+            ISpectralAnalyzer? spectralAnalyzer = null)
         {
+            this.spectralAnalyzer = spectralAnalyzer;
             this.hashDb = hashDb;
             this.remediationService = remediationService;
             this.metadataFacade = metadataFacade;
@@ -85,6 +88,11 @@ namespace slskd.LibraryHealth
             }
 
             var maxConcurrentFiles = Math.Clamp(request.MaxConcurrentFiles > 0 ? request.MaxConcurrentFiles : 4, 1, 8);
+
+            if (request.IncludeSpectralAnalysis && spectralAnalyzer?.IsEnabled != true)
+            {
+                throw new SpectralAnalysisUnavailableException();
+            }
 
             var scanId = Guid.NewGuid().ToString();
             lock (scanAdmissionLock)
@@ -126,6 +134,7 @@ namespace slskd.LibraryHealth
                 FileExtensions = requestedExtensions,
                 SkipPreviouslyScanned = request.SkipPreviouslyScanned,
                 MaxConcurrentFiles = maxConcurrentFiles,
+                IncludeSpectralAnalysis = request.IncludeSpectralAnalysis,
             };
 
             _ = TaskObservation.Observe(
@@ -244,7 +253,7 @@ namespace slskd.LibraryHealth
                     {
                         try
                         {
-                            await ScanFileAsync(file, scan, scanLock, releaseChecks, fileCancellationToken);
+                            await ScanFileAsync(file, request.IncludeSpectralAnalysis, scan, scanLock, releaseChecks, fileCancellationToken);
                         }
                         catch (Exception ex)
                         {
@@ -315,6 +324,7 @@ namespace slskd.LibraryHealth
 
         private async Task ScanFileAsync(
             string filePath,
+            bool includeSpectralAnalysis,
             LibraryHealthScan scan,
             object scanLock,
             ConcurrentDictionary<(string ReleaseId, string Directory), string> releaseChecks,
@@ -394,25 +404,58 @@ namespace slskd.LibraryHealth
                     return;
                 }
 
-                // Step 3: Check for transcodes
-                if (variant.TranscodeSuspect)
+                // Step 2b: Measure the spectral shelf of lossless files when the scan requested it
+                SpectralAnalysisResult? spectral = null;
+                if (includeSpectralAnalysis && spectralAnalyzer != null && TranscodeDetector.IsLosslessCodec(variant.Codec))
                 {
+                    spectral = await spectralAnalyzer
+                        .AnalyzeAsync(filePath, variant.SampleRateHz, variant.DurationMs / 1000.0, ct)
+                        .ConfigureAwait(false);
+                    spectral?.ApplyTo(variant);
+                }
+
+                // Step 3: Check for transcodes. A spectral Suspect or Upsampled result is recorded as a low-severity
+                // issue: it may be a mastering filter rather than a lossy source.
+                var spectralOnlySuspect = !variant.TranscodeSuspect &&
+                    spectral?.Verdict is SpectralVerdict.Suspect or SpectralVerdict.Upsampled;
+                if (variant.TranscodeSuspect || spectralOnlySuspect)
+                {
+                    var issueMetadata = new Dictionary<string, object>
+                    {
+                        ["quality_score"] = variant.QualityScore,
+                        ["codec"] = variant.Codec,
+                        ["bitrate"] = variant.BitrateKbps,
+                    };
+                    if (spectral is { Verdict: not SpectralVerdict.Inconclusive })
+                    {
+                        issueMetadata["spectral_verdict"] = spectral.Verdict.ToString();
+                        if (spectral.CutoffHz is double cutoffHz)
+                        {
+                            issueMetadata["spectral_cutoff_hz"] = Math.Round(cutoffHz);
+                        }
+
+                        if (spectral.ShelfDropDb is double dropDb)
+                        {
+                            issueMetadata["spectral_shelf_drop_db"] = Math.Round(dropDb, 1);
+                        }
+
+                        if (!string.IsNullOrEmpty(spectral.EstimatedSource))
+                        {
+                            issueMetadata["spectral_estimated_source"] = spectral.EstimatedSource;
+                        }
+                    }
+
                     await EmitIssueAsync(new LibraryIssue
                     {
                         IssueId = Guid.NewGuid().ToString(),
                         Type = LibraryIssueType.SuspectedTranscode,
-                        Severity = LibraryIssueSeverity.High,
+                        Severity = variant.TranscodeSuspect ? LibraryIssueSeverity.High : LibraryIssueSeverity.Low,
                         FilePath = filePath,
                         MusicBrainzRecordingId = recordingId,
                         Artist = metadata.Artist ?? string.Empty,
                         Title = metadata.Title ?? string.Empty,
-                        Reason = variant.TranscodeReason,
-                        Metadata = new Dictionary<string, object>
-                        {
-                            ["quality_score"] = variant.QualityScore,
-                            ["codec"] = variant.Codec,
-                            ["bitrate"] = variant.BitrateKbps,
-                        },
+                        Reason = variant.TranscodeSuspect ? variant.TranscodeReason : spectral!.Describe(),
+                        Metadata = issueMetadata,
                         CanAutoFix = true,
                         SuggestedAction = "Replace with verified lossless variant from canonical sources",
                         Status = LibraryIssueStatus.Detected,

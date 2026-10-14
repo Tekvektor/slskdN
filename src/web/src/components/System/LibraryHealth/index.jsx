@@ -14,6 +14,7 @@ import './LibraryHealth.css';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Button,
+  Checkbox,
   Grid,
   Header,
   Icon,
@@ -37,6 +38,7 @@ const LibraryHealth = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [libraryPath, setLibraryPath] = useState('');
   const [scanning, setScanning] = useState(false);
+  const [includeSpectralAnalysis, setIncludeSpectralAnalysis] = useState(false);
   const [summary, setSummary] = useState(null);
   const [dashboardPath, setDashboardPath] = useState('');
   const [dashboardLoadFailed, setDashboardLoadFailed] = useState(false);
@@ -286,10 +288,14 @@ const LibraryHealth = () => {
       setScanning(true);
       setScanMonitoringPaused(false);
       setScanProgress({ filesScanned: 0, issuesDetected: 0 });
-      setScanMessage('Starting a recursive, read-only scan of the entered server-side path.');
+      setScanMessage(
+        includeSpectralAnalysis
+          ? 'Starting a recursive, read-only scan with the spectral transcode check. Lossless files are decoded, so this takes longer.'
+          : 'Starting a recursive, read-only scan of the entered server-side path.',
+      );
       setScanMessageType('info');
       setError(null);
-      const response = await libraryHealth.startScan(libraryPath);
+      const response = await libraryHealth.startScan(libraryPath, { includeSpectralAnalysis });
       const scanId = isObject(response.data) && typeof response.data.scanId === 'string'
         ? response.data.scanId
         : '';
@@ -690,6 +696,20 @@ const LibraryHealth = () => {
                 onChange={handleLibraryPathChange}
                 placeholder="Enter a server path (for example, /music or C:\\Music)"
                 value={libraryPath}
+              />
+              <Popup
+                className="library-health-popup"
+                content="Also decode lossless files with ffmpeg to find the lowpass shelf a lossy source (MP3, AAC, Opus) leaves behind, and report likely transcodes. Adds about a second per lossless file. Requires audio.spectral_analysis.enabled in the configuration."
+                trigger={(
+                  <Checkbox
+                    checked={includeSpectralAnalysis}
+                    className="library-health-spectral-option"
+                    disabled={scanning}
+                    id="library-health-spectral"
+                    label="Spectral transcode check (slower)"
+                    onChange={(_event, data) => setIncludeSpectralAnalysis(Boolean(data.checked))}
+                  />
+                )}
               />
               <div className="library-health-actions">
                 <Popup

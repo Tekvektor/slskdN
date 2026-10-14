@@ -22,6 +22,14 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Added
+
+- Library Health scans can optionally decode lossless files with ffmpeg to
+  find the lowpass shelf an MP3, AAC, or Opus source leaves behind, reporting
+  likely transcodes as `SuspectedTranscode` issues. Completed lossless
+  downloads can also be measured and recorded in HashDb. Both are off by
+  default and configured under `audio.spectral_analysis`.
+
 ### Security
 
 - .NET dependency graphs and bundled runtimes now use the 10.0.13 servicing
