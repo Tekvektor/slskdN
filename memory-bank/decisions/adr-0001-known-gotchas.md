@@ -21,6 +21,20 @@ repository ID to it. Keep the release-gate contract test for a renamed
 repository and confirm the run's workflow, event, branch, commit, status, and
 conclusion independently.
 
+### 0z1856. Verify Checkout Targets By Repository ID Across Owner Renames (2026-10-14)
+
+**What went wrong:** The GitHub write-target guard rejected the intended
+checkout after its owner name changed, even though the old alias and new
+canonical name resolved to the same repository.
+
+**Why:** The guard compared exact remote URLs and owner/name strings, which are
+mutable labels rather than repository identity.
+
+**Prevention:** Accept only recognized GitHub remote forms, resolve both the
+configured remote and `gh` default repository through the API, and require each
+to match the pinned repository ID. Keep the upstream remote check separate and
+read-only.
+
 ### 0z1854. Exclude Synthetic Sandbox Identity From Leak Scans (2026-10-13)
 
 **What went wrong:** The trusted validation environment sets `HOME` to a
