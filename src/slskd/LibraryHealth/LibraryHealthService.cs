@@ -334,9 +334,10 @@ namespace slskd.LibraryHealth
             {
                 // Step 1: Resolve MusicBrainz ID via metadata facade
                 var metadata = await metadataFacade.GetByFileAsync(filePath, ct).ConfigureAwait(false);
-                if (metadata == null || string.IsNullOrWhiteSpace(metadata.MusicBrainzRecordingId))
+                var hasRecordingId = metadata != null && !string.IsNullOrWhiteSpace(metadata.MusicBrainzRecordingId);
+                if (!hasRecordingId)
                 {
-                    // Issue: Missing metadata
+                    // Issue: Missing metadata. Transcode checks below still run; they only need the file.
                     await EmitIssueAsync(new LibraryIssue
                     {
                         IssueId = Guid.NewGuid().ToString(),
@@ -348,10 +349,9 @@ namespace slskd.LibraryHealth
                         Status = LibraryIssueStatus.Detected,
                         DetectedAt = DateTimeOffset.UtcNow,
                     }, scan, scanLock, ct);
-                    return;
                 }
 
-                var recordingId = metadata.MusicBrainzRecordingId;
+                var recordingId = hasRecordingId ? metadata!.MusicBrainzRecordingId : string.Empty;
 
                 // Step 2: Create AudioVariant from file
                 AudioVariant variant;
@@ -387,6 +387,12 @@ namespace slskd.LibraryHealth
                 }
                 catch (Exception)
                 {
+                    if (!hasRecordingId)
+                    {
+                        // Already reported as missing metadata; an unreadable file without an ID adds nothing more.
+                        return;
+                    }
+
                     // Issue: Corrupted file
                     await EmitIssueAsync(new LibraryIssue
                     {
@@ -408,10 +414,18 @@ namespace slskd.LibraryHealth
                 SpectralAnalysisResult? spectral = null;
                 if (includeSpectralAnalysis && spectralAnalyzer != null && TranscodeDetector.IsLosslessCodec(variant.Codec))
                 {
-                    spectral = await spectralAnalyzer
-                        .AnalyzeAsync(filePath, variant.SampleRateHz, variant.DurationMs / 1000.0, ct)
-                        .ConfigureAwait(false);
-                    spectral?.ApplyTo(variant);
+                    try
+                    {
+                        spectral = await spectralAnalyzer
+                            .AnalyzeAsync(filePath, variant.SampleRateHz, variant.DurationMs / 1000.0, ct)
+                            .ConfigureAwait(false);
+                        spectral?.ApplyTo(variant);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // The measurement is optional; a decoder failure must not be reported as a corrupted file.
+                        log.LogWarning(ex, "[LH] Spectral analysis failed for {Path}", LoggingSanitizer.SanitizeFilePath(filePath));
+                    }
                 }
 
                 // Step 3: Check for transcodes. A spectral Suspect or Upsampled result is recorded as a low-severity
@@ -452,8 +466,8 @@ namespace slskd.LibraryHealth
                         Severity = variant.TranscodeSuspect ? LibraryIssueSeverity.High : LibraryIssueSeverity.Low,
                         FilePath = filePath,
                         MusicBrainzRecordingId = recordingId,
-                        Artist = metadata.Artist ?? string.Empty,
-                        Title = metadata.Title ?? string.Empty,
+                        Artist = metadata?.Artist ?? string.Empty,
+                        Title = metadata?.Title ?? string.Empty,
                         Reason = variant.TranscodeSuspect ? variant.TranscodeReason : spectral!.Describe(),
                         Metadata = issueMetadata,
                         CanAutoFix = true,
@@ -461,6 +475,12 @@ namespace slskd.LibraryHealth
                         Status = LibraryIssueStatus.Detected,
                         DetectedAt = DateTimeOffset.UtcNow,
                     }, scan, scanLock, ct);
+                }
+
+                // Steps 4 and 5 compare against MusicBrainz data, so they need a recording ID.
+                if (!hasRecordingId)
+                {
+                    return;
                 }
 
                 // Step 4: Check for canonical upgrades

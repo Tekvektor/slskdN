@@ -1499,8 +1499,9 @@ spent in ffmpeg, so leave this off unless you want every download measured.
 
 Encoders that apply no lowpass leave no shelf to find, and material with
 little high-frequency content gives no evidence either way; both are reported
-as genuine, never as lossy. Library Health scans only analyze files that have
-a MusicBrainz recording ID.
+as genuine, never as lossy. Files without a MusicBrainz recording ID are still
+checked for transcodes; they are also reported as missing metadata, and the
+canonical-variant and release-completeness checks are skipped for them.
 
 ### Lidarr
 

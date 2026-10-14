@@ -510,6 +510,101 @@ namespace slskd.Tests.Unit.LibraryHealth
             }
         }
 
+        [Fact]
+        public async Task StartScanAsync_FileWithoutMusicBrainzId_StillGetsTranscodeChecks()
+        {
+            var shareRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(shareRoot);
+            WriteWaveFile(Path.Combine(shareRoot, "untagged.wav"));
+            try
+            {
+                var (hashDb, scanCompleted, issues) = CreateRecordingHashDb();
+                var untagged = new Mock<IMetadataFacade>();
+                untagged
+                    .Setup(s => s.GetByFileAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(default(MetadataResult));
+                var analyzer = new Mock<ISpectralAnalyzer>();
+                analyzer.SetupGet(a => a.IsEnabled).Returns(true);
+                analyzer
+                    .Setup(a => a.AnalyzeAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<double>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new SpectralAnalysisResult
+                    {
+                        Verdict = SpectralVerdict.Lossy,
+                        SampleRateHz = 8000,
+                        CutoffHz = 16600,
+                        AboveShelfDb = -50,
+                        EstimatedSource = "MP3 128 kbps",
+                    });
+                var canonicalStats = new Mock<ICanonicalStatsService>();
+                var options = new slskd.Options
+                {
+                    Shares = new slskd.Options.SharesOptions { Directories = new[] { shareRoot } },
+                };
+                var service = new LibraryHealthService(
+                    hashDb.Object,
+                    Mock.Of<ILibraryHealthRemediationService>(),
+                    untagged.Object,
+                    canonicalStats.Object,
+                    Mock.Of<IMusicBrainzClient>(),
+                    new TestOptionsMonitor<slskd.Options>(options),
+                    NullLogger<LibraryHealthService>.Instance,
+                    analyzer.Object);
+
+                await service.StartScanAsync(new LibraryHealthScanRequest
+                {
+                    FileExtensions = new List<string> { ".wav" },
+                    LibraryPath = shareRoot,
+                    IncludeSpectralAnalysis = true,
+                });
+                await scanCompleted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+                Assert.Single(issues, i => i.Type == LibraryIssueType.MissingMetadata);
+                var transcode = Assert.Single(issues, i => i.Type == LibraryIssueType.SuspectedTranscode);
+                Assert.Equal(LibraryIssueSeverity.High, transcode.Severity);
+                Assert.Empty(transcode.MusicBrainzRecordingId);
+                canonicalStats.Verify(
+                    s => s.GetCanonicalVariantCandidatesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+                    Times.Never);
+            }
+            finally
+            {
+                Directory.Delete(shareRoot, recursive: true);
+            }
+        }
+
+        [Fact]
+        public async Task StartScanAsync_SpectralAnalyzerFailure_IsNotReportedAsACorruptedFile()
+        {
+            var shareRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(shareRoot);
+            WriteWaveFile(Path.Combine(shareRoot, "recording-1.wav"));
+            try
+            {
+                var (hashDb, scanCompleted, issues) = CreateRecordingHashDb();
+                var analyzer = new Mock<ISpectralAnalyzer>();
+                analyzer.SetupGet(a => a.IsEnabled).Returns(true);
+                analyzer
+                    .Setup(a => a.AnalyzeAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<double>(), It.IsAny<CancellationToken>()))
+                    .ThrowsAsync(new System.ComponentModel.Win32Exception("ffmpeg could not be started"));
+                var service = CreateSpectralScanService(shareRoot, hashDb, CreateTaggedMetadata(), analyzer.Object);
+
+                await service.StartScanAsync(new LibraryHealthScanRequest
+                {
+                    FileExtensions = new List<string> { ".wav" },
+                    LibraryPath = shareRoot,
+                    IncludeSpectralAnalysis = true,
+                });
+                await scanCompleted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+                Assert.DoesNotContain(issues, i => i.Type == LibraryIssueType.CorruptedFile);
+                Assert.DoesNotContain(issues, i => i.Type == LibraryIssueType.SuspectedTranscode);
+            }
+            finally
+            {
+                Directory.Delete(shareRoot, recursive: true);
+            }
+        }
+
         private static LibraryHealthService CreateSpectralScanService(
             string shareRoot,
             Mock<IHashDbService> hashDb,
