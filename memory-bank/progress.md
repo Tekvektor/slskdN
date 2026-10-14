@@ -1,3 +1,23 @@
+# Update 2026-10-14 00:42 UTC — Fix sandbox identity false positive in release validation
+
+The remediation task creates a private validation environment whose `HOME`
+basename is the generic word `home`. The local identity scanner treated that
+synthetic value as an operator identity and its substring search matched it
+inside ordinary commit text. Runtime-derived identities can now be disabled
+for that isolated task while explicit denylist values remain active; commit
+messages use whole-word matching, and release-facing files retain literal
+matching. Added three isolated scanner contract tests and a validation-engine
+environment regression. Focused tests pass (3/3 scanner, 17/17 engine), shell,
+Node and Python syntax checks pass, and `./bin/lint` passes.
+
+The full remediation baseline passes through the release branch-sync guard.
+The initial stop also exposed a stale vendored-runtime source revision; the
+guarded sync helper updated the manifest and CI workflow mirror, and the
+source/mirror check now passes. The source change only selects a hosted Windows
+runner. The branch-sync guard is expected to stop until these local commits are
+pushed. Exact-head hosted CI and browser validation remain pending; no release
+tag has been created.
+
 # Update 2026-10-13 22:13 UTC — Patch SignalR servicing advisory for `.351`
 
 Updated all first-party .NET dependencies and the Flatpak runtime to 10.0.13,

@@ -26,6 +26,26 @@
 
 ## Active Development
 
+### Release identity scan sandbox scope — 2026-10-14
+
+- [x] Reproduce the false positive caused by a validation task's synthetic
+  `HOME` basename being scanned as an operator identity.
+- [x] Make runtime-derived identity discovery configurable and disable it only
+  for the isolated remediation task; explicit denylist entries remain active.
+- [x] Match commit-message identities as whole words while retaining literal
+  matching for release-facing files.
+- [x] Add scanner contract tests and a validation-engine environment test.
+- [x] Sync the vendored runtime manifest and mirror to its current source ref;
+  the intervening source change is limited to a hosted CI runner setting.
+- [x] Pass the scanner and validation-engine tests, static checks, lint, and
+  the runtime source/mirror check.
+- [ ] Push normally, run the exact-head hosted CI and Playwright workflows,
+  then complete the guarded stable release after all required checks pass.
+
+Status: The scanner regression is fixed locally. The full remediation baseline
+passes through the release branch-sync guard, which correctly waits until the
+local commits are pushed. No history rewrite or release tag has been made.
+
 ### Files API and responsive system workflows — 2026-10-13
 
 - [x] Add on-demand subtree sizes and guarded multi-item file/directory deletion
