@@ -1,3 +1,16 @@
+# Update 2026-10-14 01:02 UTC — Refresh validation inventory after the normal push
+
+Pushed the scanner fix, sandbox gotcha, and current vendored-runtime source
+revision to `main` with a normal fast-forward. The complete remediation check
+then found the tracked red-team candidate count was stale at 12,917. Compared
+normalized report lines with the pre-change head: the net increase is 12 (17
+new validation-code/test fixture lines, minus five old matches removed by the
+conditional runtime-identity branch). These are validation-only candidates,
+not confirmed defects. Refreshed `docs/dev/bug-council-active-backlog.md` to
+12,929 and reran the full remediation baseline successfully, including source
+sync, branch sync, all candidate counts, and negative-space checks. Exact-head
+hosted CI and Playwright E2E remain pending; no tag has been created.
+
 # Update 2026-10-14 00:42 UTC — Fix sandbox identity false positive in release validation
 
 The remediation task creates a private validation environment whose `HOME`

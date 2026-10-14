@@ -1,4 +1,4 @@
-## Current state — Stable `.351` candidate validation repair — 2026-10-14 00:42 UTC
+## Current state — Stable `.351` post-push validation — 2026-10-14 01:02 UTC
 
 The `.351` feature and documentation work is prepared in the candidate, with
 README and feature/API/configuration guides updated. Release validation
@@ -10,13 +10,14 @@ contract tests and the validation-engine environment regression pass; all 17
 validation-engine tests, `./bin/lint`, syntax checks, and `git diff --check`
 pass.
 
-The guarded runtime sync also corrected the manifest and vendored CI workflow
-mirror to the current source revision; the runtime source/mirror check passes.
-The complete remediation baseline passes through its expected branch-sync stop
-because these commits have not been pushed. No forced push or release tag has
-been made. Next: verify the fork target, push normally, run exact-head hosted
-CI and Playwright E2E, and use the guarded stable release flow only after both
-are green. Live DHT/VPN validation still lacks credentials and a VPN profile.
+The guarded runtime sync corrected the manifest and vendored CI workflow
+mirror to the current source revision. Three commits were pushed with a normal
+fast-forward to the fork. The post-push remediation baseline now passes all
+checks; the tracked red-team candidate inventory is refreshed to 12,929 after
+classifying its net twelve-line validation-fixture change. Next: run exact-head
+hosted CI and Playwright E2E, then use the guarded stable release flow only if
+both are green. No release tag has been created. Live DHT/VPN validation still
+lacks credentials and a VPN profile.
 
 ## Prior state — Stable `.351` security release candidate — 2026-10-13 22:13 UTC
 

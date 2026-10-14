@@ -39,12 +39,15 @@
   the intervening source change is limited to a hosted CI runner setting.
 - [x] Pass the scanner and validation-engine tests, static checks, lint, and
   the runtime source/mirror check.
-- [ ] Push normally, run the exact-head hosted CI and Playwright workflows,
-  then complete the guarded stable release after all required checks pass.
+- [x] Push the implementation and complete the post-push remediation baseline;
+  refresh the tracked candidate inventory with the measured count change.
+- [ ] Run exact-head hosted CI and Playwright workflows, then complete the
+  guarded stable release after all required checks pass.
 
-Status: The scanner regression is fixed locally. The full remediation baseline
-passes through the release branch-sync guard, which correctly waits until the
-local commits are pushed. No history rewrite or release tag has been made.
+Status: The scanner regression and tracked inventory refresh are pushed to the
+fork, and the full post-push remediation baseline passes. Exact-head hosted
+CI/E2E and stable-release verification remain. History is preserved; no tag
+has been created.
 
 ### Files API and responsive system workflows — 2026-10-13
 
