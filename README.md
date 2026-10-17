@@ -17,6 +17,8 @@ maturity.
 > Experimental features are not guaranteed stable, and feature gates have
 > feature-specific defaults.
 
+For local MCP access, see the [SnapeTech MCP integration guide](docs/integrations/snapetech-mcp.md). This is separate from slskdN's Moderation / Control Plane (MCP) documentation.
+
 ## Get started
 
 - [Install and configure slskdN](docs/getting-started.md)
