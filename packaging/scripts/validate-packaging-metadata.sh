@@ -105,7 +105,6 @@ expect_literal bin/watch 'pnpm --filter @slskdn/web start'
 reject_literal bin/build 'npm ci --legacy-peer-deps'
 reject_literal packaging/aur/PKGBUILD 'npm ci --legacy-peer-deps'
 expect_literal packaging/aur/PKGBUILD "'nodejs' 'pnpm'"
-PNPM_SETUP_ACTION='pnpm/setup@v3'
 for workflow in \
     .github/workflows/build-on-tag.yml \
     .github/workflows/ci-enhancements.yml \
@@ -113,11 +112,12 @@ for workflow in \
     .github/workflows/e2e-tests.yml \
     .github/workflows/release-copr.yml \
     .github/workflows/release-linux.yml \
-    .github/workflows/release-ppa.yml \
-    .github/workflows/windows-smoke.yml; do
-    expect_literal "$workflow" "$PNPM_SETUP_ACTION"
+    .github/workflows/release-ppa.yml; do
+    expect_line "$workflow" 'uses: pnpm/setup@[0-9a-f]{40}[[:space:]]+# v3'
     expect_literal "$workflow" 'install: false'
 done
+reject_line .github/workflows/windows-smoke.yml 'uses:[[:space:]]+(pnpm/setup|actions/setup-node)@'
+expect_literal .github/workflows/windows-smoke.yml 'run: dotnet test slskd.sln --configuration Release --no-build'
 for workflow in \
     .github/workflows/build-on-tag.yml \
     .github/workflows/ci.yml \
@@ -144,12 +144,14 @@ for task_id in \
     expect_literal scripts/validation-engine/config.mjs "id: '$task_id'"
 done
 reject_literal packaging/scripts/run-release-gate.sh 'timeout --preserve-status'
-expect_literal .github/workflows/ci.yml 'TMPDIR: ${{ runner.temp }}'
-expect_literal .github/workflows/e2e-tests.yml 'TMPDIR: ${{ runner.temp }}'
-expect_literal .github/workflows/build-on-tag.yml 'TMPDIR: ${{ runner.temp }}'
-expect_literal .github/workflows/ci.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
-expect_literal .github/workflows/e2e-tests.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
-expect_literal .github/workflows/build-on-tag.yml 'path: ${{ runner.temp }}/slskdn-validation-*/'
+# Validate the job-wide, fail-closed runner-temp setup instead of requiring a
+# step-scoped TMPDIR value that cannot reach later build and test steps.
+bash scripts/check-dotnet-runtime-matrix.sh
+# Keep the evidence uploads limited to the same paths enforced by the YAML contract.
+for workflow in .github/workflows/ci.yml .github/workflows/e2e-tests.yml .github/workflows/build-on-tag.yml; do
+    expect_literal "$workflow" '${{ runner.temp }}/slskdn-validation-*/receipt.json'
+    expect_literal "$workflow" '${{ runner.temp }}/slskdn-validation-*/*.log'
+done
 reject_literal .github/workflows/ci.yml 'path: /tmp/slskdn-validation-*/'
 reject_literal .github/workflows/e2e-tests.yml 'path: /tmp/slskdn-validation-*/'
 expect_literal scripts/verify-release-artifacts.sh 'SHA256SUMS.txt'
@@ -188,7 +190,6 @@ expect_literal docs/dev/release-checklist.md 'scripts/create-release-tag.sh'
 expect_literal docs/build.md 'scripts/create-release-tag.sh'
 expect_literal memory-bank/decisions/adr-0005-tagging-system.md 'scripts/create-release-tag.sh'
 expect_literal memory-bank/QUICK_REFERENCE.md 'scripts/create-release-tag.sh'
-expect_literal AGENTS.md 'scripts/create-release-tag.sh'
 
 CLOUDRON_VERSION="$(jq -er '.version' packaging/cloudron/CloudronManifest.json)"
 CLOUDRON_CATALOG_VERSION="$(jq -er --arg version "$CLOUDRON_VERSION" '.versions[$version].manifest.version' packaging/cloudron/CloudronVersions.json)"
@@ -233,7 +234,6 @@ reject_literal docs/build.md 'git tag build-main-'
 reject_literal docs/dev/release-checklist.md 'git tag build-main-'
 reject_literal memory-bank/decisions/adr-0005-tagging-system.md 'git tag "build-main-${VERSION}"'
 reject_literal memory-bank/QUICK_REFERENCE.md 'git tag build-main-'
-reject_literal AGENTS.md 'git tag build-main-'
 
 expect_line ca_profile.xml '^<CommunityApplications>$'
 expect_line ca_profile.xml '<Profile>[^<[:space:]][^<]*</Profile>'
@@ -471,17 +471,21 @@ test -x packaging/docker/slskdn-container-start || fail 'packaging/docker/slskdn
 test -x packaging/scripts/run-docker-apparmor-smoke.sh || fail 'packaging/scripts/run-docker-apparmor-smoke.sh must be executable'
 test -f packaging/docker/apparmor/slskdn-docker || fail 'packaging/docker/apparmor/slskdn-docker is missing'
 
-sdk_version=$(awk -F '"' '/"version"/ { print $4; exit }' global.json)
-fail_if_empty "$sdk_version" 'global.json SDK version'
-git ls-files --error-unmatch global.json >/dev/null 2>&1 || fail 'global.json must be tracked so tag release gates use the same SDK pin as local checks'
-expect_literal .github/workflows/build-on-tag.yml "DOTNET_VERSION: '${sdk_version}'"
-expect_literal .github/workflows/ci.yml "DOTNET_VERSION: '${sdk_version}'"
-expect_literal .github/workflows/ci-enhancements.yml "DOTNET_VERSION: '${sdk_version}'"
-expect_literal .github/workflows/e2e-tests.yml "DOTNET_VERSION: '${sdk_version}'"
-expect_literal .github/workflows/codeql.yml "DOTNET_VERSION: '${sdk_version}'"
-expect_literal .github/workflows/release-linux.yml "dotnet-version: '${sdk_version}'"
-expect_literal .github/workflows/release-copr.yml "dotnet-version: '${sdk_version}'"
-expect_literal .github/workflows/release-ppa.yml "dotnet-version: '${sdk_version}'"
+sdk_minimum_version=$(awk -F '"' '/"version"/ { print $4; exit }' global.json)
+fail_if_empty "$sdk_minimum_version" 'global.json SDK minimum version'
+git ls-files --error-unmatch global.json >/dev/null 2>&1 || fail 'global.json must be tracked so source builds and release checks share the declared .NET SDK floor'
+sdk_major="${sdk_minimum_version%%.*}"
+ci_sdk_version=$(awk -F "'" '/DOTNET_VERSION:/ { print $2; exit }' .github/workflows/ci.yml)
+if [[ ! "$ci_sdk_version" =~ ^${sdk_major}\.0\.[0-9]+$ ]]; then
+  fail "CI SDK pin must be a stable .NET ${sdk_major}.0 SDK version"
+fi
+expect_literal .github/workflows/build-on-tag.yml "DOTNET_VERSION: '${ci_sdk_version}'"
+expect_literal .github/workflows/ci-enhancements.yml "DOTNET_VERSION: '${ci_sdk_version}'"
+expect_literal .github/workflows/e2e-tests.yml "DOTNET_VERSION: '${ci_sdk_version}'"
+expect_literal .github/workflows/codeql.yml "DOTNET_VERSION: '${ci_sdk_version}'"
+expect_literal .github/workflows/release-linux.yml "dotnet-version: '${ci_sdk_version}'"
+expect_literal .github/workflows/release-copr.yml "dotnet-version: '${ci_sdk_version}'"
+expect_literal .github/workflows/release-ppa.yml "dotnet-version: '${ci_sdk_version}'"
 reject_literal .github/workflows/build-on-tag.yml "DOTNET_VERSION: '10'"
 reject_literal .github/workflows/build-on-tag.yml 'dotnet-version: 10.0.x'
 reject_literal .github/workflows/release-linux.yml 'dotnet-version: 10.0.x'

@@ -54,6 +54,16 @@ if ! rg -q "^  DOTNET_VERSION: '${target_major}\.0\.[0-9]+'$" "$repo_root/$workf
 fi
 expect_literal "$workflow" 'dotnet-version: ${{ env.DOTNET_VERSION }}'
 
+expect_hosted_workflows() {
+  local workflow_directory="$repo_root/.github/workflows"
+  if rg -n '^[[:space:]]*(runs-on|labels):.*self-hosted|TRUSTED_MAIN_RUNNERS_ENABLED|PREFER_SELF_HOSTED|inputs\.runner' "$workflow_directory"; then
+    printf 'workflow files must not select private runners\n' >&2
+    failed=1
+  fi
+}
+
+expect_hosted_workflows
+
 if rg -n '\.NET 8\.0|\.NET 8|aspnetcore-runtime-8\.0|dotnet-runtime-8\.0|dotnet-version: .8\.0\.x.' \
   "$repo_root/packaging/flatpak" \
   "$repo_root/packaging/proxmox-lxc" \

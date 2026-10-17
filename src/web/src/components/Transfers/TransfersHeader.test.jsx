@@ -4,9 +4,17 @@ import TransfersHeader from './TransfersHeader';
 import React from 'react';
 import userEvent from '@testing-library/user-event';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetInterfaceLanguage, setInterfaceLanguage } from '../../lib/interfaceLocale';
+import { stubLocaleCatalogFetch } from '../../test/localeCatalogFetchMock';
 
 describe('TransfersHeader', () => {
+  beforeEach(() => stubLocaleCatalogFetch(vi));
+  afterEach(async () => {
+    await resetInterfaceLanguage();
+    vi.unstubAllGlobals();
+  });
+
   it('surfaces download filters on an empty Downloads view', () => {
     render(
       <AppContext.Provider
@@ -40,9 +48,10 @@ describe('TransfersHeader', () => {
     );
   });
 
-  it('explains bulk retry scope and peer traffic on both split controls', async () => {
+  it('explains loaded-row scope and peer traffic on both split controls', async () => {
     const user = userEvent.setup();
-    const retryTooltip = 'Retry every eligible download in the chosen status group. This sends new requests to Soulseek peers; use the arrow menu to choose Errored, Cancelled, or All.';
+    const retryTooltip = 'Retry every eligible loaded download in the chosen status group. Load more transfers first to include older rows. This sends new requests to Soulseek peers; use the arrow menu to choose Errored, Cancelled, or All.';
+    const cancelTooltip = 'Cancel loaded transfers in the chosen state group to stop queued or active peer traffic. Load more transfers first to include older rows. Use the arrow menu to choose All, Queued, or In Progress.';
     render(
       <AppContext.Provider value={{ options: {} }}>
         <TransfersHeader
@@ -55,7 +64,10 @@ describe('TransfersHeader', () => {
           transfers={[
             {
               directories: [{
-                files: [{ direction: 'download', state: 'Completed, Errored' }],
+                files: [
+                  { direction: 'download', state: 'Completed, Errored' },
+                  { direction: 'download', state: 'InProgress' },
+                ],
               }],
             },
           ]}
@@ -73,5 +85,41 @@ describe('TransfersHeader', () => {
     expect(retryScope).toBeInTheDocument();
     await user.hover(retryScope);
     expect(await screen.findByText(retryTooltip)).toBeInTheDocument();
+
+    const cancel = screen.getByRole('button', { name: 'Cancel All' });
+    await user.hover(cancel);
+    expect(await screen.findByText(cancelTooltip)).toBeInTheDocument();
+
+    const cancelScope = document.querySelector(
+      '.transfers-header-actions .ui.dropdown[aria-label="Choose transfers to cancel"]',
+    );
+    expect(cancelScope).toBeInTheDocument();
+    await user.hover(cancelScope);
+    expect(await screen.findByText(cancelTooltip)).toBeInTheDocument();
+  });
+
+  it('sets Arabic language and direction on each localized transfer label', async () => {
+    await setInterfaceLanguage('ar');
+    render(
+      <AppContext.Provider value={{ options: {} }}>
+        <TransfersHeader
+          direction="download"
+          onCancelAll={vi.fn()}
+          onRemoveAll={vi.fn()}
+          onRetryAll={vi.fn()}
+          server={{ isConnected: true }}
+          totalCount={1}
+          transfers={[{
+            directories: [{
+              files: [{ direction: 'download', state: 'Completed, Errored' }],
+            }],
+          }]}
+        />
+      </AppContext.Provider>,
+    );
+
+    const retryLabel = screen.getByText('إعادة المحاولة');
+    expect(retryLabel).toHaveAttribute('lang', 'ar');
+    expect(retryLabel).toHaveAttribute('dir', 'rtl');
   });
 });

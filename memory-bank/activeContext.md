@@ -1,35 +1,124 @@
-## Current state — Public PR runner isolation and CI capacity review — 2026-10-12
+## Current state — Localization PR #360 — 2026-10-15
 
-Public pull-request workflows in the SLSKDN CI, enhancement, and Windows smoke
-files now select GitHub-hosted runners. Manual dispatches from refs other than
-`main` also use hosted runners; trusted `main` dispatches can opt into hosted
-or follow configured runner policy. The main CI token defaults to read-only;
-release publishing gets its required write scopes in the release job. Focused
-workflow syntax, trigger-policy, identity, diff, and release-note checks pass.
+PR #360 contains the 12-locale UI coverage and Arabic rendering fixes. The
+follow-up closes the remaining identified Network display gaps: per-label
+translations, regionalized peer and sequence counts, relative timestamps,
+stable mesh security warnings, and localized backfill progress. All twelve
+catalogs now have 5,475 matching keys (65,700 translated values), with nonempty
+entries and matching placeholders. The README and maturity draft are identical.
 
-The previously failing allocation assertion now warms expired-entry cleanup on
-the measured `DescriptorRetriever` instance, with its `<4 KiB` cap unchanged.
-The local engine planned one unit-test task but executed zero because `pnpm` and
-the .NET CLI home were unavailable. A direct filtered run also executed zero:
-the scratch package cache lacks the pinned .NET 10.0.12 reference pack. The
-fresh candidate scan reports 217 callback/event, 434 remote-text, 12,732
-red-team, and 836 mutable-ownership matches. After accounting for updated
-ledger descriptions, its only branch-added red-team match is expected
-CI-permission changelog text. PR #358 still needs hosted validation on this
-exact source before merge.
+Follow-up validation passed the focused Network suite (15/15), ESLint for the
+changed Network component, the Web UI production build, catalog key/value and
+placeholder parity, and the README maturity audit. Fresh exact-head hosted CI
+must be checked after the PR branch is updated. The broad Web UI suite and .NET
+suite were not rerun for this JavaScript-only follow-up.
 
-Cross-repository runner pooling is still pending. All repositories remain under
-the existing personal account while its hosted-runner concurrency tier is
-unknown. The local CI hosts are under heavy load and already have active SLSKDN
-and TorrentNG jobs, so no runner agents or additional local test load were
-added. Standard hosted runner minutes remain free for the public repositories.
+Broader raw API-error flows and fluent-speaker review remain open and are
+tracked in `docs/localization-roadmap.md`. The earlier Agent VM review covered
+Arabic metrics and downloads at mobile and desktop widths; this follow-up has
+not had a fresh browser pass and does not claim app-wide RTL support. Keep PR
+open; do not merge, release, or tag.
+
+## Current state — Stable `.351` release validation — 2026-10-14 01:28 UTC
+
+The `.351` feature and documentation work is on `main`, including the README
+and feature/API/configuration guides. Exact-head CI and Nix smoke run
+`38493466154` passed on SHA `03c352d32f7a31581dc29b8f34d33bffb0977405`.
+The release verifier initially rejected this valid run because GitHub returned
+the canonical `snapetech-org/slskdN` name while the checkout uses the
+`snapetech/slskdN` alias. The verifier now checks the fork's pinned repository
+ID, confirms the alias resolves to it, and validates the run against that ID.
+Regression coverage passes 8/8, release-note preview passes, and `./bin/lint`
+completed. The remediation baseline stopped at the expected branch-sync guard
+because the two verifier-fix commits are not pushed yet.
+
+The feature tree remains untagged. Push the gotcha and verifier fix with a
+normal fast-forward, then run the remediation baseline and dispatch new
+exact-head CI and Playwright E2E. The earlier E2E run still targets the prior
+SHA and remains queued. Create the stable tag only after both fresh exact-head
+runs pass, then verify release assets and downstream publication. Live
+DHT/VPN validation still has no supplied credentials or VPN profile.
+
+## Prior state — Stable `.351` security release candidate — 2026-10-13 22:13 UTC
+
+The SignalR denial-of-service advisory is fixed by updating the complete
+first-party .NET dependency graph and bundled Flatpak runtime to .NET 10.0.13.
+Workflow SDK pins use 10.0.402; the supported global SDK floor remains
+10.0.100. The new scanner inspects every `.csproj` under `src`, `tests`, and
+`tools` and was proven to fail on a vulnerable transitive dependency.
+
+The full local Release build and 6,227 tests pass; performance and VPN-agent
+builds, formatting lint, packaging metadata, release-note validation, and local
+identity checks also pass. The candidate is locally six commits ahead of
+`origin/main`. Next: push to `snapetech/slskdN`, run exact-head hosted CI and
+Playwright E2E, then use the guarded `.351` release-tag flow and verify assets.
+No public DHT/VPN test credentials are configured; any live network test must
+remain out of scope unless suitable credentials/profile are available.
 
 ### Next Steps
 
-- Keep public pull-request workloads on hosted runners.
-- Reassess local host capacity before adding project-specific runner agents.
-- Confirm the account concurrency plan and organization destination before any
-repository transfer or shared organization runner setup.
+- Push the validated `.351` candidate after verifying the GitHub target.
+- Require successful hosted CI and browser E2E for the exact pushed SHA.
+- Create the authorized stable tag and verify all published assets.
+- Update the Flatpak application asset reference once the `.351` asset is
+  published and its checksum is available.
+
+## Current state — Stable `.350` publication follow-through — 2026-10-13 08:51 UTC
+
+Stable release `2026101222-slskdn.350` is published with 13 assets; all six
+platform archives and checksums verify. Publisher recovery succeeded for AUR
+source and binary packages, COPR, container registries, and Nix metadata/smoke.
+
+Hosted `workflow_dispatch` run `38365844172` passed on branch head
+`62f2f95f67bb11e8fc62571d5e137b3b74af5a38`: 15/15 selected release-gate tasks,
+7,344 active cases, zero failures or blockers, three browser E2E exclusions,
+and successful Nix package smoke. The prior branch-sync failure was caused by
+`main` advancing after checkout. The refreshed local remediation baseline
+passes with 12,811 review candidates.
+
+The exact `.350` Jammy source is `Published` and its build log completed, but
+Launchpad's build API still says `Uploading build`; the exact binary is absent
+from all 331 published-binary records and the current Jammy amd64 apt index.
+The release waiter timed out after repeated API SSL timeouts. Do not resubmit
+the accepted source while publication is unresolved.
+
+### Next Steps
+
+- Recheck Launchpad's exact binary publication state and apt index read-only.
+- Keep PR-specific runner routing and main manual-dispatch validation as a
+  separate follow-up.
+
+## Prior state — Runner trust and scan gates — retired 2026-10-16
+
+This describes the retired configuration. All workflows now use GitHub-hosted
+runners, and the private GitHub Actions runners have been removed from
+`kspls0` and `kspld0`. The routing and runner-group plans below are historical.
+
+PR #357 already isolates runner-owned temporary storage in Linux self-hosted
+jobs and scopes release write permissions to the publisher. This follow-up
+removes blanket failure suppression from the test and scan workflow, pins its
+external actions across workflows, and makes high/critical dependency and image
+findings fail their scan jobs. The repository's default workflow token is now
+read-only. The standalone load harness remains on hosted Linux after the prior
+local SIGBUS.
+
+The merged `68b36d3` validation run executed 15/15 tasks and failed two checks
+because `main` advanced during the run; the release-branch-sync check and the
+remediation baseline's nested copy both saw the checkout behind origin/main.
+A fresh full run for `252e92f` is pending. Earlier Web unit-test failures and
+the load-test SIGBUS still require exact-head hosted verification. Focused
+workflow policy, runtime matrix, YAML, and diff checks pass on the PR branch.
+
+### Next Steps
+
+- Verify non-`snapetech` pull requests select hosted runners and all external
+  contributors remain approval-gated.
+- Verify trusted pull requests and main pushes can use either local host where
+  their workflow labels match.
+- Rerun exact-head CI and report actual task counts, skips, exclusions, and
+  scanner findings separately.
+- Keep the future Free-organization migration plan current and check billing
+  remains $0 before any transfer.
 
 ## Current state — Stable `.349` released; issue and release-gate follow-up complete — 2026-10-11 23:30 UTC
 
@@ -19300,3 +19389,88 @@ verification pass.
 Fetch and verify current `origin/main`, push the validated tree to
 `snapetech/slskdN/main`, create the authorized stable `.350` tag, verify hosted
 release publishers and artifacts, then remove task-scoped scratch data.
+
+## Current state — System file management release validation — 2026-10-13 12:50 UTC
+
+System file browsing supports on-demand subtree sizes and validated mixed-item
+deletion with per-item results. Responsive browser coverage exercises folder
+sizes, keyboard navigation, deletion recovery, selection, and partial success.
+Room queries retain slash-containing names, and watched-user state is
+published after registration.
+
+The full .NET suite passes 6,180 tests; the web suite passes 1,300 tests; and
+the selected headless browser suite passes 97 tests with seven opt-in network
+and soak scenarios skipped. Repository lint and the Release build pass with
+zero compiler warnings and errors. Local Soulseek/DHT and VPN validation was
+not run because no credentials or VPN profile were available.
+
+### Next Steps
+
+- Commit and push the validated branch to `snapetech/slskdN`.
+- Create the authorized stable build tag and verify the hosted release gate and
+  artifacts.
+
+## Current state — Trusted browser cache and E2E follow-up — 2026-10-13
+
+The validation engine keeps the browser cache from its trusted read-only mount
+and falls back to an isolated task cache for all other values. Local test
+guidance and a validation release-note fragment are updated. The transfer
+column fixture explicitly hides `requested`, whose product default is visible.
+
+The validation-engine suite passes 16 tests; the full headless Web suite passes
+89 with 16 expected skips; the dedicated 15-minute loopback radio-renewal soak
+passes. The Release build and repository lint pass. The trusted local backend
+unit task stalled before test execution and is not counted as passing. Public
+DHT/VPN behavior was not exercised in the network-isolated runner.
+
+### Next Steps
+
+- Commit the browser-cache implementation, release fragment, and documentation.
+- Complete the backend unit suite and exact-head hosted release gate before
+  publication.
+
+## Current state — Unraid configuration coverage and release follow-up — 2026-10-13
+
+The packaging validator exposed missing advanced Unraid fields for documented
+download destination, retry, and retention environment options. The template
+now exposes all documented `SLSKD_*` settings with blank values, and its README
+and support text explain that these fields retain image and YAML defaults. A
+release-note fragment and Unreleased changelog bullet document the operator
+impact. The shared omission pattern is recorded in gotcha `0z1847`.
+
+Packaging metadata validation passes, the Unraid XML parses, and a direct
+coverage scan finds no documented environment settings missing from the
+template. Hosted CI run `38470254893` was dispatched on commit
+`f2b9256d48eca1eaddac3cdd85b9fa4f8bca7f2e`; subsequent release, gotcha, and
+Unraid-template changes still require validation on the final default-branch
+commit. The stable versioned changelog section and tag remain pending.
+
+### Next Steps
+
+- Commit and push the complete Unraid template and release-note follow-up.
+- Complete the backend test suite and exact-head hosted release gate on `main`.
+- Prepare versioned `.351` notes after the validated changes reach `main`, then
+  cut the explicitly requested stable release and verify published artifacts.
+
+## Current state — Main release candidate — 2026-10-13
+
+The 154-commit candidate was fast-forwarded to the fork's `main` at
+`043111a66abd92913f3f8cf539486d5ec1a424db`; the feature branch remains pushed
+and tracks its corresponding remote branch. The exact dated `.351` changelog
+section is now prepared for this candidate. Local Release build, formatting
+lint, the recorded 6,180-test backend suite, 89 passing headless browser tests,
+the 15-minute loopback player-renewal soak, validation-engine tests, and
+packaging metadata checks are green. Live public-network DHT/VPN behavior was
+not exercised because the isolated runner has no live profile or credentials.
+
+Two feature-branch manual CI runs were superseded while the fork's workflow
+queue was backed up. Neither is release evidence. The next step is to dispatch
+the hosted CI release gate against the final `main` commit after the versioned
+changelog/memory update, then tag only if the exact-head gate passes.
+
+### Next Steps
+
+- Commit and push the `.351` versioned changelog plus final progress records.
+- Run `ci.yml` manually on `main` with the GitHub-hosted runner and verify the
+  run against the exact commit.
+- Run the guarded stable-tag helper, watch publication, and verify all assets.
