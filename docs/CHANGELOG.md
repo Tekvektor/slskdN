@@ -22,6 +22,8 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+## [2026101723-slskdn.351] — 2026-10-17
+
 ### Security
 
 - .NET dependency graphs and bundled runtimes now use the 10.0.13 servicing
@@ -51,8 +53,6 @@ For dev or build tags, use the same logical version string embedded in the tag.
 - Downloads and Uploads tables now align values with their headers. Completed
   transfers show a full progress bar and their recorded average speed, with a
   localized speed hint.
-
-## [2026101321-slskdn.351] — 2026-10-13
 
 ### Added
 
@@ -117,10 +117,9 @@ For dev or build tags, use the same logical version string embedded in the tag.
   Maintainers can retry selected failed publishers for an existing stable
   release using published assets, without rebuilding or repeating successful
   channels.
-- Pull request validation uses GitHub-hosted runners for all contributors;
-  persistent local runners are reserved for trusted default-branch validation.
-  Workflow tokens default to read-only, and release write scopes are limited to
-  the publisher.
+- Pull request, tag, and manual validation workflows use GitHub-hosted runners,
+  removing persistent private runner access. Workflow tokens default to
+  read-only, and release write scopes are limited to the publisher.
 
 ### Changed
 
