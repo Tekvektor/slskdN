@@ -32,7 +32,7 @@ slskdN is a community fork of slskd that takes the opposite approach to the upst
 
 ### Infrastructure
 - **CI/CD**: GitHub Actions (with self-hosted runners)
-- **Containers**: Docker (GHCR: `ghcr.io/snapetech/slskdn`)
+- **Containers**: Docker (GHCR: `ghcr.io/snapetech-org/slskdn`)
 - **Packages**: AUR, COPR, PPA, Unraid
 
 ---

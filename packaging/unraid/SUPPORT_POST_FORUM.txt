@@ -11,7 +11,7 @@ Project:
 https://github.com/snapetech/slskdN
 
 Docker image:
-https://ghcr.io/snapetech/slskdn
+https://ghcr.io/snapetech-org/slskdn
 
 Unraid template:
 https://github.com/snapetech/slskdN/raw/refs/heads/main/packaging/unraid/slskdn.xml

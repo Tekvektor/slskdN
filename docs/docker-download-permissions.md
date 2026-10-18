@@ -31,7 +31,7 @@ destinations:
 ```yaml
 services:
   slskdn:
-    image: ghcr.io/snapetech/slskdn:latest
+    image: ghcr.io/snapetech-org/slskdn:latest
     environment:
       PUID: "1000"
       PGID: "1000"

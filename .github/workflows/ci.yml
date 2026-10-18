@@ -327,8 +327,8 @@ jobs:
         run: |
           {
             echo 'canary_tags<<EOF'
-            echo "ghcr.io/snapetech/slskdn:${CONTAINER_VERSION}"
-            echo 'ghcr.io/snapetech/slskdn:canary'
+            echo "ghcr.io/snapetech-org/slskdn:${CONTAINER_VERSION}"
+            echo 'ghcr.io/snapetech-org/slskdn:canary'
             if [ "${HAS_DOCKERHUB}" = "true" ]; then
               echo "${DOCKERHUB_IMAGE}:${CONTAINER_VERSION}"
               echo "${DOCKERHUB_IMAGE}:canary"
@@ -337,10 +337,10 @@ jobs:
             fi
             echo 'EOF'
             echo 'release_tags<<EOF'
-            echo "ghcr.io/snapetech/slskdn:${CONTAINER_VERSION}"
-            echo "ghcr.io/snapetech/slskdn:${TAG}"
-            echo 'ghcr.io/snapetech/slskdn:canary'
-            echo 'ghcr.io/snapetech/slskdn:latest'
+            echo "ghcr.io/snapetech-org/slskdn:${CONTAINER_VERSION}"
+            echo "ghcr.io/snapetech-org/slskdn:${TAG}"
+            echo 'ghcr.io/snapetech-org/slskdn:canary'
+            echo 'ghcr.io/snapetech-org/slskdn:latest'
             if [ "${HAS_DOCKERHUB}" = "true" ]; then
               echo "${DOCKERHUB_IMAGE}:${CONTAINER_VERSION}"
               echo "${DOCKERHUB_IMAGE}:${TAG}"
@@ -356,6 +356,8 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/snapetech-org/slskdN
           build-args: |
             TAG=${{ env.TAG }}
             VERSION=${{ env.APP_VERSION }}
@@ -371,6 +373,8 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/snapetech-org/slskdN
           build-args: |
             VERSION=${{ env.APP_VERSION }}
           tags: ${{ steps.docker_tags.outputs.release_tags }}

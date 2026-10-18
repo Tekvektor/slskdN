@@ -218,7 +218,7 @@ questions:
           label: "Repository"
           schema:
             type: string
-            default: "ghcr.io/snapetech/slskdn"
+            default: "ghcr.io/snapetech-org/slskdn"
         - variable: tag
           label: "Tag"
           schema:

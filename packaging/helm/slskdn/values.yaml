@@ -3,7 +3,7 @@
 
 # Image
 image:
-  repository: ghcr.io/snapetech/slskdn
+  repository: ghcr.io/snapetech-org/slskdn
   tag: ""
   pullPolicy: IfNotPresent
 

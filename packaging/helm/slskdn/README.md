@@ -28,7 +28,7 @@ helm install slskdn ./packaging/helm/slskdn \
 
 | Section | Key | Default | Description |
 |--------|-----|---------|-------------|
-| **image** | `repository` | `ghcr.io/snapetech/slskdn` | Image |
+| **image** | `repository` | `ghcr.io/snapetech-org/slskdn` | Image |
 | | `tag` | (Chart `appVersion`) | Override tag |
 | | `pullPolicy` | `IfNotPresent` | Pull policy |
 | **service** | `main.port` | `5030` | HTTP port |

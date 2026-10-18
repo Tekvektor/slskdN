@@ -1,6 +1,6 @@
 # Optional heavier media tooling layer for operators who intentionally enable
 # experimental SongID workflows.
-ARG BASE_IMAGE=ghcr.io/snapetech/slskdn:latest
+ARG BASE_IMAGE=ghcr.io/snapetech-org/slskdn:latest
 FROM ${BASE_IMAGE}
 
 USER root

@@ -86,7 +86,7 @@ scoop install slskdn
 ### Docker
 
 ```bash
-docker pull ghcr.io/snapetech/slskdn:latest
+docker pull ghcr.io/snapetech-org/slskdn:latest
 docker pull snapetech/slskdn:latest
 docker run -d \
   --name slskdn \
@@ -94,7 +94,7 @@ docker run -d \
   -v /path/to/config:/app/config \
   -v /path/to/downloads:/app/downloads \
   -v /path/to/shares:/app/shares \
-  ghcr.io/snapetech/slskdn:latest
+  ghcr.io/snapetech-org/slskdn:latest
 ```
 
 ### Manual Installation

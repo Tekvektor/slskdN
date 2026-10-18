@@ -3,7 +3,7 @@
 set -euo pipefail
 
 if [ -z "${1:-}" ]; then
-    echo "💥  error: no image specified; provide a valid image and tag (e.g. ghcr.io/snapetech/slskdn:latest)"
+    echo "💥  error: no image specified; provide a valid image and tag (e.g. ghcr.io/snapetech-org/slskdn:latest)"
     exit 1
 fi
 

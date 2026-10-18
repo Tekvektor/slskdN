@@ -2639,7 +2639,7 @@ version: "3.9"
 
 services:
   slskdn:
-    image: ghcr.io/snapetech/slskdn:latest
+    image: ghcr.io/snapetech-org/slskdn:latest
     container_name: slskdn
     
     # Run as non-root

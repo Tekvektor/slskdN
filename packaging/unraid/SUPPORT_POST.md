@@ -5,7 +5,7 @@ slskdN is an unofficial, batteries-included fork of slskd, a web client for the 
 This thread is for Unraid installation, configuration, and container-specific support.
 
 Project: https://github.com/snapetech/slskdN
-Docker image: https://ghcr.io/snapetech/slskdn
+Docker image: https://ghcr.io/snapetech-org/slskdn
 Unraid template: https://github.com/snapetech/slskdN/raw/refs/heads/main/packaging/unraid/slskdn.xml
 License: AGPL-3.0
 

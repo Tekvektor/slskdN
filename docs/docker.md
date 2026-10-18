@@ -17,7 +17,7 @@ docker run -d \
   -p <listen port>:50300 \
   -v <path/to/application/data>:/app \
   --name slskd \
-  ghcr.io/snapetech/slskdn:latest
+  ghcr.io/snapetech-org/slskdn:latest
 ```
 
 The Docker image includes the core runtime tools used by the built-in media and
@@ -61,7 +61,7 @@ For reproducible deployments, bake the tools into a derived image instead of
 mutating a running container:
 
 ```dockerfile
-FROM ghcr.io/snapetech/slskdn:latest
+FROM ghcr.io/snapetech-org/slskdn:latest
 
 RUN install-optional-media-tools all
 ```
@@ -74,7 +74,7 @@ reuse the downloaded optional-tool dependencies:
 ```shell
 DOCKER_BUILDKIT=1 docker build -t slskdn:all-tools \
   -f packaging/docker/Dockerfile.all-tools \
-  --build-arg BASE_IMAGE=ghcr.io/snapetech/slskdn:latest \
+  --build-arg BASE_IMAGE=ghcr.io/snapetech-org/slskdn:latest \
   .
 ```
 
@@ -88,12 +88,12 @@ want every optional prerequisite baked in and are willing to accept the image
 size and supply-chain surface:
 
 ```shell
-docker pull ghcr.io/snapetech/slskdn:omnibus
+docker pull ghcr.io/snapetech-org/slskdn:omnibus
 
-docker pull ghcr.io/snapetech/slskdn:2026051600-slskdn.259-omnibus
+docker pull ghcr.io/snapetech-org/slskdn:2026101723-slskdn.351-omnibus
 ```
 
-Use `ghcr.io/snapetech/slskdn:omnibus` for the latest stable testers image, or
+Use `ghcr.io/snapetech-org/slskdn:omnibus` for the latest stable testers image, or
 pin the versioned `-omnibus` tag for reproducible internal validation. The
 normal `latest` image remains smaller and includes only the default runtime
 media prerequisites.
@@ -102,7 +102,7 @@ Use `SLSKDN_PIP_PACKAGES` to pin or replace the Python tool set in a derived
 image, for example:
 
 ```dockerfile
-FROM ghcr.io/snapetech/slskdn:latest
+FROM ghcr.io/snapetech-org/slskdn:latest
 
 ENV SLSKDN_PIP_PACKAGES="openai-whisper==20250625 demucs==4.0.1"
 RUN install-optional-media-tools distro ai-python
@@ -124,7 +124,7 @@ released runtime image:
 ```shell
 docker build -t slskdn:experimental-media \
   -f packaging/docker/Dockerfile.experimental-media \
-  --build-arg BASE_IMAGE=ghcr.io/snapetech/slskdn:latest \
+  --build-arg BASE_IMAGE=ghcr.io/snapetech-org/slskdn:latest \
   .
 ```
 
@@ -165,7 +165,7 @@ docker run -d \
   -v <path/to/application/data>:/app \
   -v <path/to/downloads>:/downloads \
   -v <path/to/shares>:/shares:ro \
-  ghcr.io/snapetech/slskdn:latest \
+  ghcr.io/snapetech-org/slskdn:latest \
   ./slskd --config /etc/slskd/slskd.yml --app-dir /app
 ```
 
@@ -185,7 +185,7 @@ To prove the profile on an AppArmor-enabled Docker host, build or pull the
 image you want to test and run:
 
 ```shell
-SLSKDN_DOCKER_IMAGE=ghcr.io/snapetech/slskdn:latest \
+SLSKDN_DOCKER_IMAGE=ghcr.io/snapetech-org/slskdn:latest \
   bash packaging/scripts/run-docker-apparmor-smoke.sh
 ```
 
@@ -237,7 +237,7 @@ docker run -d \
   -e PUID=1000 \
   -e PGID=1000 \
   --name slskd \
-  ghcr.io/snapetech/slskdn:latest
+  ghcr.io/snapetech-org/slskdn:latest
 ```
 
 Or, for `docker-compose`:
@@ -258,7 +258,7 @@ services:
       - /srv/slskdn/app:/app:rw
       - /srv/media/music:/music:rw
       - /srv/media/audiobooks:/ebooks:rw
-    image: ghcr.io/snapetech/slskdn:latest
+    image: ghcr.io/snapetech-org/slskdn:latest
 ```
 The YAML configuration file would contain:
 
@@ -290,7 +290,7 @@ docker run -d \
   -e PUID=1000 \
   -e PGID=1000 \
   --name slskd \
-  ghcr.io/snapetech/slskdn:latest
+  ghcr.io/snapetech-org/slskdn:latest
 ```
 
 Or, for `docker-compose`:
@@ -312,5 +312,5 @@ services:
       - /srv/slskdn/app:/app:rw
       - /srv/media/music:/music:rw
       - /srv/media/audiobooks:/ebooks:rw
-    image: ghcr.io/snapetech/slskdn:latest
+    image: ghcr.io/snapetech-org/slskdn:latest
 ```

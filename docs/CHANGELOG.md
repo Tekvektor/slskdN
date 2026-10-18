@@ -22,6 +22,12 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Packaging
+
+- GHCR publishing and current container deployment defaults now use the
+  organization-owned `ghcr.io/snapetech-org/slskdn` image. Publisher recovery can
+  retry the omnibus image independently or alongside the main image.
+
 ## [2026101723-slskdn.351] — 2026-10-17
 
 ### Security

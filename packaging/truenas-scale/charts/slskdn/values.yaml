@@ -6,7 +6,7 @@ TC: true
 
 # Image configuration
 image:
-  repository: ghcr.io/snapetech/slskdn
+  repository: ghcr.io/snapetech-org/slskdn
   pullPolicy: IfNotPresent
   tag: "latest"
 

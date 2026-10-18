@@ -129,7 +129,7 @@ services:
       - "127.0.0.1:5030:5030"
 
   slskdn:
-    image: ghcr.io/snapetech/slskdn:RELEASE_TAG
+    image: ghcr.io/snapetech-org/slskdn:RELEASE_TAG
     network_mode: service:tailscale-slskdn
     depends_on:
       - tailscale-slskdn

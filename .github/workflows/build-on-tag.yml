@@ -37,6 +37,11 @@ on:
         required: false
         default: false
         type: boolean
+      retry_docker_omnibus:
+        description: Retry the omnibus Docker publisher (requires the versioned main image to exist, or select retry_docker too)
+        required: false
+        default: false
+        type: boolean
       retry_nix:
         description: Retry the Nix metadata publisher
         required: false
@@ -66,6 +71,7 @@ jobs:
           RETRY_COPR: ${{ inputs.retry_copr }}
           RETRY_PPA: ${{ inputs.retry_ppa }}
           RETRY_DOCKER: ${{ inputs.retry_docker }}
+          RETRY_DOCKER_OMNIBUS: ${{ inputs.retry_docker_omnibus }}
           RETRY_NIX: ${{ inputs.retry_nix }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -77,7 +83,7 @@ jobs:
               echo "::error::Manual publisher recovery requires an existing build-main-* tag"
               exit 1
             fi
-            if [[ "$RETRY_AUR" != true && "$RETRY_COPR" != true && "$RETRY_PPA" != true && "$RETRY_DOCKER" != true && "$RETRY_NIX" != true ]]; then
+            if [[ "$RETRY_AUR" != true && "$RETRY_COPR" != true && "$RETRY_PPA" != true && "$RETRY_DOCKER" != true && "$RETRY_DOCKER_OMNIBUS" != true && "$RETRY_NIX" != true ]]; then
               echo "::error::Select at least one publisher to retry"
               exit 1
             fi
@@ -1170,8 +1176,8 @@ jobs:
         run: |
           {
             echo 'tags<<EOF'
-            echo 'ghcr.io/snapetech/slskdn:${{ needs.parse.outputs.version }}'
-            echo 'ghcr.io/snapetech/slskdn:latest'
+            echo 'ghcr.io/snapetech-org/slskdn:${{ needs.parse.outputs.version }}'
+            echo 'ghcr.io/snapetech-org/slskdn:latest'
             if [ "${HAS_DOCKERHUB}" = "true" ]; then
               echo "${DOCKERHUB_IMAGE}:${{ needs.parse.outputs.version }}"
               echo "${DOCKERHUB_IMAGE}:latest"
@@ -1186,6 +1192,8 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/snapetech-org/slskdN
           build-args: |
             VERSION=${{ needs.parse.outputs.version }}
           tags: ${{ steps.docker_tags.outputs.tags }}
@@ -1195,8 +1203,8 @@ jobs:
       - name: Summary
         run: |
           echo "✅ Published Docker images:"
-          echo "  - ghcr.io/snapetech/slskdn:${{ needs.parse.outputs.version }}"
-          echo "  - ghcr.io/snapetech/slskdn:latest"
+          echo "  - ghcr.io/snapetech-org/slskdn:${{ needs.parse.outputs.version }}"
+          echo "  - ghcr.io/snapetech-org/slskdn:latest"
           if [ "${HAS_DOCKERHUB}" = "true" ]; then
             echo "  - ${DOCKERHUB_IMAGE}:${{ needs.parse.outputs.version }}"
             echo "  - ${DOCKERHUB_IMAGE}:latest"
@@ -1207,7 +1215,12 @@ jobs:
   docker-omnibus:
     name: Build and Push Docker (Omnibus Testers)
     needs: [parse, release-main, docker-main]
-    if: needs.parse.outputs.channel == 'main' && github.event_name != 'workflow_dispatch'
+    if: >-
+      always() && needs.parse.outputs.channel == 'main' &&
+      ((github.event_name != 'workflow_dispatch' && needs.release-main.result == 'success' && needs.docker-main.result == 'success') ||
+       (github.event_name == 'workflow_dispatch' && inputs.retry_docker_omnibus &&
+        ((inputs.retry_docker && needs.docker-main.result == 'success') ||
+         (!inputs.retry_docker && needs.docker-main.result == 'skipped'))))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1233,19 +1246,21 @@ jobs:
           file: packaging/docker/Dockerfile.all-tools
           platforms: linux/amd64
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/snapetech-org/slskdN
           build-args: |
-            BASE_IMAGE=ghcr.io/snapetech/slskdn:${{ needs.parse.outputs.version }}
+            BASE_IMAGE=ghcr.io/snapetech-org/slskdn:${{ needs.parse.outputs.version }}
           tags: |
-            ghcr.io/snapetech/slskdn:${{ needs.parse.outputs.version }}-omnibus
-            ghcr.io/snapetech/slskdn:omnibus
+            ghcr.io/snapetech-org/slskdn:${{ needs.parse.outputs.version }}-omnibus
+            ghcr.io/snapetech-org/slskdn:omnibus
           cache-from: type=gha,scope=omnibus-testers-amd64
           cache-to: type=gha,mode=max,scope=omnibus-testers-amd64
 
       - name: Summary
         run: |
           echo "✅ Published omnibus testers Docker images:"
-          echo "  - ghcr.io/snapetech/slskdn:${{ needs.parse.outputs.version }}-omnibus"
-          echo "  - ghcr.io/snapetech/slskdn:omnibus"
+          echo "  - ghcr.io/snapetech-org/slskdn:${{ needs.parse.outputs.version }}-omnibus"
+          echo "  - ghcr.io/snapetech-org/slskdn:omnibus"
           echo
           echo "This image is linux/amd64 only and intentionally includes the heavyweight optional media toolchain."
 

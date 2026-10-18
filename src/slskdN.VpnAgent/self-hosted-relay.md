@@ -116,7 +116,7 @@ services:
       - SYS_MODULE
 
   slskdn:
-    image: ghcr.io/snapetech/slskdn:latest
+    image: ghcr.io/snapetech-org/slskdn:latest
     network_mode: service:tailscale-slskdn
     depends_on:
       - tailscale-slskdn
