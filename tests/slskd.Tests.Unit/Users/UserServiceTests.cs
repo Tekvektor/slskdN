@@ -137,6 +137,27 @@ namespace slskd.Tests.Unit.Users
 
                 Assert.Contains(resolvedGroup, new[] { Application.DefaultGroup, Application.LeecherGroup });
             }
+
+            [Theory, AutoData]
+            public void Returns_Blacklisted_For_Blacklisted_User_From_Privileged_List(string username)
+            {
+                var options = new Options()
+                {
+                    Groups = new Options.GroupsOptions()
+                    {
+                        Blacklisted = new Options.GroupsOptions.BlacklistedOptions
+                        {
+                            Members = new[] { username },
+                        },
+                    },
+                };
+
+                var (service, mocks) = GetFixture(options);
+
+                mocks.SoulseekClient.Raise(client => client.PrivilegedUserListReceived += null, null, (IReadOnlyCollection<string>)new[] { username });
+
+                Assert.Equal(Application.BlacklistedGroup, service.GetGroup(username));
+            }
         }
 
         public class Configuration

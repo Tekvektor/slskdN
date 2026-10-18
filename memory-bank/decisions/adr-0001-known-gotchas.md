@@ -4,6 +4,22 @@
 > **Date**: 2025-12-08  
 > **Author**: AI-assisted development sessions
 
+### 0z1864. Set The Key Field On Every Cache Record You Create (2026-10-18)
+
+**What went wrong:** A blacklisted user who was also Soulseek-privileged
+resolved to the `privileged` group. `UserService.GetGroup` checks the
+blacklist first, but it checked `user.Username`, and the records created from
+the server's privileged list, user statistics, and user status never set
+`Username`. The blacklist check ran against an empty name and passed.
+
+**Why:** `ConcurrentDictionary.AddOrUpdate` callers set `Username` in the
+update factory but not in `addValue`, so the bug appeared only when the first
+record for a user came from one of those paths.
+
+**Prevention:** When a cached record carries its own key, set it in both the
+add value and the update factory. Cover precedence rules with a test that
+seeds the cache through each entry path, not just through configuration.
+
 ### 0z1863. Give Grid Header Rows The Same Row Spacing Class As Data Rows (2026-10-12)
 
 **What went wrong:** The transfer table header row used only
