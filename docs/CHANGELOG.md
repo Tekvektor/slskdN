@@ -22,6 +22,13 @@ For dev or build tags, use the same logical version string embedded in the tag.
 
 ## [Unreleased]
 
+### Fixed
+
+- Blacklisted users who also hold Soulseek privileges now resolve to the
+  blacklisted group everywhere, including upload scheduling, upload speed
+  limits, and the user group API. Previously they could resolve as privileged.
+  (#382)
+
 ### Packaging
 
 - GHCR publishing and current container deployment defaults now use the
